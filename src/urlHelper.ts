@@ -1,0 +1,35 @@
+class UrlHelper {
+    public stickToGrid(): void {
+        const hashstr = window.location.hash.substr(1).split(',');
+        if (hashstr[2] === '0') {
+            // If zoom is zero, don't try replacing href, it will freak out.
+            return;
+        }
+        // Set 1 zoom level more, will update canvas.
+        location.href = `${window.location.href.split('#')[0]}#${hashstr[0]},${
+            hashstr[1]
+        },${parseInt(hashstr[2], 10) + 1}`;
+
+        // Set zoom level back to what it was.
+        location.href = `${window.location.href.split('#')[0]}#${hashstr[0]},${
+            hashstr[1]
+        },${hashstr[2]}`;
+    }
+
+    public get xCoord(): number {
+        const hashstr = window.location.hash.substr(1).split(',');
+        return parseInt(hashstr[0], 10);
+    }
+
+    public get yCoord(): number {
+        const hashstr = window.location.hash.substr(1).split(',');
+        return parseInt(hashstr[1], 10);
+    }
+
+    public get zoomLevel(): number {
+        const hashstr = window.location.hash.substr(1).split(',');
+        return parseInt(hashstr[2], 10);
+    }
+}
+
+export default new UrlHelper();
