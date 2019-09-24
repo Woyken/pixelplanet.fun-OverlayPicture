@@ -1,5 +1,6 @@
 import urlHelper from './urlHelper';
 import { Configuration } from './configuration';
+import { configurationStore } from './configurationStore';
 
 class UserInput {
     private inputBase: HTMLDivElement;
@@ -15,7 +16,7 @@ class UserInput {
     constructor(initializeFromUrlHash: string) {
         this.onClickShare = this.onClickShare.bind(this);
 
-        this.configuration = new Configuration(initializeFromUrlHash);
+        this.configuration = Configuration.createFromUrlHash(initializeFromUrlHash);
 
         this.createInputElements();
         this.createOverlayImage();
@@ -60,6 +61,26 @@ class UserInput {
     <img
         id="PictureOverlay_ExpandBtn"
         src="https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg"
+    />
+    <img
+        id="PictureOverlay_SaveConfigBtn"
+        src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg"
+    />
+    <img
+        id="PictureOverlay_ConfigDropDownBtn"
+        src="https://fonts.gstatic.com/s/i/materialicons/folder_open/v1/24px.svg"
+    />
+    <div
+        id="PictureOverlay_ConfigDropDownContent"
+        style="
+            width: 100%;
+            position: absolute;
+            background-color: #f1f1f1;
+            min-width: 160px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        "
     />
 </div>
         `;
@@ -161,6 +182,155 @@ class UserInput {
                 baseForExpanding.style.display = 'block';
             }
         };
+
+        const saveConfigBtn = document.getElementById(
+            'PictureOverlay_SaveConfigBtn',
+        ) as HTMLImageElement;
+        saveConfigBtn.onclick = () => {
+            configurationStore.add(this.configuration);
+            this.updateConfigDropDown();
+        };
+
+        const openConfigDropDownBtn = document.getElementById(
+            'PictureOverlay_ConfigDropDownBtn',
+        ) as HTMLImageElement;
+        openConfigDropDownBtn.onclick = () => {
+            this.toggleConfigDropDown();
+        };
+    }
+
+    private toggleConfigDropDown() {
+        const dropDownContent = document.getElementById(
+            'PictureOverlay_ConfigDropDownContent',
+        ) as HTMLDivElement;
+
+        if (dropDownContent.childElementCount > 0) {
+            this.closeConfigDropDown();
+        } else {
+            this.openConfigDropDown();
+        }
+    }
+
+    private updateConfigDropDown() {
+        const dropDownContent = document.getElementById(
+            'PictureOverlay_ConfigDropDownContent',
+        ) as HTMLDivElement;
+
+        if (dropDownContent.childElementCount > 0) {
+            this.closeConfigDropDown();
+            this.openConfigDropDown();
+        }
+    }
+
+    private openConfigDropDown() {
+        const dropDownContent = document.getElementById(
+            'PictureOverlay_ConfigDropDownContent',
+        ) as HTMLDivElement;
+
+        if (dropDownContent.childElementCount > 0) {
+            this.closeConfigDropDown();
+        }
+
+        const configs = configurationStore.getSavedConfigurations();
+
+        configs.forEach((config) => {
+            dropDownContent.appendChild(this.createConfigDropDonwElement(
+                config,
+                (conf: Configuration) => {
+                    this.trasparencyInput.value = conf.transparency.toString(10);
+                    this.trasparencyInput.dispatchEvent(new Event('input'));
+                    this.yOffsetInput.value = conf.yOffset.toString(10);
+                    this.yOffsetInput.dispatchEvent(new Event('input'));
+                    this.xOffsetInput.value = conf.xOffset.toString(10);
+                    this.xOffsetInput.dispatchEvent(new Event('input'));
+                    this.urlInput.value = conf.imgUrl;
+                    this.urlInput.dispatchEvent(new Event('change'));
+                },
+                (imgUrl: string) => {
+                    configurationStore.remove(imgUrl);
+                    this.updateConfigDropDown();
+                },
+            ));
+        });
+    }
+
+    private closeConfigDropDown() {
+        const dropDownContent = document.getElementById(
+            'PictureOverlay_ConfigDropDownContent',
+        ) as HTMLDivElement;
+
+        while (dropDownContent.childElementCount > 0) {
+            dropDownContent.removeChild(dropDownContent.firstChild);
+        }
+    }
+
+    private createConfigDropDonwElement(
+        config: Configuration,
+        clickCallback: (config: Configuration) => void,
+        deleteCallback: (imgUrl: string) => void,
+    ): HTMLDivElement {
+        const innerHtml = `
+        <div
+            style="
+                color: black;
+                text-decoration: none;
+                display: block;
+            "
+        >
+            <img
+                class="PictureOverlay_ConfigDropDownElImg"
+                src="https://fonts.gstatic.com/s/i/materialicons/delete_forever/v1/24px.svg"
+                style="width: 15%;"
+            />
+            <a
+                class="PictureOverlay_ConfigDropDownElText"
+                style="
+                    width: 60%;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: inline-block;
+                "
+            >
+                Placeholder
+            </a>
+            <img
+                class="PictureOverlay_ConfigDropDownElDelete"
+                src="https://fonts.gstatic.com/s/i/materialicons/delete_forever/v1/24px.svg"
+                style="
+                    width: 12%;
+                    position: absolute;
+                    right: 0;
+                "
+            />
+        </div>
+        `;
+
+        const parentDiv = document.createElement('div');
+        parentDiv.innerHTML = innerHtml;
+        parentDiv.onclick = () => {
+            clickCallback(config);
+        };
+
+        const imgEl = parentDiv.getElementsByClassName(
+            'PictureOverlay_ConfigDropDownElImg',
+        )[0] as HTMLImageElement;
+        imgEl.src = config.imgUrl;
+
+        const textEl = parentDiv.getElementsByClassName(
+            'PictureOverlay_ConfigDropDownElText',
+        )[0] as HTMLLinkElement;
+        textEl.innerText = config.imgUrl;
+
+        const deleteBtn = parentDiv.getElementsByClassName(
+            'PictureOverlay_ConfigDropDownElDelete',
+        )[0] as HTMLImageElement;
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteCallback(config.imgUrl);
+        };
+
+        return parentDiv;
     }
 
     private onClickShare() {
@@ -172,7 +342,7 @@ class UserInput {
         }#${this.configuration.xOffset.toString(
             10,
         )},${this.configuration.yOffset.toString(10)},${hashstr[2] ||
-            0},${this.configuration.serialize()}`;
+            0},${this.configuration.serializeForUrl()}`;
 
         this.urlInput.value = shareLink;
         this.urlInput.select();

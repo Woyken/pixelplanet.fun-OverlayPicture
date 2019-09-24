@@ -1,18 +1,19 @@
 export class Configuration {
-    constructor(initializeFromUrlHash: string) {
-        console.log('initializing config');
-        const hashstr = initializeFromUrlHash.substr(1).split(',');
-        this.imgUrl = '';
-        this.xOffset = parseInt(hashstr[0], 10);
-        this.yOffset = parseInt(hashstr[1], 10);
-        const serializedInitObj = decodeURIComponent(hashstr[3]);
-        let initObj: any = undefined;
+    public constructor() {
+    }
+
+    public fillFromSerialized(serialized: string): void {
+        let initObj: any;
         try {
-            initObj = JSON.parse(serializedInitObj);
-            console.log('Parsed config from url. Reading..');
+            initObj = JSON.parse(serialized);
         } catch (error) {
-            console.warn('Could not parse config from url');
+            return;
         }
+
+        this.fillFromObj(initObj);
+    }
+
+    public fillFromObj(initObj: any): void {
         if (typeof initObj === 'object') {
             if (typeof initObj.imgUrl === 'string') {
                 this.imgUrl = initObj.imgUrl;
@@ -32,14 +33,24 @@ export class Configuration {
                     `Read transparency ${this.transparency.toString(10)}`,
                 );
             }
-        } else {
-            console.warn(
-                `Invalid config, not an object. Found type = ${typeof initObj}`,
-            );
         }
     }
 
-    public serialize(): string {
+    public static createFromUrlHash(initializeFromUrlHash: string): Configuration {
+        console.log('initializing config');
+        const configObj = new Configuration();
+        const hashstr = initializeFromUrlHash.substr(1).split(',');
+        configObj.imgUrl = '';
+        configObj.xOffset = parseInt(hashstr[0], 10);
+        configObj.yOffset = parseInt(hashstr[1], 10);
+        const serializedInitObj = decodeURIComponent(hashstr[3]);
+
+        configObj.fillFromSerialized(serializedInitObj);
+
+        return configObj;
+    }
+
+    public serializeForUrl(): string {
         return encodeURIComponent(JSON.stringify(this));
     }
 
