@@ -59,7 +59,7 @@ class UserInput {
     </div>
     <img
         id="PictureOverlay_ExpandBtn"
-        src="https://material.io/tools/icons/static/icons/baseline-expand_less-24px.svg"
+        src="https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg"
     />
 </div>
         `;
@@ -152,12 +152,12 @@ class UserInput {
             if (isExpanded) {
                 isExpanded = false;
                 expandBtn.src =
-                    'https://material.io/tools/icons/static/icons/baseline-expand_more-24px.svg';
+                    'https://fonts.gstatic.com/s/i/materialicons/expand_more/v1/24px.svg';
                 baseForExpanding.style.display = 'none';
             } else {
                 isExpanded = true;
                 expandBtn.src =
-                    'https://material.io/tools/icons/static/icons/baseline-expand_less-24px.svg';
+                    'https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg';
                 baseForExpanding.style.display = 'block';
             }
         };
