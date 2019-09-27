@@ -1,15 +1,20 @@
 import urlHelper from './urlHelper';
 import { Configuration } from './configuration';
 import { configurationStore } from './configurationStore';
+import { pictureConverter } from './pictureConverter';
 
 class UserInput {
     private inputBase: HTMLDivElement;
     private urlInput: HTMLInputElement;
     private trasparencyInput: HTMLInputElement;
+    private brightenInput: HTMLInputElement;
+    private shouldConvertColorsInput: HTMLInputElement;
     private displayInput: HTMLInputElement;
     private xOffsetInput: HTMLInputElement;
     private yOffsetInput: HTMLInputElement;
     private overlayPicture: HTMLImageElement;
+    private overlayCanvas: HTMLCanvasElement;
+    private activeOverlayElement: HTMLImageElement | HTMLCanvasElement;
 
     private configuration: Configuration;
 
@@ -20,7 +25,7 @@ class UserInput {
 
         this.createInputElements();
         this.createOverlayImage();
-        this.initializeUIElements();
+        this.initializeUIElements().catch(() => {});
         this.initializeEventListeners();
     }
 
@@ -54,6 +59,13 @@ class UserInput {
             <br/>
             Transparency:<br/>
             <input id="PictureOverlay_Transparency" type="range" min="0" max="100"/>
+
+            <div id="PictureOverlay_ModificationsBase">
+                <input id="PictureOverlay_ConvertColors" type="checkbox"/>
+                Convert colors:<br/>
+                Brighten Image:<br/>
+                <input id="PictureOverlay_Brighten" type="range" min="-20" max="20"/>
+            </div>
             <br/>
             <button id="PictureOverlay_Share">Share overlay</button>
         </div>
@@ -113,9 +125,9 @@ class UserInput {
         const urlInput = document.getElementById(
             'PictureOverlay_ImageUrl',
         ) as HTMLInputElement;
-        urlInput.onchange = (ev) => {
+        urlInput.onchange = async (ev) => {
             this.configuration.imgUrl = this.urlInput.value;
-            this.overlayPicture.src = this.configuration.imgUrl;
+            await this.updateOverlayImage();
             this.updateOverlayPicturePositionFromUrl();
             this.updateDisplay();
         };
@@ -150,11 +162,34 @@ class UserInput {
                 this.trasparencyInput.value,
                 10,
             );
-            this.overlayPicture.style.opacity = (
+            this.activeOverlayElement.style.opacity = (
                 this.configuration.transparency / 100
             ).toString(10);
         };
         this.trasparencyInput = trasparencyInput;
+
+        const brightenInput = document.getElementById(
+            'PictureOverlay_Brighten',
+        ) as HTMLInputElement;
+        brightenInput.value = '15';
+        brightenInput.onchange = async (ev) => {
+            this.configuration.brighten = parseInt(
+                brightenInput.value,
+                10,
+            );
+            await this.updateOverlayImage();
+        };
+        this.brightenInput = brightenInput;
+
+        const shouldConvertColorsInput = document.getElementById(
+            'PictureOverlay_ConvertColors',
+        ) as HTMLInputElement;
+        shouldConvertColorsInput.checked = true;
+        shouldConvertColorsInput.onchange = async (ev) => {
+            this.configuration.convertColors = shouldConvertColorsInput.checked;
+            await this.updateOverlayImage();
+        };
+        this.shouldConvertColorsInput = shouldConvertColorsInput;
 
         const shareBtn = document.getElementById(
             'PictureOverlay_Share',
@@ -236,7 +271,7 @@ class UserInput {
         configs.forEach((config) => {
             dropDownContent.appendChild(this.createConfigDropDonwElement(
                 config,
-                (conf: Configuration) => {
+                async (conf: Configuration) => {
                     this.trasparencyInput.value = conf.transparency.toString(10);
                     this.trasparencyInput.dispatchEvent(new Event('input'));
                     this.yOffsetInput.value = conf.yOffset.toString(10);
@@ -357,22 +392,91 @@ Share this link with others to quickly share your overlay configuration.
     }
 
     private createOverlayImage() {
-        const overlayElement = new Image();
-        overlayElement.style.position = 'absolute';
-        overlayElement.style.left = '0';
-        overlayElement.style.top = '0';
-        overlayElement.style.pointerEvents = 'none';
-        overlayElement.style.transformOrigin = 'top left';
-        (overlayElement.style as any).imageRendering = 'pixelated';
-        if (!(overlayElement.style as any).imageRendering) {
-            (overlayElement.style as any).imageRendering = 'crisp-edges';
+        const overlayPicture = new Image();
+        const overlayCanvas = document.createElement('canvas');
+        overlayPicture.style.position = 'absolute';
+        overlayCanvas.style.position = 'absolute';
+        overlayPicture.style.left = '0';
+        overlayCanvas.style.left = '0';
+        overlayPicture.style.top = '0';
+        overlayCanvas.style.top = '0';
+        overlayPicture.style.pointerEvents = 'none';
+        overlayCanvas.style.pointerEvents = 'none';
+        overlayPicture.style.transformOrigin = 'top left';
+        overlayCanvas.style.transformOrigin = 'top left';
+        (overlayPicture.style as any).imageRendering = 'pixelated';
+        (overlayCanvas.style as any).imageRendering = 'pixelated';
+        if (!(overlayPicture.style as any).imageRendering) {
+            (overlayPicture.style as any).imageRendering = 'crisp-edges';
         }
-        this.overlayPicture = overlayElement;
+        if (!(overlayCanvas.style as any).imageRendering) {
+            (overlayCanvas.style as any).imageRendering = 'crisp-edges';
+        }
+        this.overlayPicture = overlayPicture;
+        this.overlayCanvas = overlayCanvas;
+        this.activeOverlayElement = this.overlayPicture;
 
-        document.body.insertBefore(overlayElement, document.body.firstChild);
+        document.body.insertBefore(overlayPicture, document.body.firstChild);
+        document.body.insertBefore(overlayCanvas, document.body.firstChild);
     }
 
-    public initializeUIElements() {
+    private async updateOverlayImage() {
+        const ctx = this.overlayCanvas.getContext('2d');
+
+        // TODO
+        // Cannnot fetch image from another server, cors is disabled.
+        // Fallback to showing via only image element if that happens.
+
+        // Disable modification inputs and show message
+        // "Server, where this file is hosted, doesn't allow these files to be modified. (CORS disabled)
+        // Use imgur, or something similar. Just drop picture in there, and copy it's link"
+
+        const data = await pictureConverter.convertPictureFromUrl(
+            this.configuration.imgUrl,
+            ctx,
+            this.configuration.convertColors,
+            this.configuration.brighten)
+            .catch((reason) => {
+                // first transfer current styles and stuff to newly shown one.
+                this.overlayPicture.style.transform = this.activeOverlayElement.style.transform;
+                this.overlayPicture.style.opacity = this.activeOverlayElement.style.opacity;
+                this.overlayPicture.style.left = this.activeOverlayElement.style.left;
+                this.overlayPicture.style.right = this.activeOverlayElement.style.right;
+                this.overlayPicture.style.display = this.activeOverlayElement.style.display;
+                this.overlayPicture.src = this.configuration.imgUrl;
+                // change reference to element itself
+                this.activeOverlayElement = this.overlayPicture;
+
+                document.getElementById('PictureOverlay_ModificationsBase')
+                    .style.display = 'none';
+            });
+
+        if (!data) {
+            // just draw the picture.
+            return;
+        }
+        // first transfer current styles and stuff to newly shown one.
+        this.overlayCanvas.style.transform = this.activeOverlayElement.style.transform;
+        this.overlayCanvas.style.opacity = this.activeOverlayElement.style.opacity;
+        this.overlayCanvas.style.left = this.activeOverlayElement.style.left;
+        this.overlayCanvas.style.right = this.activeOverlayElement.style.right;
+        this.overlayCanvas.style.display = this.activeOverlayElement.style.display;
+        this.overlayPicture.src = '';
+        // change reference to element itself
+        this.activeOverlayElement = this.overlayCanvas;
+
+        document.getElementById('PictureOverlay_ModificationsBase')
+                    .style.display = 'block';
+
+        this.overlayCanvas.width = data.width;
+        this.overlayCanvas.height = data.height;
+
+        ctx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+
+        ctx.putImageData(data, 0, 0);
+    }
+
+    public async initializeUIElements() {
         const hashstr = window.location.hash.substr(1).split(',');
         if (hashstr.length >= 3) {
             // Configuration was passed by url, copy values to inputs
@@ -384,8 +488,8 @@ Share this link with others to quickly share your overlay configuration.
             );
         }
 
-        this.overlayPicture.src = this.urlInput.value;
-        this.overlayPicture.style.opacity = (
+        await this.updateOverlayImage();
+        this.activeOverlayElement.style.opacity = (
             parseInt(this.trasparencyInput.value, 10) / 100
         ).toString(10);
 
@@ -421,7 +525,7 @@ Share this link with others to quickly share your overlay configuration.
                 return;
             }
             isMoving = true;
-            this.overlayPicture.style.display = 'none';
+            this.activeOverlayElement.style.display = 'none';
         });
 
         gameWindow.addEventListener('mouseup', (e) => {
@@ -444,7 +548,7 @@ Share this link with others to quickly share your overlay configuration.
                 this.updateCoordInputFromUrl();
             }
 
-            this.overlayPicture.style.display = 'none';
+            this.activeOverlayElement.style.display = 'none';
 
             if (timeoutAfterScroll > 0) {
                 clearTimeout(timeoutAfterScroll);
@@ -455,7 +559,7 @@ Share this link with others to quickly share your overlay configuration.
                 clearTimeout(timeoutAfterScroll);
                 timeoutAfterScroll = -1;
                 this.resetToGrid();
-            },                              1000);
+            },                              1000) as any;
         });
     }
 
@@ -491,16 +595,16 @@ Share this link with others to quickly share your overlay configuration.
         );
         const zoom = Math.pow(2, urlHelper.zoomLevel / 10);
 
-        this.overlayPicture.style.left = `${window.innerWidth / 2 -
+        this.activeOverlayElement.style.left = `${window.innerWidth / 2 -
             (xOffset - this.configuration.xOffset) * zoom}px`;
 
-        this.overlayPicture.style.top = `${window.innerHeight / 2 -
+        this.activeOverlayElement.style.top = `${window.innerHeight / 2 -
             (yOffset - this.configuration.yOffset) * zoom}px`;
     }
 
     private updateOverlayPictureScale() {
         const zoom = Math.pow(2, urlHelper.zoomLevel / 10);
-        this.overlayPicture.style.transform = `scale(${zoom})`;
+        this.activeOverlayElement.style.transform = `scale(${zoom})`;
     }
 
     private updateDisplay() {
@@ -508,7 +612,7 @@ Share this link with others to quickly share your overlay configuration.
             ? 'block'
             : 'none';
 
-        this.overlayPicture.style.display = this.displayInput.checked
+        this.activeOverlayElement.style.display = this.displayInput.checked
             ? 'block'
             : 'none';
     }

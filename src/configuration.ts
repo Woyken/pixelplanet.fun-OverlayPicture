@@ -58,4 +58,6 @@ export class Configuration {
     public xOffset: number = 0;
     public yOffset: number = 0;
     public transparency: number = 70;
+    public brighten: number = 15;
+    public convertColors: boolean = true;
 }

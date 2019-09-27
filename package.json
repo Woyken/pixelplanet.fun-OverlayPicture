@@ -1,5 +1,5 @@
 {
-    "name": "pixelplanet.fun-PictureOverlay",
+    "name": "pixelplanet.fun-picture-overlay",
     "version": "1.0.0",
     "description": "Picture overlay for pixelplanet.fun",
     "main": "./dist/index.js",
@@ -23,5 +23,8 @@
         "typescript": "^3.4.5",
         "webpack": "^4.32.2",
         "webpack-cli": "^3.3.2"
+    },
+    "dependencies": {
+        "fast-png": "^4.0.1"
     }
 }
