@@ -97,12 +97,18 @@ class UserInput {
 </div>
         `;
 
-        (document.getElementsByClassName(
+        const onlineBoxEl = document.getElementsByClassName(
             'onlinebox',
-        )[0] as HTMLDivElement).style.zIndex = '2';
-        (document.getElementsByClassName(
+        )[0];
+        if (onlineBoxEl) {
+            (onlineBoxEl as HTMLDivElement).style.zIndex = '2';
+        }
+        const coordinatesBoxEl = document.getElementsByClassName(
             'coorbox',
-        )[0] as HTMLDivElement).style.zIndex = '2';
+        )[0];
+        if (coordinatesBoxEl) {
+            (coordinatesBoxEl as HTMLDivElement).style.zIndex = '2';
+        }
 
         const overlayBaseDiv = document.createElement('div');
         overlayBaseDiv.id = 'PictureOverlay_Base';
