@@ -86,14 +86,8 @@ export default {
     }),
     terser({
       output: {
-        comments: function(node, comment) {
-          var text = comment.value;
-          var type = comment.type;
-          if (type == "comment1") {
-            // multiline comment
-            return /^ (==\/?UserScript==)|(@)/i.test(text);
-          }
-        }
+        comments: false,
+        preamble: banner,
       }
     }),
   ]
