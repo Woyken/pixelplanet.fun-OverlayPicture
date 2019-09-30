@@ -62,5 +62,5 @@ export class Configuration {
     public yOffset: number = 0;
     public transparency: number = 70;
     public brighten: number = 15;
-    public convertColors: boolean = true;
+    public convertColors: boolean = false;
 }

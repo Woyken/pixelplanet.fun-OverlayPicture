@@ -60,10 +60,11 @@ class UserInput {
             Transparency:<br/>
             <input id="PictureOverlay_Transparency" type="range" min="0" max="100"/>
 
+            <img id="PictureOverlay_ModificationsInfo" src="https://fonts.gstatic.com/s/i/materialicons/error_outline/v1/24px.svg" alt="Modifications not available (disabled CORS)" title="Picture color conversion not available for this picture.\nUse different picture hosting site, such as Imgur, upload picture there and copy the link.\n#Error CORS disabled."/>
             <div id="PictureOverlay_ModificationsBase">
                 <input id="PictureOverlay_ConvertColors" type="checkbox"/>
                 Convert colors:<br/>
-                Brighten Image:<br/>
+                Adjust Brightness:<br/>
                 <input id="PictureOverlay_Brighten" type="range" min="-20" max="20"/>
             </div>
             <br/>
@@ -190,9 +191,10 @@ class UserInput {
         const shouldConvertColorsInput = document.getElementById(
             'PictureOverlay_ConvertColors',
         ) as HTMLInputElement;
-        shouldConvertColorsInput.checked = true;
+        shouldConvertColorsInput.checked = false;
         shouldConvertColorsInput.onchange = async (ev) => {
             this.configuration.convertColors = shouldConvertColorsInput.checked;
+            this.brightenInput.disabled = !this.configuration.convertColors;
             await this.updateOverlayImage();
         };
         this.shouldConvertColorsInput = shouldConvertColorsInput;
@@ -429,36 +431,34 @@ Share this link with others to quickly share your overlay configuration.
     private async updateOverlayImage() {
         const ctx = this.overlayCanvas.getContext('2d');
 
-        // TODO
-        // Cannnot fetch image from another server, cors is disabled.
-        // Fallback to showing via only image element if that happens.
-
-        // Disable modification inputs and show message
-        // "Server, where this file is hosted, doesn't allow these files to be modified. (CORS disabled)
-        // Use imgur, or something similar. Just drop picture in there, and copy it's link"
-
         const data = await pictureConverter.convertPictureFromUrl(
             this.configuration.imgUrl,
             ctx,
             this.configuration.convertColors,
             this.configuration.brighten)
             .catch((reason) => {
-                // first transfer current styles and stuff to newly shown one.
-                this.overlayPicture.style.transform = this.activeOverlayElement.style.transform;
-                this.overlayPicture.style.opacity = this.activeOverlayElement.style.opacity;
-                this.overlayPicture.style.left = this.activeOverlayElement.style.left;
-                this.overlayPicture.style.right = this.activeOverlayElement.style.right;
-                this.overlayPicture.style.display = this.activeOverlayElement.style.display;
-                this.overlayPicture.src = this.configuration.imgUrl;
-                // change reference to element itself
-                this.activeOverlayElement = this.overlayPicture;
-
-                document.getElementById('PictureOverlay_ModificationsBase')
-                    .style.display = 'none';
+                console.log('png parsing has failed :(' + reason);
+                return undefined;
             });
 
         if (!data) {
-            // just draw the picture.
+            // first transfer current styles and stuff to newly shown one.
+            this.overlayPicture.style.transform = this.activeOverlayElement.style.transform;
+            this.overlayPicture.style.opacity = this.activeOverlayElement.style.opacity;
+            this.overlayPicture.style.left = this.activeOverlayElement.style.left;
+            this.overlayPicture.style.right = this.activeOverlayElement.style.right;
+            this.overlayPicture.style.display = this.activeOverlayElement.style.display;
+            this.overlayPicture.src = this.configuration.imgUrl;
+            this.overlayCanvas.style.display = 'none';
+            // change reference to element itself
+            this.activeOverlayElement = this.overlayPicture;
+
+
+            document.getElementById('PictureOverlay_ModificationsInfo')
+                .style.display = 'block';
+
+            document.getElementById('PictureOverlay_ModificationsBase')
+                .style.display = 'none';
             return;
         }
         // first transfer current styles and stuff to newly shown one.
@@ -468,8 +468,12 @@ Share this link with others to quickly share your overlay configuration.
         this.overlayCanvas.style.right = this.activeOverlayElement.style.right;
         this.overlayCanvas.style.display = this.activeOverlayElement.style.display;
         this.overlayPicture.src = '';
+        this.overlayPicture.style.display = 'none';
         // change reference to element itself
         this.activeOverlayElement = this.overlayCanvas;
+
+        document.getElementById('PictureOverlay_ModificationsInfo')
+            .style.display = 'none';
 
         document.getElementById('PictureOverlay_ModificationsBase')
                     .style.display = 'block';
