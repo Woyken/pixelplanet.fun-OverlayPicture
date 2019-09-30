@@ -1,7 +1,7 @@
-import { Configuration } from './configuration';
+import { Configuration, configurationMethods } from './configuration';
 
 class ConfigurationStore {
-    private readonly storageItemName = 'OverlaySavedConfigs';
+    private readonly storageItemName: string = 'OverlaySavedConfigs';
     public getSavedConfigurations(): Configuration[] {
         const serializedSavedData = localStorage.getItem(this.storageItemName);
         if (serializedSavedData == null) {
@@ -14,8 +14,7 @@ class ConfigurationStore {
         }
         const configs: Configuration[] = [];
         data.forEach((element: any) => {
-            const conf = new Configuration();
-            conf.fillFromObj(element);
+            const conf = configurationMethods.createFromObj(element);
             if (conf.imgUrl !== '') {
                 configs.push(conf);
             }

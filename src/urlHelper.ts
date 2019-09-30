@@ -30,6 +30,15 @@ class UrlHelper {
         const hashstr = window.location.hash.substr(1).split(',');
         return parseInt(hashstr[2], 10);
     }
+
+    public copyToClipboard(text: string): void {
+        const dummy = document.createElement('input');
+        document.body.appendChild(dummy);
+        dummy.value = text;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+    }
 }
 
 export default new UrlHelper();

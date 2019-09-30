@@ -1,8 +1,6 @@
-export class Configuration {
-    public constructor() {
-    }
+class ConfigurationWithMethods {
 
-    public fillFromSerialized(serialized: string): void {
+    public createFromSerialized(serialized: string): Configuration | undefined {
         let initObj: any;
         try {
             initObj = JSON.parse(serialized);
@@ -10,50 +8,55 @@ export class Configuration {
             return;
         }
 
-        this.fillFromObj(initObj);
+        return this.createFromObj(initObj);
     }
 
-    public fillFromObj(initObj: any): void {
+    public createFromObj(initObj: any): Configuration {
+        const config = new Configuration();
         if (typeof initObj === 'object') {
             if (typeof initObj.imgUrl === 'string') {
-                this.imgUrl = initObj.imgUrl;
-                console.log(`Read img url ${this.imgUrl}`);
+                config.imgUrl = initObj.imgUrl;
+                console.log(`Read img url ${config.imgUrl}`);
             }
             if (typeof initObj.xOffset === 'number') {
-                this.xOffset = initObj.xOffset;
-                console.log(`Read x offset ${this.xOffset.toString(10)}`);
+                config.xOffset = initObj.xOffset;
+                console.log(`Read x offset ${config.xOffset.toString(10)}`);
             }
             if (typeof initObj.yOffset === 'number') {
-                this.yOffset = initObj.yOffset;
-                console.log(`Read y offset ${this.yOffset.toString(10)}`);
+                config.yOffset = initObj.yOffset;
+                console.log(`Read y offset ${config.yOffset.toString(10)}`);
             }
             if (typeof initObj.transparency === 'number') {
-                this.transparency = initObj.transparency;
+                config.transparency = initObj.transparency;
                 console.log(
-                    `Read transparency ${this.transparency.toString(10)}`,
+                    `Read transparency ${config.transparency.toString(10)}`,
                 );
             }
         }
+        return config;
     }
 
-    public static createFromUrlHash(initializeFromUrlHash: string): Configuration {
+    public createFromUrlHash(initializeFromUrlHash: string): Configuration | undefined {
         console.log('initializing config');
-        const configObj = new Configuration();
-        const hashstr = initializeFromUrlHash.substr(1).split(',');
-        configObj.imgUrl = '';
-        configObj.xOffset = parseInt(hashstr[0], 10);
-        configObj.yOffset = parseInt(hashstr[1], 10);
-        const serializedInitObj = decodeURIComponent(hashstr[3]);
+        const hashstr = initializeFromUrlHash.substr(1)
+                            .split(',');
 
-        configObj.fillFromSerialized(serializedInitObj);
+        const serializedInitObj = decodeURIComponent(hashstr.slice(3)
+                                                        .join(','));
 
-        return configObj;
+        const newConf = this.createFromSerialized(serializedInitObj);
+
+        return newConf;
     }
 
     public serializeForUrl(): string {
         return encodeURIComponent(JSON.stringify(this));
     }
+}
 
+export const configurationMethods = new ConfigurationWithMethods();
+
+export class Configuration {
     public imgUrl: string = '';
     public xOffset: number = 0;
     public yOffset: number = 0;

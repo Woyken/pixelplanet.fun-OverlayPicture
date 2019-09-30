@@ -12,7 +12,22 @@
         ],
         "no-increment-decrement": false,
         "no-floating-promises": true,
-        "no-unused-expression": true
+        "no-unused-expression": true,
+        "typedef": [
+            true,
+            "call-signature",
+            "arrow-call-signature",
+            "parameter",
+            "property-declaration",
+            "member-variable-declaration",
+            "object-destructuring",
+            "array-destructuring"
+        ],
+        "newline-per-chained-call": true,
+        "member-ordering": false,
+        "no-bitwise": false,
+        "ordered-imports": false,
+        "import-name": false
     },
     "rulesDirectory": []
 }

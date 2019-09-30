@@ -1,0 +1,27 @@
+.PictureOverlay_ConfigDropDownElement {
+    color: black;
+    text-decoration: none;
+    display: block;
+}
+
+.PictureOverlay_ConfigDropDownElement:hover {
+    background-color: #ddd;
+}
+
+.PictureOverlay_ConfigDropDownElImg {
+    width: 15%;
+}
+
+.PictureOverlay_ConfigDropDownElText {
+    width: 60%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+}
+
+.PictureOverlay_ConfigDropDownElDelete {
+    width: 12%;
+    position: absolute;
+    right: 0;
+}
