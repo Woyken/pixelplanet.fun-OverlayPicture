@@ -3,7 +3,7 @@ import './configurationModal.scss';
 import OverlayConfig from '../overlayConfig/overlayConfig';
 import { Configuration } from '../../configuration';
 import ConfigDropDown from '../configDropDown/configDropDown';
-import { Checkbox, FormControlLabel } from '@material-ui/core';
+import { Checkbox, FormControlLabel, Tooltip } from '@material-ui/core';
 
 interface OwnState {
     isModalMinimized: boolean;
@@ -40,16 +40,18 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
 
         return (
         <div id="PictureOverlay_ConfigurationModalRoot">
-            <FormControlLabel
-                control={
-                    <Checkbox color="primary"
-                        checked={isOverlayEnabled}
-                        onChange={(e): void => isOverlayEnabledChanged(e.target.checked)}
-                    />
-                }
-                label="Image Overlay"
-                labelPlacement="end"
-            />
+            <Tooltip title="Toggle on/off Overlay. Shortcut: O">
+                <FormControlLabel
+                    control={
+                        <Checkbox color="primary"
+                            checked={isOverlayEnabled}
+                            onChange={(e): void => isOverlayEnabledChanged(e.target.checked)}
+                        />
+                    }
+                    label="Image Overlay"
+                    labelPlacement="end"
+                />
+            </Tooltip>
             <div style={{
                 display: isOverlayEnabled ? '' : 'none',
             }}>

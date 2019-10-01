@@ -154,6 +154,42 @@ class App extends React.Component<Props, OwnState> {
             },                              1000) as any;
         });
 
+        window.addEventListener('keyup', (event) => {
+            const target = event.target;
+            if (!target) {
+                return;
+            }
+
+            const clickedNodeName = (target as HTMLElement).tagName ||
+                (target as HTMLElement).nodeName;
+
+            // Ignore if user is typing text.
+            if (clickedNodeName === 'TEXTAREA') {
+                return;
+            }
+            if (clickedNodeName === 'INPUT') {
+                const inputEl = target as HTMLInputElement;
+                if (inputEl.type === 'text') {
+                    return;
+                }
+            }
+
+            const key = event.keyCode;
+            switch (key) {
+                case 79 /* O key */: {
+                    event.stopImmediatePropagation();
+                    this.setState({
+                        ...this.state,
+                        overlayEnabled: !this.state.overlayEnabled,
+                    });
+                }
+                    break;
+
+                default:
+                    break;
+            }
+        });
+
         autoBind(this);
     }
 
