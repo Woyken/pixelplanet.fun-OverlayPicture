@@ -171,6 +171,15 @@ class App extends React.Component<Props, OwnState> {
 
         return (
         <div>
+            <OverlayImage
+                activeConfiguration={activeConfiguration}
+                modifyAvailableChanged={this.modifyAvailableChanged}
+                currentXPosition={currentXPosition}
+                currentYPosition={currentYPosition}
+                zoomLevelFromUrl={zoomLevelFromUrl}
+                temporarilyHidden={overlayIsMoving}
+                isOverlayEnabled={overlayEnabled}
+            />
             <ConfigurationModal
                 activeConfiguration={activeConfiguration}
                 onConfigurationChange={this.onApplyConfig}
@@ -180,15 +189,6 @@ class App extends React.Component<Props, OwnState> {
                     overlayEnabled: enabled,
                 })}
                 modifyImageAvailable={modifyImageAvailable}
-            />
-            <OverlayImage
-                activeConfiguration={activeConfiguration}
-                modifyAvailableChanged={this.modifyAvailableChanged}
-                currentXPosition={currentXPosition}
-                currentYPosition={currentYPosition}
-                zoomLevelFromUrl={zoomLevelFromUrl}
-                temporarilyHidden={overlayIsMoving}
-                isOverlayEnabled={overlayEnabled}
             />
         </div>
         );
