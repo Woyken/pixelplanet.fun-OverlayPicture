@@ -86,7 +86,6 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                 aria-labelledby="transparency-slider"
                 valueLabelDisplay="auto"
                 step={1}
-                marks
                 min={0}
                 max={100}
                 value={activeConfiguration.transparency}
@@ -129,7 +128,6 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                         aria-labelledby="brightness-slider"
                         valueLabelDisplay="auto"
                         step={1}
-                        marks
                         min={-20}
                         max={20}
                         value={activeConfiguration.brighten}
