@@ -95,8 +95,8 @@ class App extends React.Component<Props, OwnState> {
                 return;
             }
             isMoving = false;
-            const x = Math.round((window as any).lastPosX) || urlHelper.xCoord;
-            const y = Math.round((window as any).lastPosY) || urlHelper.yCoord;
+            const x = (window as any).lastPosX || urlHelper.xCoord;
+            const y = (window as any).lastPosY || urlHelper.yCoord;
             // if no picture provided, set coordinates to center of the screen
             if (!this.state.activeConfiguration.imgUrl) {
                 this.setState({
@@ -104,8 +104,8 @@ class App extends React.Component<Props, OwnState> {
                     overlayIsMoving: isMoving,
                     activeConfiguration: {
                         ...this.state.activeConfiguration,
-                        xOffset: x,
-                        yOffset: y,
+                        xOffset: Math.round(x),
+                        yOffset: Math.round(y),
                     },
                 });
             } else {
