@@ -160,9 +160,9 @@ class OverlayConfig extends React.Component<Props, OwnState> {
         // default link format is: pixelplanet.fun/#0,0,0
         const shareLink = `${
             window.location.href.split('#')[0]
-        }#${activeConfiguration.xOffset.toString(
+        }#${hashstr[0]},${activeConfiguration.xOffset.toString(
             10,
-        )},${activeConfiguration.yOffset.toString(10)},${hashstr[2] ||
+        )},${activeConfiguration.yOffset.toString(10)},${hashstr[3] ||
             0},${JSON.stringify(activeConfiguration)}`;
 
         urlHelper.copyToClipboard(shareLink);

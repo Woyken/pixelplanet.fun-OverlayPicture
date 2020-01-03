@@ -53,7 +53,7 @@ class App extends React.Component<Props, OwnState> {
 
             const hashstr = window.location.hash.substr(1)
                                 .split(',');
-            if (hashstr.length <= 2) {
+            if (hashstr.length <= 3) {
                 return;
             }
 

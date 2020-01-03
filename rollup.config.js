@@ -78,6 +78,7 @@ export default {
         ],
         "node_modules/react-is/index.js": [
           "ForwardRef",
+          "isFragment",
         ],
         "node_modules/prop-types/index.js": [
           "elementType",

@@ -41,7 +41,7 @@ class ConfigurationWithMethods {
         const hashstr = initializeFromUrlHash.substr(1)
                             .split(',');
 
-        const serializedInitObj = decodeURIComponent(hashstr.slice(3)
+        const serializedInitObj = decodeURIComponent(hashstr.slice(4)
                                                         .join(','));
 
         const newConf = this.createFromSerialized(serializedInitObj);
