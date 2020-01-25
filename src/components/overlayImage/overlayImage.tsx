@@ -3,39 +3,37 @@ import { Configuration } from '../../configuration';
 import autoBind from 'react-autobind';
 import { pictureConverter } from '../../pictureConverter';
 import './overlayImage.scss';
+import { connect } from 'react-redux';
+import { OverlayImageOutput, PlacementConfiguration, GameState, OverlayImageInput } from '../../store/guiTypes';
+import { AppState } from '../../store';
+import { ThunkDispatch } from 'redux-thunk';
+import logger from '../../handlers/logger';
 
 interface OwnState {
-    imgUrl: string;
     zoom: number;
-    leftOffset: number;
     topOffset: number;
-    imageWidth: number;
-    imageHeight: number;
+    leftOffset: number;
 }
 
 interface OwnProps {
-    activeConfiguration: Configuration;
-    zoomLevelFromUrl: number;
-    currentXPosition: number;
-    currentYPosition: number;
-    modifyAvailableChanged: (available: boolean) => void;
-    temporarilyHidden: boolean;
-    isOverlayEnabled: boolean;
 }
 
-type Props = OwnProps;
+interface StateProps {
+    placementConfiguration: PlacementConfiguration;
+    outputImage: OverlayImageOutput;
+    gameState: GameState;
+    inputImage: OverlayImageInput;
+}
+
+interface DispatchProps {
+}
+
+type Props = StateProps & DispatchProps & OwnProps;
 
 class OverlayImage extends React.Component<Props, OwnState> {
     constructor(props: Props) {
         super(props);
-        this.state = {
-            imageHeight: 0,
-            imageWidth: 0,
-            imgUrl: '',
-            leftOffset: 0,
-            topOffset: 0,
-            zoom: 0,
-        };
+        this.state = this.getImagePositionOffsetState(props.gameState, props.placementConfiguration);
 
         autoBind(this);
     }
@@ -46,126 +44,113 @@ class OverlayImage extends React.Component<Props, OwnState> {
     ): Promise<void> {
         if (prevProps !== this.props) {
             // Input has changed, update state.
-            // tslint:disable-next-line: typedef
             const {
-                activeConfiguration,
-                zoomLevelFromUrl,
-                currentXPosition,
-                currentYPosition,
+                gameState,
+                placementConfiguration,
             } = this.props;
-            const zoom = Math.pow(2, zoomLevelFromUrl / 10);
-            this.setState({
-                ...prevState,
-                zoom,
-                imgUrl: activeConfiguration.imgUrl,
-                leftOffset: window.innerWidth / 2 -
-                    (currentXPosition - activeConfiguration.xOffset) * zoom,
-                topOffset: window.innerHeight / 2 -
-                    (currentYPosition - activeConfiguration.yOffset) * zoom,
-            });
+            this.setState(this.getImagePositionOffsetState(gameState, placementConfiguration));
         }
-        if (this.state.imgUrl !== prevState.imgUrl ||
-            this.props.activeConfiguration.brighten !==
-                prevProps.activeConfiguration.brighten ||
-            this.props.activeConfiguration.convertColors !==
-                prevProps.activeConfiguration.convertColors
-        ) {
-            // url has changed, update the source
+        if (this.props.outputImage.outputImageData !== prevProps.outputImage.outputImageData) {
             await this.updateSource();
         }
     }
 
+    getImagePositionOffsetState(gameState: GameState, placementConfiguration: PlacementConfiguration): OwnState {
+        const zoom = Math.pow(2, gameState.zoomLevel / 10);
+        return {
+            zoom,
+            leftOffset: window.innerWidth / 2 -
+                (gameState.centerX - placementConfiguration.xOffset) * zoom,
+            topOffset: window.innerHeight / 2 -
+                (gameState.centerY - placementConfiguration.yOffset) * zoom,
+        }
+    }
+
     render(): React.ReactNode {
-        // tslint:disable-next-line: typedef
-        const { activeConfiguration, temporarilyHidden, isOverlayEnabled } = this.props;
-        // tslint:disable-next-line:typedef
+        const {
+            outputImage,
+            placementConfiguration,
+            inputImage,
+            gameState,
+        } = this.props;
+
         const {
             zoom,
             leftOffset,
             topOffset,
-            imageWidth,
-            imageHeight,
         } = this.state;
 
-        const opacity = activeConfiguration.transparency / 100;
+        const opacity = placementConfiguration.transparency / 100;
 
         return (
-        <div style={{
-            display: temporarilyHidden || !isOverlayEnabled ? 'none' : '',
-        }}>
-            <img
-                ref="image"
-                className="PictureOverlay_OverlayImage"
-                src={activeConfiguration.imgUrl}
-                style={{
-                    opacity,
-                    transform: `scale(${zoom})`,
-                    left: leftOffset,
-                    top: topOffset,
-                }}
-            />
-            <canvas
-                ref="canvas"
-                className="PictureOverlay_OverlayImage"
-                style={{
-                    opacity,
-                    transform: `scale(${zoom})`,
-                    left: leftOffset,
-                    top: topOffset,
-                }}
-                width={imageWidth}
-                height={imageHeight}
-            />
-        </div>
+            <div style={{
+                display: gameState.isMouseDragging ? 'none' : '',
+            }}>
+                {
+                    outputImage.outputImageData ?
+                        <canvas
+                            ref="canvas"
+                            className="PictureOverlay_OverlayImage"
+                            style={{
+                                opacity,
+                                transform: `scale(${zoom})`,
+                                left: leftOffset,
+                                top: topOffset,
+                            }}
+                            width={outputImage.outputImageData?.width}
+                            height={outputImage.outputImageData?.height}
+                        />
+                        :
+                        <img
+                            ref="image"
+                            className="PictureOverlay_OverlayImage"
+                            src={inputImage.url}
+                            style={{
+                                opacity,
+                                transform: `scale(${zoom})`,
+                                left: leftOffset,
+                                top: topOffset,
+                            }}
+                        />
+                }
+            </div>
         );
     }
 
     async updateSource(): Promise<void> {
-        console.log('updating image source...');
-        // tslint:disable-next-line: typedef
-        const { activeConfiguration, modifyAvailableChanged } = this.props;
-        // tslint:disable-next-line: typedef
-        const { imgUrl } = this.state;
-
-        const canvas = this.refs.canvas as HTMLCanvasElement;
-        const image = this.refs.image as HTMLImageElement;
-        const ctx = canvas.getContext('2d');
-
-        const data = await pictureConverter.convertPictureFromUrl(
-            imgUrl,
-            ctx,
-            activeConfiguration.convertColors,
-            activeConfiguration.brighten)
-            .catch((reason) => {
-                // Probably CORS is disabled.
-            });
-
-        if (!data) {
-            // render only <img/>
-            image.style.display = 'block';
-            canvas.style.display = 'none';
-
-            modifyAvailableChanged(false);
-
+        const { outputImage } = this.props;
+        if (!outputImage.outputImageData) {
             return;
         }
-        image.style.display = 'none';
-        canvas.style.display = 'block';
+        console.log('updating image source, repainting canvas...');
+        const canvas = this.refs.canvas as HTMLCanvasElement;
+        // const image = this.refs.image as HTMLImageElement;
+        const ctx = canvas.getContext('2d');
 
-        modifyAvailableChanged(true);
+        ctx?.clearRect(0, 0, outputImage.outputImageData.width, outputImage.outputImageData.height);
 
-        this.setState((prevState): OwnState => {
-            return {
-                ...prevState,
-                imageHeight: data.height,
-                imageWidth: data.width,
-            };
-        });
-
-        ctx.clearRect(0, 0, data.width, data.height);
-
-        ctx.putImageData(data, 0, 0);
+        ctx?.putImageData(outputImage.outputImageData, 0, 0);
     }
 }
 
-export default OverlayImage;
+function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+    return {
+        outputImage: state.guiData.overlayImage.outputImage,
+        placementConfiguration: state.guiData.placementConfiguration,
+        gameState: state.guiData.currentGameState,
+        inputImage: state.guiData.overlayImage.inputImage,
+    };
+}
+
+function mapDispatchToProps(
+    dispatch: ThunkDispatch<{}, {}, any>,
+    ownProps: OwnProps,
+): DispatchProps {
+    return {
+    };
+}
+
+export default connect<StateProps, DispatchProps, OwnProps, AppState>(
+    mapStateToProps,
+    mapDispatchToProps,
+)(OverlayImage);

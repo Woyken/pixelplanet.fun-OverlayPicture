@@ -1,16 +1,16 @@
 import React from 'react';
 import './configDropDownContent.scss';
-import { Configuration } from '../../../configuration';
 import ConfigDropDownElement from '../element/configDropDownElement';
 import autoBind from 'react-autobind';
+import { SavedConfiguration } from '../../../store/guiTypes';
 
 interface OwnState {}
 
 interface OwnProps {
-    configs: Configuration[];
+    configs: SavedConfiguration[];
     isActive: boolean;
-    onApplyConfig: (config: Configuration) => void;
-    onRemoveConfig: (config: Configuration) => void;
+    onApplyConfig: (config: SavedConfiguration) => void;
+    onRemoveConfig: (config: SavedConfiguration) => void;
 }
 
 type Props = OwnProps;
@@ -35,7 +35,7 @@ class ConfigDropDownContent extends React.Component<Props, OwnState> {
             {configs.map(config =>
                 <ConfigDropDownElement
                     config={config}
-                    key={config.imgUrl}
+                    key={config.imageUrl}
                     onClickCallback={this.onConfigApply}
                     onDeleteCallback={this.removeConfig}
                 />)}
@@ -43,13 +43,13 @@ class ConfigDropDownContent extends React.Component<Props, OwnState> {
         );
     }
 
-    removeConfig(config: Configuration): void {
+    removeConfig(config: SavedConfiguration): void {
         // tslint:disable-next-line: typedef
         const { onRemoveConfig } = this.props;
         onRemoveConfig(config);
     }
 
-    onConfigApply(config: Configuration): void {
+    onConfigApply(config: SavedConfiguration): void {
         // tslint:disable-next-line: typedef
         const { onApplyConfig } = this.props;
         onApplyConfig(config);

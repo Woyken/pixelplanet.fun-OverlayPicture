@@ -72,13 +72,22 @@ export default {
           "isValidElement",
           "Children",
           "cloneElement",
+          "useMemo",
+          "useEffect",
+          "useLayoutEffect",
+          "useContext",
+          "useReducer",
+          "useRef",
         ],
         "node_modules/react-dom/index.js": [
           "render",
+          "unstable_batchedUpdates",
         ],
         "node_modules/react-is/index.js": [
           "ForwardRef",
           "isFragment",
+          "isValidElementType",
+          "isContextConsumer",
         ],
         "node_modules/prop-types/index.js": [
           "elementType",

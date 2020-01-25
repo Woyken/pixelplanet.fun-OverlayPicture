@@ -1,20 +1,29 @@
 import React from 'react';
 import ConfigDropDownContent from './Content/configDropDownContent';
-import { Configuration } from '../../configuration';
-import { configurationStore } from '../../configurationStore';
 import autoBind from 'react-autobind';
+import { GuiParametersState, SavedConfiguration } from '../../store/guiTypes';
+import { connect } from 'react-redux';
+import { AppState } from '../../store';
+import { ThunkDispatch } from 'redux-thunk';
+import { saveCurrentConfiguration, applySavedConfiguration, removeSavedConfiguration } from '../../actions/guiActions';
 
 interface OwnState {
     isActive: boolean;
-    savedConfigurations: Configuration[];
 }
 
 interface OwnProps {
-    onApplyConfig: (config: Configuration) => void;
-    activeConfiguration: Configuration;
+}
+interface StateProps {
+    guiState: GuiParametersState;
 }
 
-type Props = OwnProps;
+interface DispatchProps {
+    saveCurrentConfig: () => void;
+    applyConfig: (config: SavedConfiguration) => void;
+    removeConfig: (imgUrl: string) => void;
+}
+
+type Props = StateProps & DispatchProps & OwnProps;
 
 class ConfigDropDown extends React.Component<Props, OwnState> {
 
@@ -22,7 +31,6 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
         super(props);
         this.state = {
             isActive: false,
-            savedConfigurations: configurationStore.getSavedConfigurations(),
         };
 
         autoBind(this);
@@ -30,55 +38,44 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
 
     render(): React.ReactNode {
         // tslint:disable-next-line:typedef
-        const { isActive, savedConfigurations } = this.state;
+        const { guiState } = this.props;
+        const { isActive } = this.state;
         return (
-        <div>
-            <img
-                src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg"
-                onClick={this.onSaveActiveConfiguration}
-            />
-            <img
-                src="https://fonts.gstatic.com/s/i/materialicons/folder_open/v1/24px.svg"
-                onClick={(): void => this.toggle()}
-            />
-            <ConfigDropDownContent
-                isActive={isActive}
-                onApplyConfig={this.onApplyConfig}
-                onRemoveConfig={this.onRemoveConfig}
-                configs={savedConfigurations}
-            />
-        </div>
+            <div>
+                <img
+                    src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg"
+                    onClick={this.onSaveActiveConfiguration}
+                />
+                <img
+                    src="https://fonts.gstatic.com/s/i/materialicons/folder_open/v1/24px.svg"
+                    onClick={(): void => this.toggle()}
+                />
+                <ConfigDropDownContent
+                    onApplyConfig={this.onApplyConfig}
+                    onRemoveConfig={this.onRemoveConfig}
+                    configs={guiState.savedConfigurations.configs}
+                    isActive={isActive}
+                />
+            </div>
         );
     }
 
     onSaveActiveConfiguration(): void {
         // tslint:disable-next-line: typedef
-        const { activeConfiguration } = this.props;
-        configurationStore.add(activeConfiguration);
-        this.setState((prevState): OwnState => {
-            return {
-                ...prevState,
-                savedConfigurations: configurationStore.getSavedConfigurations(),
-            };
-        });
+        const { guiState, saveCurrentConfig } = this.props;
+        saveCurrentConfig();
     }
 
-    onApplyConfig(config: Configuration): void {
+    onApplyConfig(config: SavedConfiguration): void {
         this.toggle(false);
 
-        // tslint:disable-next-line: typedef
-        const { onApplyConfig } = this.props;
-        onApplyConfig(config);
+        const { applyConfig } = this.props;
+        applyConfig(config);
     }
 
-    onRemoveConfig(config: Configuration): void {
-        configurationStore.remove(config.imgUrl);
-        this.setState((prevState): OwnState => {
-            return {
-                ...prevState,
-                savedConfigurations: configurationStore.getSavedConfigurations(),
-            };
-        });
+    onRemoveConfig(config: SavedConfiguration): void {
+        const { removeConfig } = this.props;
+        removeConfig(config.imageUrl);
     }
 
     toggle(enabled?: boolean): void {
@@ -91,4 +88,24 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
     }
 }
 
-export default ConfigDropDown;
+function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+    return {
+        guiState: state.guiData,
+    };
+}
+
+function mapDispatchToProps(
+    dispatch: ThunkDispatch<{}, {}, any>,
+    ownProps: OwnProps,
+): DispatchProps {
+    return {
+        saveCurrentConfig: () => dispatch(saveCurrentConfiguration()),
+        applyConfig: (config: SavedConfiguration) => dispatch(applySavedConfiguration(config)),
+        removeConfig: (imgUrl: string) => dispatch(removeSavedConfiguration(imgUrl)),
+    };
+}
+
+export default connect<StateProps, DispatchProps, OwnProps, AppState>(
+    mapStateToProps,
+    mapDispatchToProps,
+)(ConfigDropDown);

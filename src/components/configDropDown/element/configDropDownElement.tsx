@@ -1,17 +1,17 @@
 import React from 'react';
 import './configDropDownElement.scss';
-import { Configuration } from '../../../configuration';
 import autoBind from 'react-autobind';
+import { SavedConfiguration } from '../../../store/guiTypes';
 
 interface OwnProps {
-    config: Configuration;
-    onClickCallback: (config: Configuration) => void;
-    onDeleteCallback: (config: Configuration) => void;
+    config: SavedConfiguration;
+    onClickCallback: (config: SavedConfiguration) => void;
+    onDeleteCallback: (config: SavedConfiguration) => void;
 }
 
 type Props = OwnProps;
 
-class ConfigDropDownElement extends React.Component<Props, undefined> {
+class ConfigDropDownElement extends React.Component<Props, {}> {
     constructor(props: Props) {
         super(props);
 
@@ -26,12 +26,12 @@ class ConfigDropDownElement extends React.Component<Props, undefined> {
             >
                 <img
                     className="PictureOverlay_ConfigDropDownElImg"
-                    src={this.props.config.imgUrl}
+                    src={this.props.config.imageUrl}
                 />
                 <a
                     className="PictureOverlay_ConfigDropDownElText"
                 >
-                    {this.props.config.imgUrl}
+                    {this.props.config.imageUrl}
                 </a>
                 <img
                     className="PictureOverlay_ConfigDropDownElDelete"

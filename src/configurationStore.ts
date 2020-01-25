@@ -1,4 +1,5 @@
 import { Configuration, configurationMethods } from './configuration';
+import { SavedConfiguration } from './store/guiTypes';
 
 class ConfigurationStore {
     private readonly storageItemName: string = 'OverlaySavedConfigs';
@@ -20,6 +21,27 @@ class ConfigurationStore {
             }
         });
         return configs;
+    }
+
+    public getSavedConfigurationsState(): SavedConfiguration[] {
+        const oldConfigs = this.getSavedConfigurations();
+        return oldConfigs.map((c) => {
+            const n: SavedConfiguration = {
+                imageUrl: c.imgUrl,
+                modifiers: {
+                    doModifications: false,
+                    shouldConvertColors: c.convertColors,
+                    modificationsAvailable: false,
+                    imageBrightness: c.brighten,
+                },
+                placementConfiguration: {
+                    transparency: c.transparency,
+                    xOffset: c.xOffset,
+                    yOffset: c.yOffset,
+                },
+            };
+            return n;
+        });
     }
 
     private saveConfigurations(configs: Configuration[]): void {
@@ -66,6 +88,10 @@ class ConfigurationStore {
             saved.splice(idx, 1);
             this.saveConfigurations(saved);
         }
+    }
+
+    public clear(): void {
+        localStorage.removeItem(this.storageItemName);
     }
 }
 

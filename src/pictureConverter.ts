@@ -1,22 +1,30 @@
 import colorConverter from './colorConverter';
 import { decode } from 'fast-png';
+import logger from './handlers/logger';
 
 class PictureConverter {
+    public async isImageValidCors(url: string): Promise<boolean> {
+        try {
+            const response = await fetch(url);
+        } catch (error) {
+            // Likely failed due to cors.
+            return false;
+        }
+        return true;
+    }
+
     public async convertPictureFromUrl(
-        imgUrl: string,
+        pngBuffer: ArrayBuffer,
         contextForBufferCreation: CanvasRenderingContext2D,
         convertColors: boolean,
         brightenBy: number,
     ): Promise<ImageData> {
-        console.log(`converting picture: ${imgUrl}, convertcolors: ${convertColors}, brightenBy: ${brightenBy}`);
-        const response = await fetch(imgUrl);
-        const buffer = await response.arrayBuffer();
         const decodedPng = decode(buffer);
         const imageData = contextForBufferCreation.createImageData(
             decodedPng.width, decodedPng.height);
 
         if (decodedPng.palette) {
-            console.log('detected pallette png.');
+            logger.log('detected pallette png.');
             if (convertColors) {
                 // need to convert the palette.
                 for (let i = 0; i < decodedPng.palette.length; i++) {
@@ -51,7 +59,7 @@ class PictureConverter {
                 }
             }
         } else {
-            console.log('detected RGBA png.');
+            logger.log('detected RGBA png.');
             if (convertColors) {
                 for (let y = 0; y < decodedPng.height; y++) {
                     for (let x = 0; x < decodedPng.width; x++) {

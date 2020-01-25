@@ -2,6 +2,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './components/app/app';
+import { Provider, connect } from 'react-redux';
+import store from './store';
+import webSocketHandler from './handlers/websocket/websocketHandler';
+import { updateMetadata, updatePixel } from './actions/pixelData';
+import { chunkOffsetToPixel } from './chunkHelper';
 
 function init(): void {
     const rootNode = document.createElement('div');
@@ -15,7 +20,20 @@ function init(): void {
         document.body.append(rootNode);
     }
 
-    ReactDOM.render(<App />, rootNode);
+    ReactDOM.render(
+        <Provider store={store}>
+            <App />
+        </Provider>,
+        rootNode,
+    );
+
+    webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex) => {
+        const { chunkData } = store.getState()
+        store.dispatch(updatePixel(chunkOffsetToPixel(chunk, pixelOffset, chunkData.canvasesMetadata[chunkData.activeCanvasId].size), colorIndex))
+    };
+    webSocketHandler.onRequestReloadMetadata = () => {
+        store.dispatch((updateMetadata as any)());
+    }
 }
 
 init();

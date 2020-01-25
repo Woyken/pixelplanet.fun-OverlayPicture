@@ -4,16 +4,28 @@ import { Configuration } from '../../configuration';
 import { Typography, Slider, FormControlLabel, Checkbox, Button } from '@material-ui/core';
 import urlHelper from '../../urlHelper';
 import autoBind from 'react-autobind';
+import { connect } from 'react-redux';
+import { updateImagePlacementConfiguration, updateInputImage, updateImageModifiers } from '../../actions/guiActions';
+import { ThunkDispatch } from 'redux-thunk';
+import { AppState } from '../../store';
+import { PlacementConfiguration, ImageModifiers, OverlayImageInput, GuiParametersState } from '../../store/guiTypes';
 
-interface OwnState {}
+interface OwnState { }
 
 interface OwnProps {
-    activeConfiguration: Configuration;
-    onConfigurationChange: (newConfig: Configuration) => void;
-    modifyImageAvailable: boolean;
 }
 
-type Props = OwnProps;
+interface StateProps {
+    guiState: GuiParametersState;
+}
+
+interface DispatchProps {
+    updateConfig: (transparency?: number, x?: number, y?: number) => void;
+    updateInputImage: (url: string) => void;
+    updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => void;
+}
+
+type Props = StateProps & DispatchProps & OwnProps;
 
 class OverlayConfig extends React.Component<Props, OwnState> {
     constructor(props: Props) {
@@ -22,148 +34,129 @@ class OverlayConfig extends React.Component<Props, OwnState> {
         autoBind(this);
     }
     render(): React.ReactNode {
-        // tslint:disable-next-line: typedef
         const {
-            activeConfiguration,
-            onConfigurationChange,
-            modifyImageAvailable,
+            guiState,
+            updateInputImage,
+            updateConfig,
+            updateModifications,
         } = this.props;
 
         return (
-        <div>
-            <TextField
-                label="Url"
-                type="string"
-                value={activeConfiguration.imgUrl}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                    onConfigurationChange({
-                        ...activeConfiguration,
-                        imgUrl: e.target.value,
-                    });
-                }}
-            />
-            <br/>
-            <TextField
-                label="X"
-                type="number"
-                value={activeConfiguration.xOffset}
-                onInput={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                    const numValue = parseInt(e.target.value, 10);
-                    if (isNaN(numValue)) {
-                        return;
-                    }
-                    onConfigurationChange({
-                        ...activeConfiguration,
-                        xOffset: numValue,
-                    });
-                }}
-            />
-            <br/>
-            <TextField
-                label="Y"
-                type="number"
-                value={activeConfiguration.yOffset}
-                onInput={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                    const numValue = parseInt(e.target.value, 10);
-                    if (isNaN(numValue)) {
-                        return;
-                    }
-                    onConfigurationChange({
-                        ...activeConfiguration,
-                        yOffset: numValue,
-                    });
-                }}
-            />
-            <br/>
-            <Typography id="transparency-slider" gutterBottom>
-                Transparency
+            <div>
+                <TextField
+                    label="Url"
+                    type="string"
+                    value={guiState.overlayImage.inputImage.url}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                        updateInputImage(e.target.value);
+                    }}
+                />
+                <br />
+                <TextField
+                    label="X"
+                    type="number"
+                    value={guiState.placementConfiguration.xOffset}
+                    onInput={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                        const numValue = parseInt(e.target.value, 10);
+                        if (isNaN(numValue)) {
+                            return;
+                        }
+                        updateConfig(undefined, numValue);
+                    }}
+                />
+                <br />
+                <TextField
+                    label="Y"
+                    type="number"
+                    value={guiState.placementConfiguration.yOffset}
+                    onInput={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                        const numValue = parseInt(e.target.value, 10);
+                        if (isNaN(numValue)) {
+                            return;
+                        }
+                        updateConfig(undefined, undefined, numValue);
+                    }}
+                />
+                <br />
+                <Typography id="transparency-slider" gutterBottom>
+                    Transparency
             </Typography>
-            <Slider
-                defaultValue={70}
-                getAriaValueText={(v): string => {
-                    return v.toString(10);
-                }}
-                aria-labelledby="transparency-slider"
-                valueLabelDisplay="auto"
-                step={1}
-                min={0}
-                max={100}
-                value={activeConfiguration.transparency}
-                onChange={(e, value: number): void => {
-                    onConfigurationChange({
-                        ...activeConfiguration,
-                        transparency: value,
-                    });
-                }}
-            />
-            <div style={{
-                display: modifyImageAvailable ? '' : 'none',
-            }}>
-                <br/>
-                <FormControlLabel
-                    control={
-                        <Checkbox color="primary"
-                            checked={activeConfiguration.convertColors}
-                            onChange={(e): void => {
-                                onConfigurationChange({
-                                    ...activeConfiguration,
-                                    convertColors: e.target.checked,
-                                });
+                <Slider
+                    defaultValue={70}
+                    getAriaValueText={(v): string => {
+                        return v.toString(10);
+                    }}
+                    aria-labelledby="transparency-slider"
+                    valueLabelDisplay="auto"
+                    step={1}
+                    min={0}
+                    max={100}
+                    value={guiState.placementConfiguration.transparency}
+                    onChange={(e, value): void => {
+                        if(typeof(value) !== 'number') {
+                            return;
+                        }
+                        updateConfig(value);
+                    }}
+                />
+                <div style={{
+                    display: guiState.modifications.modificationsAvailable ? '' : 'none',
+                }}>
+                    <br />
+                    <FormControlLabel
+                        control={
+                            <Checkbox color="primary"
+                                checked={guiState.modifications.shouldConvertColors}
+                                onChange={(e): void => {
+                                    updateModifications(undefined, undefined, e.target.checked);
+                                }}
+                            />
+                        }
+                        label="Convert colors"
+                        labelPlacement="end"
+                    />
+                    <br />
+                    <div style={{ display: guiState.modifications.shouldConvertColors ? '' : 'none' }}>
+                        <Typography id="brightness-slider" gutterBottom>
+                            Image brightness
+                    </Typography>
+                        <Slider
+                            defaultValue={15}
+                            getAriaValueText={(v): string => {
+                                return v.toString(10);
+                            }}
+                            aria-labelledby="brightness-slider"
+                            valueLabelDisplay="auto"
+                            step={1}
+                            min={-20}
+                            max={20}
+                            value={guiState.modifications.imageBrightness}
+                            onChange={(e, value): void => {
+                                if(typeof(value) !== 'number') {
+                                    return;
+                                }
+                                updateModifications(undefined, undefined, undefined, value);
                             }}
                         />
-                    }
-                    label="Convert colors"
-                    labelPlacement="end"
-                />
-                <br/>
-                <div style={{ display: activeConfiguration.convertColors ? '' : 'none' }}>
-                    <Typography id="brightness-slider" gutterBottom>
-                        Image brightness
-                    </Typography>
-                    <Slider
-                        defaultValue={15}
-                        getAriaValueText={(v): string => {
-                            return v.toString(10);
-                        }}
-                        aria-labelledby="brightness-slider"
-                        valueLabelDisplay="auto"
-                        step={1}
-                        min={-20}
-                        max={20}
-                        value={activeConfiguration.brighten}
-                        onChange={(e, value: number): void => {
-                            onConfigurationChange({
-                                ...activeConfiguration,
-                                brighten: value,
-                            });
-                        }}
-                    />
+                    </div>
                 </div>
-            </div>
-            <br/>
-            <Button
-                onClick={(): void => this.onShareConfig()}
-            >
-                Share overlay
+                <br />
+                <Button
+                    onClick={(): void => this.onShareConfig()}
+                >
+                    Share overlay
             </Button>
-        </div>
+            </div>
         );
     }
 
     private onShareConfig(): void {
         // tslint:disable-next-line:typedef
-        const { activeConfiguration } = this.props;
+        const { guiState } = this.props;
 
-        const hashstr = window.location.hash.substr(1)
-                            .split(',');
+        const shareConf = urlHelper.sharableConfigFromState(guiState);
 
-        // default link format is: pixelplanet.fun/#0,0,0
-        const shareLink = `${
-            window.location.href.split('#')[0]
-        }#${hashstr[0]},${activeConfiguration.xOffset.toString(
-            10,
-        )},${activeConfiguration.yOffset.toString(10)},${hashstr[3] ||
-            0},${JSON.stringify(activeConfiguration)}`;
+        const shareLink = urlHelper.getSharableLink(shareConf);
 
         urlHelper.copyToClipboard(shareLink);
 
@@ -175,4 +168,25 @@ Share this link with others to quickly share your overlay configuration.
     }
 }
 
-export default OverlayConfig;
+
+function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+    return {
+        guiState: state.guiData,
+    };
+}
+
+function mapDispatchToProps(
+    dispatch: ThunkDispatch<{}, {}, any>,
+    ownProps: OwnProps,
+): DispatchProps {
+    return {
+        updateConfig: (transparency?: number, x?: number, y?: number) => dispatch(updateImagePlacementConfiguration(transparency, x, y)),
+        updateInputImage: (url: string) => dispatch(updateInputImage(url)),
+        updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => dispatch(updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness))
+    };
+}
+
+export default connect<StateProps, DispatchProps, OwnProps, AppState>(
+    mapStateToProps,
+    mapDispatchToProps,
+)(OverlayConfig);
