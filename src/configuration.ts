@@ -1,3 +1,5 @@
+import logger from "./handlers/logger";
+
 class ConfigurationWithMethods {
 
     public createFromSerialized(serialized: string): Configuration | undefined {
@@ -16,19 +18,19 @@ class ConfigurationWithMethods {
         if (typeof initObj === 'object') {
             if (typeof initObj.imgUrl === 'string') {
                 config.imgUrl = initObj.imgUrl;
-                console.log(`Read img url ${config.imgUrl}`);
+                logger.log(`Read img url ${config.imgUrl}`);
             }
             if (typeof initObj.xOffset === 'number') {
                 config.xOffset = initObj.xOffset;
-                console.log(`Read x offset ${config.xOffset.toString(10)}`);
+                logger.log(`Read x offset ${config.xOffset.toString(10)}`);
             }
             if (typeof initObj.yOffset === 'number') {
                 config.yOffset = initObj.yOffset;
-                console.log(`Read y offset ${config.yOffset.toString(10)}`);
+                logger.log(`Read y offset ${config.yOffset.toString(10)}`);
             }
             if (typeof initObj.transparency === 'number') {
                 config.transparency = initObj.transparency;
-                console.log(
+                logger.log(
                     `Read transparency ${config.transparency.toString(10)}`,
                 );
             }
@@ -37,7 +39,7 @@ class ConfigurationWithMethods {
     }
 
     public createFromUrlHash(initializeFromUrlHash: string): Configuration | undefined {
-        console.log('initializing config');
+        logger.log('initializing config');
         const hashstr = initializeFromUrlHash.substr(1)
                             .split(',');
 

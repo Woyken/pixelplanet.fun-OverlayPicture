@@ -122,7 +122,7 @@ class OverlayImage extends React.Component<Props, OwnState> {
         if (!outputImage.outputImageData) {
             return;
         }
-        console.log('updating image source, repainting canvas...');
+        logger.log(`updating image source, repainting canvas... ${outputImage.outputImageData.data.length}`);
         const canvas = this.refs.canvas as HTMLCanvasElement;
         // const image = this.refs.image as HTMLImageElement;
         const ctx = canvas.getContext('2d');
