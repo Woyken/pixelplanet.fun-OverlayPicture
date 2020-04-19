@@ -19,7 +19,7 @@ class PictureConverter {
         convertColors: boolean,
         brightenBy: number,
     ): Promise<ImageData> {
-        const decodedPng = decode(buffer);
+        const decodedPng = decode(pngBuffer);
         const imageData = contextForBufferCreation.createImageData(
             decodedPng.width, decodedPng.height);
 
