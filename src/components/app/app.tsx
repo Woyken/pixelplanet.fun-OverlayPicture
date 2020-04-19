@@ -47,7 +47,7 @@ class App extends React.Component<Props, OwnState> {
         // TODO: move this logic out somewhere else.
         window.addEventListener('hashchange', () => {
             // If url is not set, update current coordinates to follow middle of screen
-            if (!this.props.guiState.overlayImage.inputImage.url) {
+            if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
                 this.props.updateConfig(undefined, urlHelper.xCoord, urlHelper.yCoord);
             }
 
@@ -87,7 +87,7 @@ class App extends React.Component<Props, OwnState> {
             const x = (window as any).lastPosX || urlHelper.xCoord;
             const y = (window as any).lastPosY || urlHelper.yCoord;
             // if no picture provided, set coordinates to center of the screen
-            if (!this.props.guiState.overlayImage.inputImage.url) {
+            if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
                 this.props.updateConfig(undefined, Math.round(x), Math.round(y));
             } else {
             }
@@ -96,7 +96,8 @@ class App extends React.Component<Props, OwnState> {
 
         let timeoutAfterScroll: number = -1;
         viewport.onWheel = (e, c) => {
-            if (!this.props.guiState.overlayImage.inputImage.url) {
+            if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
+                // if no picture provided, set coordinates to center of the screen
                 this.props.updateConfig(undefined, urlHelper.xCoord, urlHelper.yCoord);
             } else {
             }
@@ -115,7 +116,7 @@ class App extends React.Component<Props, OwnState> {
             timeoutAfterScroll = setTimeout(() => {
                 clearTimeout(timeoutAfterScroll);
                 timeoutAfterScroll = -1;
-                if (this.props.guiState.overlayImage.inputImage.url) {
+                if (this.props.guiState.overlayImage.inputImage.url || this.props.guiState.overlayImage.inputImage.file) {
                     urlHelper.stickToGrid();
                 }
             }, 1000) as any;

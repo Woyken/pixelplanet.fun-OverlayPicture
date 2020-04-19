@@ -12,7 +12,67 @@ export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     };
 }
 
-export function updateImageModifiers(modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): ActionTypes {
+async function startProcessingImage(dispatch: (action: ActionTypes) => ActionTypes, getState: () => AppState) {
+    dispatch(updateOutputImageStatus(true));
+    try {
+        let buffer: ArrayBuffer;
+        const url = getState().guiData.overlayImage.inputImage.url;
+        const file = getState().guiData.overlayImage.inputImage.file;
+        if (url) {
+            logger.log('Parsing url input');
+            const response = await fetch(url);
+            buffer = await response.arrayBuffer();
+        } else if (file) {
+            logger.log('Parsing file input');
+            buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const data = reader.result as ArrayBuffer;
+                    logger.log(`File parsed as array ${data.byteLength}`);
+                    resolve(data);
+                };
+                reader.onerror = (ev) => {
+                    logger.logError(`File parsing failed`);
+                    reject('could not parse file');
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        } else {
+            // This shouldn't be possible.
+            throw new Error('Something unexpected happened');
+        }
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+
+        logger.log(`Starting picture conversion ${buffer.byteLength}`);
+        const result = await pictureConverter.convertPictureFromUrl(buffer, ctx, getState().guiData.modifications.shouldConvertColors, getState().guiData.modifications.imageBrightness);
+        logger.log(`updating output image ${result.data.length}`)
+        dispatch(updateOutputImage(result));
+    }
+    catch (err) {
+        logger.logError(`Something went wrong while parsing picture: ${err}`);
+        // Likely to happen when fetching image
+        dispatch(updateOutputImage(undefined));
+    }
+    finally {
+        dispatch(updateOutputImageStatus(false));
+    }
+}
+
+export function updateImageModifiers(modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): ThunkAction<
+    Promise<void>,
+    AppState,
+    null,
+    ActionTypes
+> {
+    return async (dispatch, getState) => {
+        dispatch(updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness));
+        await startProcessingImage(dispatch, getState);
+    };
+}
+
+function updateImageModifiersInternal(modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): ActionTypes {
     return {
         type: UPDATE_IMAGE_MODIFIERS,
         modificationsAvailable: modificationsAvailable,
@@ -29,63 +89,40 @@ export function updateInputImage(url?: string, file?: File): ThunkAction<
     ActionTypes
 > {
     return async (dispatch, getState) => {
+        logger.log(`Updating input image (${url}, ${!!file})`);
         dispatch({
             type: UPDATE_INPUT_IMAGE,
             file,
             url,
         });
         if (!url && !file) {
+            logger.log(`Input image empty, clearing state...`);
             // Clear output image
             dispatch(updateOutputImage())
             return;
         }
         if (url) {
             if (!pictureConverter.isImageValidCors(url)) {
+                logger.log(`Image url ${url} not valid cors, don't parse`)
                 // No point in trying to parse this out.
                 // Clear output image
                 dispatch(updateOutputImage());
+                dispatch(updateImageModifiers(false));
                 return;
             }
+            dispatch(updateImageModifiers(true));
         }
-        if (!getState().guiData.modifications.modificationsAvailable || !getState().guiData.modifications.doModifications) {
+        if (file) {
+            dispatch(updateImageModifiers(true, true));
+        }
+        if (!file && (!getState().guiData.modifications.modificationsAvailable) || !getState().guiData.modifications.doModifications) {
+            logger.log('Modifications are disabled. Not parsing.');
             // Modifications should not be made. Clean up output image.
             dispatch(updateOutputImage(undefined));
             return;
         }
-        dispatch(updateOutputImageStatus(true));
-        try {
-            let buffer: ArrayBuffer;
-            if (url) {
-                const response = await fetch(url);
-                buffer = await response.arrayBuffer();
-            } else if (file) {
-                buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        const data = reader.result as ArrayBuffer;
-                        resolve(data);
-                    };
-                    reader.readAsArrayBuffer(file);
-                });
-            } else {
-                // This shouldn't be possible.
-                throw new Error('Something unexpected happened');
-            }
 
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d')!;
-
-            const result = await pictureConverter.convertPictureFromUrl(buffer, ctx, false, 0);
-            dispatch(updateOutputImage(result));
-        }
-        catch (err) {
-            logger.logError(`Something went wrong while parsing picture: ${err}`);
-            // Likely to happen when fetching image
-            dispatch(updateOutputImage(undefined));
-        }
-        finally {
-            dispatch(updateOutputImageStatus(false));
-        }
+        await startProcessingImage(dispatch, getState);
     }
 }
 

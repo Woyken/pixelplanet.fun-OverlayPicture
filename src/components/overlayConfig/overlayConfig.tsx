@@ -1,5 +1,6 @@
 import React from 'react';
 import TextField from '@material-ui/core/TextField';
+import Input from '@material-ui/core/Input'
 import { Configuration } from '../../configuration';
 import { Typography, Slider, FormControlLabel, Checkbox, Button } from '@material-ui/core';
 import urlHelper from '../../urlHelper';
@@ -21,7 +22,7 @@ interface StateProps {
 
 interface DispatchProps {
     updateConfig: (transparency?: number, x?: number, y?: number) => void;
-    updateInputImage: (url: string) => void;
+    updateInputImage: (url?: string, file?: File) => void;
     updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => void;
 }
 
@@ -33,6 +34,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
 
         autoBind(this);
     }
+
     render(): React.ReactNode {
         const {
             guiState,
@@ -43,14 +45,43 @@ class OverlayConfig extends React.Component<Props, OwnState> {
 
         return (
             <div>
-                <TextField
-                    label="Url"
-                    type="string"
-                    value={guiState.overlayImage.inputImage.url}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                        updateInputImage(e.target.value);
-                    }}
-                />
+                {
+                    guiState.overlayImage.inputImage.file ?
+                        null
+                        :
+                        <div>
+                            <TextField
+                                label="Url"
+                                type="string"
+                                value={guiState.overlayImage.inputImage.url}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                                    updateInputImage(e.target.value);
+                                }}
+                            />
+                            <br />
+                        </div>
+                }
+                {
+                    guiState.overlayImage.inputImage.url ?
+                        null
+                        :
+                        <div>
+                            <Input
+                                type='file'
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const theFile = e.target.files?.[0];
+                                    updateInputImage(undefined, theFile);
+                                }}
+                            />
+                            <br />
+                        </div>
+                }
+                <Button
+                    onClick={() => {
+                        updateInputImage('', undefined);
+                    }}>
+                    Clear input
+                </Button>
                 <br />
                 <TextField
                     label="X"
@@ -93,7 +124,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     max={100}
                     value={guiState.placementConfiguration.transparency}
                     onChange={(e, value): void => {
-                        if(typeof(value) !== 'number') {
+                        if (typeof (value) !== 'number') {
                             return;
                         }
                         updateConfig(value);
@@ -132,7 +163,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                             max={20}
                             value={guiState.modifications.imageBrightness}
                             onChange={(e, value): void => {
-                                if(typeof(value) !== 'number') {
+                                if (typeof (value) !== 'number') {
                                     return;
                                 }
                                 updateModifications(undefined, undefined, undefined, value);
@@ -181,7 +212,7 @@ function mapDispatchToProps(
 ): DispatchProps {
     return {
         updateConfig: (transparency?: number, x?: number, y?: number) => dispatch(updateImagePlacementConfiguration(transparency, x, y)),
-        updateInputImage: (url: string) => dispatch(updateInputImage(url)),
+        updateInputImage: (url?: string, file?: File) => dispatch(updateInputImage(url, file)),
         updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => dispatch(updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness))
     };
 }

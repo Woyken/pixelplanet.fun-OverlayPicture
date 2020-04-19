@@ -13,9 +13,14 @@ class Viewport {
     public constructor() {
         this.intervalId = window.setInterval(() => {
             const canvases = document.getElementsByTagName('canvas');
-            const viewportInDocument = canvases[0];
-            if (viewportInDocument !== this.currentActiveViewport) {
-                this.resetViewport(viewportInDocument);
+            for (let i = 0; i < canvases.length; i++) {
+                const canvas = canvases[i];
+                if (canvas.className.indexOf('PictureOverlay') > -1) {
+                    continue;
+                }
+                if (canvas !== this.currentActiveViewport) {
+                    this.resetViewport(canvas);
+                }
             }
         }, viewPortCheckingInterval);
         autoBind(this);
