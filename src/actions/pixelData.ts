@@ -12,7 +12,7 @@ import { AppState } from '../store';
 import { ChunkCell, chunkToIndex, Cell } from '../chunkHelper';
 import { UserDataResponse, CanvasMetadataResponse } from './pixelPlanetResponseTypes';
 
-export async function fetchChunk(canvasId: string, chunk: ChunkCell): Promise<ArrayBuffer> {
+export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<ArrayBuffer> {
     const url = `/chunks/${canvasId}/${chunk.chunkX}/${chunk.chunkY}.bmp`;
     const response = await fetch(url);
     if (response.ok) {
@@ -24,7 +24,7 @@ export async function fetchChunk(canvasId: string, chunk: ChunkCell): Promise<Ar
     }
 }
 
-export function loadChunkData(canvasId: string, chunk: ChunkCell): ThunkAction<
+export function loadChunkData(canvasId: number, chunk: ChunkCell): ThunkAction<
     Promise<void>,
     AppState,
     null,
@@ -79,7 +79,7 @@ export function updateMetadata(): ThunkAction<
                 if (me.canvases.hasOwnProperty(key)) {
                     const canvasMetadata = me.canvases[key];
                     canvasesMetadata.push({
-                        alpha: canvasMetadata.alpha,
+                        alpha: canvasMetadata.  ,
                         colors: canvasMetadata.colors,
                         id: key,
                         maxTimeout: canvasMetadata.cds,
@@ -119,7 +119,7 @@ export function setActiveCanvasByStringId(canvasStringId: string): ThunkAction<
     ActionTypes
 > {
     return async (dispatch, getState) => {
-        if (!(getState().chunkData.activeCanvasId === canvasStringId)) {
+        if (!(getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId].stringId === canvasStringId)) {
             return;
         }
         const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);

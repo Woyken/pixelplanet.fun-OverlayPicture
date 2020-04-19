@@ -19,7 +19,7 @@ export interface LoadedChunkData {
 }
 
 export interface CanvasMetadata {
-    id: string;
+    id: number;
     stringId: string;
     colors: [number, number, number][];
     alpha: number;
@@ -44,7 +44,7 @@ export interface UserData {
 export interface ChunkDataState {
     userData: UserData
     loadedChunks: LoadedChunkData[];
-    activeCanvasId: string;
+    activeCanvasId: number;
     canvasesMetadata: CanvasMetadata[];
 }
 
@@ -57,7 +57,7 @@ export const RECEIVE_USER_DATA = 'RECEIVE_USER_DATA';
 
 interface LoadChunkData {
     type: typeof CANVAS_LOAD_CHUNK_DATA;
-    canvasId: string;
+    canvasId: number;
     chunk: ChunkCell;
     chunkData: LoadedChunkData;
 }
@@ -77,7 +77,7 @@ interface PixelUpdate {
 
 interface ReceiveChangeCanvas {
     type: typeof CANVAS_CHANGE_CANVAS;
-    activeCanvasId: string;
+    activeCanvasId: number;
 }
 
 interface ReceiveCanvasMetadata {
