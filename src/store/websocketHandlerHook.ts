@@ -17,7 +17,7 @@ export default ((store) => (next) => (action: ActionTypes) => {
     // Execute other reducers
     const ret = next(action);
 
-    // After reducers are done check if canvas was canged.
+    // After reducers are done check if canvas was changed.
     switch (action.type) {
         case CANVAS_CHANGE_CANVAS: {
             webSocketHandler.setCanvas(action.activeCanvasId);

@@ -77,7 +77,7 @@ class WebSocketHandler {
         if (this.canvasId === canvasId || canvasId === -1) {
             return;
         }
-        // Clear all wathing chunks. Map has changed...
+        // Clear all watching chunks. Map has changed...
         this.watchingChunks = [];
         logger.log('Notify websocket server that we changed canvas');
         this.canvasId = canvasId;
