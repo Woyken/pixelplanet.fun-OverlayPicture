@@ -21,7 +21,7 @@ export interface LoadedChunkData {
 export interface CanvasMetadata {
     id: number;
     title: string,
-    colorsIgnoreCount: number,
+    colorsReservedCount: number,
     stringId: string;
     colors: [number, number, number][];
     size: number;

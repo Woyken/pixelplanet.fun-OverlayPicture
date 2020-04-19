@@ -82,7 +82,7 @@ export function updateMetadata(): ThunkAction<
                         stringId: canvasMetadata.ident,
                         title: canvasMetadata.title,
                         colors: canvasMetadata.colors,
-                        colorsIgnoreCount: canvasMetadata.cli,
+                        colorsReservedCount: canvasMetadata.cli,
                         timeoutOnEmpty: canvasMetadata.bcd,
                         timeoutOnReplace: canvasMetadata.pcd,
                         maxTimeout: canvasMetadata.cds,

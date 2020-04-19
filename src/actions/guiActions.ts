@@ -4,6 +4,8 @@ import { ThunkAction } from "redux-thunk";
 import { pictureConverter } from "../pictureConverter";
 import logger from "../handlers/logger";
 import { configurationStore } from "../configurationStore";
+import { updateMetadata } from "./pixelData";
+import { CanvasMetadata } from "../store/chunkDataTypes";
 
 export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     return {
@@ -46,7 +48,19 @@ async function startProcessingImage(dispatch: (action: ActionTypes) => ActionTyp
         const ctx = canvas.getContext('2d')!;
 
         logger.log(`Starting picture conversion ${buffer.byteLength}`);
-        const result = await pictureConverter.convertPictureFromUrl(buffer, ctx, getState().guiData.modifications.shouldConvertColors, getState().guiData.modifications.imageBrightness);
+        const curState = getState();
+        let currentCanvasMetadata: CanvasMetadata | undefined;
+        for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
+            if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
+                currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
+            }
+        }
+        if (!currentCanvasMetadata) {
+            // dispatch(updateMetadata());
+            logger.logError(`canvas(${curState.chunkData.activeCanvasId} / ${curState.chunkData.canvasesMetadata.length}) metadata is not ready yet. Can't continue`);
+            return;
+        }
+        const result = await pictureConverter.convertPictureFromUrl(currentCanvasMetadata.colors, currentCanvasMetadata.colorsReservedCount, buffer, ctx, curState.guiData.modifications.shouldConvertColors, curState.guiData.modifications.imageBrightness);
         logger.log(`updating output image ${result.data.length}`)
         dispatch(updateOutputImage(result));
     }

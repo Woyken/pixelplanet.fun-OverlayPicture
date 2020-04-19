@@ -11,6 +11,7 @@ import { connect } from 'react-redux';
 import { GuiParametersState } from '../../store/guiTypes';
 import logger from '../../handlers/logger';
 import viewport from '../../gameInjection/viewport';
+import { updateMetadata } from '../../actions/pixelData';
 
 interface OwnState {
 }
@@ -29,6 +30,7 @@ interface DispatchProps {
     updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => void;
     updateOverlayEnabled: (isEnabled: boolean) => void;
     loadSavedConfigs: () => void;
+    updateMetadata: () => void;
 }
 
 type Props = StateProps & DispatchProps & OwnProps;
@@ -43,6 +45,7 @@ class App extends React.Component<Props, OwnState> {
         // App was just loaded. Set initial values.
         this.props.updateGame(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
         this.props.loadSavedConfigs();
+        this.props.updateMetadata();
 
         // TODO: move this logic out somewhere else.
         window.addEventListener('hashchange', () => {
@@ -206,6 +209,7 @@ function mapDispatchToProps(
         updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => dispatch(updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness)),
         updateOverlayEnabled: (isEnabled: boolean) => dispatch(updateOverlayEnabled(isEnabled)),
         loadSavedConfigs: () => dispatch(loadSavedConfigurations()),
+        updateMetadata: () => dispatch(updateMetadata()),
     };
 }
 

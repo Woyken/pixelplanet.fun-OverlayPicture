@@ -14,6 +14,8 @@ class PictureConverter {
     }
 
     public async convertPictureFromUrl(
+        colorPalette: [number, number, number][],
+        reservedColorOffset: number,
         pngBuffer: ArrayBuffer,
         contextForBufferCreation: CanvasRenderingContext2D,
         convertColors: boolean,
@@ -31,12 +33,14 @@ class PictureConverter {
                     const r = Math.min(decodedPng.palette[i][0] + brightenBy, 255);
                     const g = Math.min(decodedPng.palette[i][1] + brightenBy, 255);
                     const b = Math.min(decodedPng.palette[i][2] + brightenBy, 255);
-                    const convertedColor = colorConverter.convertActualColor(
+                    const convertedColor = colorConverter.convertActualColorFromPalette(
+                        colorPalette,
+                        reservedColorOffset,
                         r,
                         g,
                         b,
                     );
-                    const resultArr = colorConverter.getActualColor(convertedColor);
+                    const resultArr = colorConverter.getActualColorFromPalette(colorPalette, convertedColor);
                     decodedPng.palette[i][0] = resultArr[0];
                     decodedPng.palette[i][1] = resultArr[1];
                     decodedPng.palette[i][2] = resultArr[2];
@@ -70,12 +74,14 @@ class PictureConverter {
                         const g = Math.min(decodedPng.data[idx + 1] + brightenBy, 255);
                         const b = Math.min(decodedPng.data[idx + 2] + brightenBy, 255);
 
-                        const convertedColor = colorConverter.convertActualColor(
+                        const convertedColor = colorConverter.convertActualColorFromPalette(
+                            colorPalette,
+                            reservedColorOffset,
                             r,
                             g,
                             b,
                         );
-                        const resultArr = colorConverter.getActualColor(convertedColor);
+                        const resultArr = colorConverter.getActualColorFromPalette(colorPalette, convertedColor);
                         imageData.data[idx + 0] = resultArr[0];
                         imageData.data[idx + 1] = resultArr[1];
                         imageData.data[idx + 2] = resultArr[2];
