@@ -20,14 +20,17 @@ export interface LoadedChunkData {
 
 export interface CanvasMetadata {
     id: number;
+    title: string,
+    colorsIgnoreCount: number,
     stringId: string;
     colors: [number, number, number][];
-    alpha: number;
     size: number;
     timeoutOnEmpty: number;
     timeoutOnReplace: number;
     maxTimeout: number;
+    ranked: boolean;
     pixelsMinimalRequirement: number;
+    description: string;
     sd: string;
 }
 

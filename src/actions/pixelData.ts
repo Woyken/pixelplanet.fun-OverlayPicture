@@ -79,16 +79,19 @@ export function updateMetadata(): ThunkAction<
                 if (me.canvases.hasOwnProperty(key)) {
                     const canvasMetadata = me.canvases[key];
                     canvasesMetadata.push({
-                        alpha: canvasMetadata.  ,
+                        stringId: canvasMetadata.ident,
+                        title: canvasMetadata.title,
                         colors: canvasMetadata.colors,
-                        id: key,
+                        colorsIgnoreCount: canvasMetadata.cli,
+                        timeoutOnEmpty: canvasMetadata.bcd,
+                        timeoutOnReplace: canvasMetadata.pcd,
                         maxTimeout: canvasMetadata.cds,
+                        ranked: canvasMetadata.ranked,
                         pixelsMinimalRequirement: canvasMetadata.req,
                         sd: canvasMetadata.sd,
                         size: canvasMetadata.size,
-                        stringId: canvasMetadata.ident,
-                        timeoutOnEmpty: canvasMetadata.bcd,
-                        timeoutOnReplace: canvasMetadata.pcd,
+                        description: canvasMetadata.desc,
+                        id: parseInt(key),
                     });
                 }
             }
