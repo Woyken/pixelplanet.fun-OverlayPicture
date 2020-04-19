@@ -11,12 +11,15 @@ export interface UserDataResponse {
 
 export interface CanvasMetadataResponse {
     ident:  string;
+    title: string;
     colors: [number, number, number][];
-    alpha:  number;
     size:   number;
+    cli: number;
     bcd:    number;
     pcd:    number;
     cds:    number;
+    ranked: boolean;
     req:    number;
     sd:     string;
+    desc: string;
 }
