@@ -116,18 +116,19 @@ export function updateInputImage(url?: string, file?: File): ThunkAction<
             return;
         }
         if (url) {
-            if (!pictureConverter.isImageValidCors(url)) {
+            if (!(await pictureConverter.isImageValidCors(url))) {
                 logger.log(`Image url ${url} not valid cors, don't parse`)
                 // No point in trying to parse this out.
                 // Clear output image
                 dispatch(updateOutputImage());
-                dispatch(updateImageModifiers(false));
+                dispatch(updateImageModifiersInternal(false));
                 return;
             }
-            dispatch(updateImageModifiers(true));
+            logger.log(`Cors seems to be fine, continuing.`)
+            dispatch(updateImageModifiersInternal(true));
         }
         if (file) {
-            dispatch(updateImageModifiers(true, true));
+            dispatch(updateImageModifiersInternal(true, true));
         }
         if (!file && (!getState().guiData.modifications.modificationsAvailable) || !getState().guiData.modifications.doModifications) {
             logger.log('Modifications are disabled. Not parsing.');
@@ -319,8 +320,8 @@ export function applySavedConfiguration(savedConfig: SavedConfiguration): ThunkA
     ActionTypes
 > {
     return async (dispatch, getState) => {
+        await dispatch(updateImageModifiersInternal(savedConfig.modifiers.modificationsAvailable, savedConfig.modifiers.doModifications, savedConfig.modifiers.shouldConvertColors, savedConfig.modifiers.imageBrightness));
         await dispatch(updateInputImage(savedConfig.imageUrl));
         await dispatch(updateImagePlacementConfiguration(savedConfig.placementConfiguration.transparency, savedConfig.placementConfiguration.xOffset, savedConfig.placementConfiguration.yOffset));
-        await dispatch(updateImageModifiers(savedConfig.modifiers.modificationsAvailable, savedConfig.modifiers.doModifications, savedConfig.modifiers.shouldConvertColors, savedConfig.modifiers.imageBrightness));
     };
 }

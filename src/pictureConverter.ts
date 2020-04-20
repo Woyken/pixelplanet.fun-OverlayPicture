@@ -85,7 +85,9 @@ class PictureConverter {
                         imageData.data[idx + 0] = resultArr[0];
                         imageData.data[idx + 1] = resultArr[1];
                         imageData.data[idx + 2] = resultArr[2];
-                        imageData.data[idx + 3] = decodedPng.data[idx + 3];
+                        // Trimming alpha if lower than threshold.
+                        // Not sure if I should do this. But here we go. Results will be closer to actual canvas. Without transparency.
+                        imageData.data[idx + 3] = decodedPng.data[idx + 3] > 30 ? 255 : 0;
                     }
                 }
             } else {
