@@ -4,7 +4,7 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { pictureConverter } from "../pictureConverter";
 import logger from "../handlers/logger";
 import { configurationStore } from "../configurationStore";
-import { updateMetadata } from "./pixelData";
+import { updateMetadata, setActiveCanvasByStringId } from "./pixelData";
 import { CanvasMetadata } from "../store/chunkDataTypes";
 
 export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
@@ -14,72 +14,79 @@ export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     };
 }
 
-async function startProcessingImage(dispatch: ThunkDispatch<AppState, null, ActionTypes>, getState: () => AppState) {
-    dispatch(updateOutputImageStatus(true));
-    try {
-        let buffer: ArrayBuffer;
-        const url = getState().guiData.overlayImage.inputImage.url;
-        const file = getState().guiData.overlayImage.inputImage.file;
-        if (url) {
-            logger.log('Parsing url input');
-            const response = await fetch(url);
-            buffer = await response.arrayBuffer();
-        } else if (file) {
-            logger.log('Parsing file input');
-            buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const data = reader.result as ArrayBuffer;
-                    logger.log(`File parsed as array ${data.byteLength}`);
-                    resolve(data);
-                };
-                reader.onerror = (ev) => {
-                    logger.logError(`File parsing failed`);
-                    reject('could not parse file');
-                };
-                reader.readAsArrayBuffer(file);
-            });
-        } else {
-            // This shouldn't be possible.
-            throw new Error('Something unexpected happened');
-        }
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d')!;
-
-        logger.log(`Starting picture conversion ${buffer.byteLength}`);
-        let curState = getState();
-        let currentCanvasMetadata: CanvasMetadata | undefined;
-        for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
-            if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
-                currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
+export function startProcessingImage(): ThunkAction<
+    Promise<void>,
+    AppState,
+    null,
+    ActionTypes
+> {
+    return async (dispatch, getState) => {
+        dispatch(updateOutputImageStatus(true));
+        try {
+            let buffer: ArrayBuffer;
+            const url = getState().guiData.overlayImage.inputImage.url;
+            const file = getState().guiData.overlayImage.inputImage.file;
+            if (url) {
+                logger.log('Parsing url input');
+                const response = await fetch(url);
+                buffer = await response.arrayBuffer();
+            } else if (file) {
+                logger.log('Parsing file input');
+                buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const data = reader.result as ArrayBuffer;
+                        logger.log(`File parsed as array ${data.byteLength}`);
+                        resolve(data);
+                    };
+                    reader.onerror = (ev) => {
+                        logger.logError(`File parsing failed`);
+                        reject('could not parse file');
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            } else {
+                // This shouldn't be possible.
+                throw new Error('Something unexpected happened');
             }
-        }
-        if (!currentCanvasMetadata) {
-            await dispatch(updateMetadata());
-            curState = getState();
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d')!;
+
+            logger.log(`Starting picture conversion ${buffer.byteLength}`);
+            let curState = getState();
+            let currentCanvasMetadata: CanvasMetadata | undefined;
             for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
                 if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
                     currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
                 }
             }
-            // currentCanvasMetadata should be defined now
-            if(!currentCanvasMetadata) {
-                logger.logError(`Can't fetch canvas metadata? Can't continue parsing the image...`);
-                return;
+            if (!currentCanvasMetadata) {
+                await dispatch(updateMetadata());
+                curState = getState();
+                for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
+                    if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
+                        currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
+                    }
+                }
+                // currentCanvasMetadata should be defined now
+                if (!currentCanvasMetadata) {
+                    logger.logError(`Can't fetch canvas metadata? Can't continue parsing the image...`);
+                    return;
+                }
             }
+            const result = await pictureConverter.convertPictureFromUrl(currentCanvasMetadata.colors, currentCanvasMetadata.colorsReservedCount, buffer, ctx, curState.guiData.modifications.shouldConvertColors, curState.guiData.modifications.imageBrightness);
+            logger.log(`updating output image ${result.data.length}`)
+            dispatch(updateOutputImage(result));
         }
-        const result = await pictureConverter.convertPictureFromUrl(currentCanvasMetadata.colors, currentCanvasMetadata.colorsReservedCount, buffer, ctx, curState.guiData.modifications.shouldConvertColors, curState.guiData.modifications.imageBrightness);
-        logger.log(`updating output image ${result.data.length}`)
-        dispatch(updateOutputImage(result));
-    }
-    catch (err) {
-        logger.logError(`Something went wrong while parsing picture: ${err}`);
-        // Likely to happen when fetching image
-        dispatch(updateOutputImage(undefined));
-    }
-    finally {
-        dispatch(updateOutputImageStatus(false));
+        catch (err) {
+            logger.logError(`Something went wrong while parsing picture: ${err}`);
+            // Likely to happen when fetching image
+            dispatch(updateOutputImage(undefined));
+        }
+        finally {
+            dispatch(updateOutputImageStatus(false));
+        }
     }
 }
 
@@ -91,7 +98,7 @@ export function updateImageModifiers(modificationsAvailable?: boolean, doModific
 > {
     return async (dispatch, getState) => {
         dispatch(updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness));
-        await startProcessingImage(dispatch, getState);
+        await dispatch(startProcessingImage());
     };
 }
 
@@ -146,7 +153,7 @@ export function updateInputImage(url?: string, file?: File): ThunkAction<
             return;
         }
 
-        await startProcessingImage(dispatch, getState);
+        await dispatch(startProcessingImage());
     }
 }
 
@@ -204,6 +211,9 @@ export function updateGameState(canvasStringId?: string, centerX?: number, cente
             zoomLevel,
             isMouseDragging,
         });
+
+        if (canvasStringId)
+            await dispatch(setActiveCanvasByStringId(canvasStringId));
     }
 }
 

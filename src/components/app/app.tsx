@@ -53,6 +53,12 @@ class App extends React.Component<Props, OwnState> {
                 this.props.updateConfig(undefined, urlHelper.xCoord, urlHelper.yCoord);
             }
 
+            if(this.props.guiState.currentGameState.canvasStringId !== urlHelper.canvasStr) {
+                logger.log('Canvas has changed!');
+                this.props.updateGame(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
+                urlHelper.stickToGrid();
+            }
+
             const shared = urlHelper.deserializeSharedUrl();
             if (!shared) {
                 return;
