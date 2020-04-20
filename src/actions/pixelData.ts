@@ -1,6 +1,5 @@
 import {
     CANVAS_LOAD_CHUNK_DATA,
-    ActionTypes,
     PIXEL_UPDATE,
     CANVAS_RECEIVE_METADATA,
     RECEIVE_USER_DATA,
@@ -8,7 +7,7 @@ import {
     CanvasMetadata,
 } from '../store/chunkDataTypes';
 import { ThunkAction } from 'redux-thunk';
-import { AppState } from '../store';
+import { AppState, ActionTypes } from '../store';
 import { ChunkCell, chunkToIndex, Cell } from '../chunkHelper';
 import { UserDataResponse, CanvasMetadataResponse } from './pixelPlanetResponseTypes';
 

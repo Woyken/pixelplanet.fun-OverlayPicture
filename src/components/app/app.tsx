@@ -45,7 +45,6 @@ class App extends React.Component<Props, OwnState> {
         // App was just loaded. Set initial values.
         this.props.updateGame(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
         this.props.loadSavedConfigs();
-        this.props.updateMetadata();
 
         // TODO: move this logic out somewhere else.
         window.addEventListener('hashchange', () => {

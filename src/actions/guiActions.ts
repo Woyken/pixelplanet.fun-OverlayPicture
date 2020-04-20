@@ -1,6 +1,6 @@
-import { ActionTypes, UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, SavedConfiguration } from "../store/guiTypes";
-import { AppState } from "../store";
-import { ThunkAction } from "redux-thunk";
+import { UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, SavedConfiguration } from "../store/guiTypes";
+import { AppState, ActionTypes } from "../store";
+import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { pictureConverter } from "../pictureConverter";
 import logger from "../handlers/logger";
 import { configurationStore } from "../configurationStore";
@@ -14,7 +14,7 @@ export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     };
 }
 
-async function startProcessingImage(dispatch: (action: ActionTypes) => ActionTypes, getState: () => AppState) {
+async function startProcessingImage(dispatch: ThunkDispatch<AppState, null, ActionTypes>, getState: () => AppState) {
     dispatch(updateOutputImageStatus(true));
     try {
         let buffer: ArrayBuffer;
@@ -48,7 +48,7 @@ async function startProcessingImage(dispatch: (action: ActionTypes) => ActionTyp
         const ctx = canvas.getContext('2d')!;
 
         logger.log(`Starting picture conversion ${buffer.byteLength}`);
-        const curState = getState();
+        let curState = getState();
         let currentCanvasMetadata: CanvasMetadata | undefined;
         for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
             if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
@@ -56,9 +56,18 @@ async function startProcessingImage(dispatch: (action: ActionTypes) => ActionTyp
             }
         }
         if (!currentCanvasMetadata) {
-            // dispatch(updateMetadata());
-            logger.logError(`canvas(${curState.chunkData.activeCanvasId} / ${curState.chunkData.canvasesMetadata.length}) metadata is not ready yet. Can't continue`);
-            return;
+            await dispatch(updateMetadata());
+            curState = getState();
+            for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
+                if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
+                    currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
+                }
+            }
+            // currentCanvasMetadata should be defined now
+            if(!currentCanvasMetadata) {
+                logger.logError(`Can't fetch canvas metadata? Can't continue parsing the image...`);
+                return;
+            }
         }
         const result = await pictureConverter.convertPictureFromUrl(currentCanvasMetadata.colors, currentCanvasMetadata.colorsReservedCount, buffer, ctx, curState.guiData.modifications.shouldConvertColors, curState.guiData.modifications.imageBrightness);
         logger.log(`updating output image ${result.data.length}`)
