@@ -4,8 +4,8 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { pictureConverter } from "../pictureConverter";
 import logger from "../handlers/logger";
 import { configurationStore } from "../configurationStore";
-import { updateMetadata, setActiveCanvasByStringId } from "./pixelData";
-import { CanvasMetadata } from "../store/chunkDataTypes";
+import { updateMetadata } from "./pixelData";
+import { CanvasMetadata, CANVAS_CHANGE_CANVAS } from "../store/chunkDataTypes";
 
 export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     return {
@@ -342,5 +342,26 @@ export function applySavedConfiguration(savedConfig: SavedConfiguration): ThunkA
         await dispatch(updateImageModifiersInternal(savedConfig.modifiers.modificationsAvailable, savedConfig.modifiers.doModifications, savedConfig.modifiers.shouldConvertColors, savedConfig.modifiers.imageBrightness));
         await dispatch(updateInputImage(savedConfig.imageUrl));
         await dispatch(updateImagePlacementConfiguration(savedConfig.placementConfiguration.transparency, savedConfig.placementConfiguration.xOffset, savedConfig.placementConfiguration.yOffset));
+    };
+}
+
+export function setActiveCanvasByStringId(canvasStringId: string): ThunkAction<
+    Promise<void>,
+    AppState,
+    null,
+    ActionTypes
+> {
+    return async (dispatch, getState) => {
+        if (getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId]?.stringId === canvasStringId) {
+            return;
+        }
+        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
+        if (idx >= 0) {
+            dispatch({
+                type: CANVAS_CHANGE_CANVAS,
+                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
+            });
+            await dispatch(startProcessingImage());
+        }
     };
 }

@@ -10,7 +10,6 @@ import { ThunkAction } from 'redux-thunk';
 import { AppState, ActionTypes } from '../store';
 import { ChunkCell, chunkToIndex, Cell } from '../chunkHelper';
 import { UserDataResponse, CanvasMetadataResponse } from './pixelPlanetResponseTypes';
-import { startProcessingImage } from './guiActions';
 
 export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<ArrayBuffer> {
     const url = `/chunks/${canvasId}/${chunk.chunkX}/${chunk.chunkY}.bmp`;
@@ -111,27 +110,6 @@ export function updateMetadata(): ThunkAction<
                     minecraftname: me.minecraftname,
                 },
             });
-        }
-    };
-}
-
-export function setActiveCanvasByStringId(canvasStringId: string): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
-    return async (dispatch, getState) => {
-        if (getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId]?.stringId === canvasStringId) {
-            return;
-        }
-        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
-        if (idx >= 0) {
-            dispatch({
-                type: CANVAS_CHANGE_CANVAS,
-                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
-            });
-            await dispatch(startProcessingImage());
         }
     };
 }
