@@ -12,6 +12,7 @@ import { GuiParametersState } from '../../store/guiTypes';
 import logger from '../../handlers/logger';
 import viewport from '../../gameInjection/viewport';
 import { updateMetadata } from '../../actions/pixelData';
+import BotModal from '../botModal/botModal';
 
 interface OwnState {
 }
@@ -174,6 +175,11 @@ class App extends React.Component<Props, OwnState> {
                     ? <OverlayImage />
                     : undefined}
                 <ConfigurationModal />
+                {
+                    guiState.isBotModalVisible
+                        ? <BotModal />
+                        : undefined
+                }
             </div>
         );
     }

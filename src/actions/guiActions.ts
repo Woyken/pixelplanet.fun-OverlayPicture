@@ -1,4 +1,4 @@
-import { UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, SavedConfiguration } from "../store/guiTypes";
+import { UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, SavedConfiguration, UPDATE_BOT_MODAL_VISIBLE } from "../store/guiTypes";
 import { AppState, ActionTypes } from "../store";
 import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { pictureConverter } from "../pictureConverter";
@@ -363,5 +363,12 @@ export function setActiveCanvasByStringId(canvasStringId: string): ThunkAction<
             });
             await dispatch(startProcessingImage());
         }
+    };
+}
+
+export function updateBotModalVisible(isVisible: boolean): ActionTypes {
+    return {
+        isVisible,
+        type: UPDATE_BOT_MODAL_VISIBLE,
     };
 }

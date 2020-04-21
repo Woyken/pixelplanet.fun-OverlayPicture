@@ -8,6 +8,9 @@ import { OverlayImageOutput, PlacementConfiguration, GameState, OverlayImageInpu
 import { AppState } from '../../store';
 import { ThunkDispatch } from 'redux-thunk';
 import logger from '../../handlers/logger';
+import { LoadedChunkData, CanvasMetadata } from '../../store/chunkDataTypes';
+import { pixelToChunk, ChunkCell, chunkToIndex, pixelInChunkOffset } from '../../chunkHelper';
+import { loadChunkData } from '../../actions/pixelData';
 
 interface OwnState {
     zoom: number;
@@ -23,9 +26,13 @@ interface StateProps {
     outputImage: OverlayImageOutput;
     gameState: GameState;
     inputImage: OverlayImageInput;
+    loadedChunks: LoadedChunkData[];
+    canvasesMetadata: CanvasMetadata[];
+    activeCanvasId: number;
 }
 
 interface DispatchProps {
+    loadChunkData(canvasId: number, chunk: ChunkCell): void;
 }
 
 type Props = StateProps & DispatchProps & OwnProps;
@@ -139,6 +146,9 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
         placementConfiguration: state.guiData.placementConfiguration,
         gameState: state.guiData.currentGameState,
         inputImage: state.guiData.overlayImage.inputImage,
+        loadedChunks: state.chunkData.loadedChunks,
+        canvasesMetadata: state.chunkData.canvasesMetadata,
+        activeCanvasId: state.chunkData.activeCanvasId,
     };
 }
 
@@ -147,6 +157,7 @@ function mapDispatchToProps(
     ownProps: OwnProps,
 ): DispatchProps {
     return {
+        loadChunkData: (canvasId: number, chunk: ChunkCell) => dispatch(loadChunkData(canvasId, chunk))
     };
 }
 

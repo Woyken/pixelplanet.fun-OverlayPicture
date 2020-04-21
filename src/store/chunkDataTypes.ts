@@ -1,18 +1,5 @@
 import { ChunkCell, Cell } from "../chunkHelper";
-
-// TODO move to actions
-export interface PixelPlaceResponse {
-    success: boolean,
-    waitSeconds: number,
-    coolDownSeconds: number,
-    errors: PixelPlaceResponseErrors[],
-    errorTitle: string,
-}
-
-// TODO move to actions
-export interface PixelPlaceResponseErrors {
-    msg: string;
-}
+import { BotState, BotActionTypes } from "./botState";
 
 export interface LoadedChunkData {
     data: Int8Array;
@@ -20,8 +7,8 @@ export interface LoadedChunkData {
 
 export interface CanvasMetadata {
     id: number;
-    title: string,
-    colorsReservedCount: number,
+    title: string;
+    colorsReservedCount: number;
     stringId: string;
     colors: [number, number, number][];
     size: number;
@@ -45,10 +32,11 @@ export interface UserData {
 }
 
 export interface ChunkDataState {
-    userData: UserData
+    userData: UserData;
     loadedChunks: LoadedChunkData[];
     activeCanvasId: number;
     canvasesMetadata: CanvasMetadata[];
+    botState: BotState;
 }
 
 export const PIXEL_PLACE = 'PIXEL_PLACE';
@@ -94,6 +82,7 @@ interface ReceiveUserData {
 }
 
 export type ActionTypes =
+    | BotActionTypes
     | LoadChunkData
     | PixelPlace
     | PixelUpdate

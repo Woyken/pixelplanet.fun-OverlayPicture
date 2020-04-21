@@ -1,4 +1,4 @@
-import { GuiParametersState, ActionTypes, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION } from '../guiTypes';
+import { GuiParametersState, ActionTypes, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, UPDATE_BOT_MODAL_VISIBLE } from '../guiTypes';
 
 const initialState: GuiParametersState = {
     modifications: {
@@ -30,6 +30,7 @@ const initialState: GuiParametersState = {
     savedConfigurations: {
         configs: [],
     },
+    isBotModalVisible: false,
 };
 
 export function guiDataReducer(
@@ -127,6 +128,12 @@ export function guiDataReducer(
                         action.config,
                     ],
                 },
+            };
+        }
+        case UPDATE_BOT_MODAL_VISIBLE: {
+            return {
+                ...state,
+                isBotModalVisible: action.isVisible,
             };
         }
         default: {

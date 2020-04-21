@@ -59,6 +59,7 @@ export interface GuiParametersState {
     overlayImage: OverlayImage;
     overlayEnabled: boolean;
     savedConfigurations: SavedConfigurations;
+    isBotModalVisible: boolean;
 }
 
 export const UPDATE_INPUT_IMAGE = 'UPDATE_INPUT_IMAGE';
@@ -68,6 +69,7 @@ export const UPDATE_IMAGE_MODIFIERS = 'UPDATE_IMAGE_MODIFIERS';
 export const UPDATE_IMAGE_PLACEMENT_CONFIGURATION = 'UPDATE_IMAGE_PLACEMENT_CONFIGURATION';
 export const UPDATE_GAME_STATE = 'UPDATE_GAME_STATE';
 export const UPDATE_OVERLAY_ENABLED = 'UPDATE_OVERLAY_ENABLED';
+export const UPDATE_BOT_MODAL_VISIBLE = 'UPDATE_BOT_MODAL_VISIBLE';
 export const LOAD_SAVED_CONFIGURATIONS = 'LOAD_SAVED_CONFIGURATIONS';
 export const SAVE_CURRENT_CONFIGURATION = 'SAVE_CURRENT_CONFIGURATION';
 
@@ -126,6 +128,11 @@ interface UpdateGameState extends Action {
     isMouseDragging?: boolean;
 }
 
+interface UpdateBotModalVisible extends Action {
+    type: typeof UPDATE_BOT_MODAL_VISIBLE;
+    isVisible: boolean;
+}
+
 export type ActionTypes =
     | UpdateInputImage
     | UpdateOutputImageStatus
@@ -135,4 +142,5 @@ export type ActionTypes =
     | UpdateGameState
     | UpdateOverlayEnabled
     | LoadSavedConfigurations
-    | SaveCurrentConfiguration;
+    | SaveCurrentConfiguration
+    | UpdateBotModalVisible;
