@@ -241,6 +241,7 @@ export function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: number)
 
             if (!response) {
                 // That's a problem. Probably need to show re-captcha.
+                alert('Captcha?');
                 // TODO. For now just disable bot.
                 dispatch({
                     type: BOT_CONFIG_ENABLED,
