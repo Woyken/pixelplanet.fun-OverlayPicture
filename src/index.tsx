@@ -33,7 +33,8 @@ function init(): void {
     };
     webSocketHandler.onRequestReloadMetadata = () => {
         store.dispatch((updateMetadata as any)());
-    }
+    };
+    webSocketHandler.connect();
 }
 
 init();
