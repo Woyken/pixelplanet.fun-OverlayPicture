@@ -67,20 +67,25 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
                             <OverlayConfig />
                         </div>
 
-                        <Tooltip title="Open BOT window">
-                            <img
-                                style={{ position: 'absolute', right: '0.4em' }}
-                                width="4%"
-                                height="4%"
-                                src="https://fonts.gstatic.com/s/i/materialicons/accessible_forward/v4/24px.svg"
-                                onClick={
-                                    (): void =>
-                                        this.props.openBotModal(
-                                            !this.props.guiState.isBotModalVisible,
-                                        )
-                                }
-                            />
-                        </Tooltip>
+                        {
+                            this.props.guiState.modifications.modificationsAvailable && this.props.guiState.modifications.shouldConvertColors
+                                ?
+                                <Tooltip title="Open BOT window">
+                                    <img
+                                        style={{ position: 'absolute', right: '0.4em' }}
+                                        width="4%"
+                                        height="4%"
+                                        src="https://fonts.gstatic.com/s/i/materialicons/accessible_forward/v4/24px.svg"
+                                        onClick={
+                                            (): void =>
+                                                this.props.openBotModal(
+                                                    !this.props.guiState.isBotModalVisible,
+                                                )
+                                        }
+                                    />
+                                </Tooltip>
+                                : null
+                        }
 
                         <ConfigDropDown />
                     </div>

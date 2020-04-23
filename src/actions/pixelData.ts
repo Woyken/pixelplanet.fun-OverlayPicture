@@ -10,7 +10,7 @@ import { ThunkAction } from 'redux-thunk';
 import { AppState, ActionTypes } from '../store';
 import { ChunkCell, chunkToIndex, Cell, pixelInChunkOffset, pixelToChunk } from '../chunkHelper';
 import { UserDataResponse, CanvasMetadataResponse } from './pixelPlanetResponseTypes';
-import { BOT_IMAGE_PROCESSING, BOT_CONFIG_ENABLED, BOT_IMAGE_PROCESSED_DATA, BOT_FEATURE_ENABLED } from '../store/botState';
+import { BOT_IMAGE_PROCESSING, BOT_CONFIG_ENABLED, BOT_IMAGE_PROCESSED_DATA, BOT_FEATURE_ENABLED, BOT_PIXEL_BEING_PLACED } from '../store/botState';
 import colorConverter from '../colorConverter';
 
 export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<ArrayBuffer> {
@@ -74,7 +74,14 @@ export async function fetchPlacePixel(
     params: PixelPlaceParams,
 ): Promise<PixelPlaceResponse | undefined> {
     const url = '/api/pixel';
-    const response = await fetch(url);
+    const response = await fetch(url, {
+        credentials: 'include',
+        body: JSON.stringify(params),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        method: 'POST',
+    });
     if (response.ok) {
         const pixelPlacedResponse = await response.json() as PixelPlaceResponse;
         return pixelPlacedResponse;
@@ -157,6 +164,7 @@ export function updateMetadata(): ThunkAction<
                 type: CANVAS_RECEIVE_METADATA,
                 canvasesMetadata: canvasesMetadata,
             });
+            await dispatch(setActiveCanvasByStringIdAfterMetadataFetch());
             dispatch({
                 type: RECEIVE_USER_DATA,
                 userData: {
@@ -173,6 +181,25 @@ export function updateMetadata(): ThunkAction<
     };
 }
 
+export function setActiveCanvasByStringIdAfterMetadataFetch(): ThunkAction<
+    Promise<void>,
+    AppState,
+    null,
+    ActionTypes
+> {
+    return async (dispatch, getState) => {
+        const canvasStringId = getState().guiData.currentGameState.canvasStringId;
+
+        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
+        if (idx >= 0) {
+            dispatch({
+                type: CANVAS_CHANGE_CANVAS,
+                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
+            });
+        }
+    };
+}
+
 export function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: number): ThunkAction<
     Promise<void>,
     AppState,
@@ -180,28 +207,63 @@ export function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: number)
     ActionTypes
 > {
     return async (dispatch, getState): Promise<void> => {
-        const response = await fetchPlacePixel({
-            x: pixel.x,
-            y: pixel.y,
-            token: null,
-            cn: canvasId.toString(),
-            clr: colorIndex,
+        dispatch({
+            type: BOT_PIXEL_BEING_PLACED,
+            isBeingPlaced: true,
         });
+        try {
+            let { loadedChunks, activeCanvasId, canvasesMetadata } = getState().chunkData;
+            let canvasData = canvasesMetadata[activeCanvasId];
+            if (!canvasData) {
+                await dispatch(updateMetadata());
+                canvasesMetadata = getState().chunkData.canvasesMetadata;
+                canvasData = canvasesMetadata[activeCanvasId];
+            }
+            const chunkCell = pixelToChunk({ x: pixel.x, y: pixel.y }, canvasData.size);
+            const chunkIndex = chunkToIndex(chunkCell);
+            const pixelInChunk = pixelInChunkOffset({ x: pixel.x, y: pixel.y }, canvasData.size);
+            const loadedChunk = loadedChunks[chunkIndex];
+            if (loadedChunk) {
+                // Only if chunk is loaded we will check if color is the same.
+                if (loadedChunk.data[pixelInChunk] === colorIndex) {
+                    // already the same, don't need to do anything.
+                    return;
+                }
+            }
 
-        if (!response) {
-            // That's a problem. Probably need to show re-captcha.
-            // TODO. For now just disable bot.
-            dispatch({
-                type: BOT_CONFIG_ENABLED,
-                isEnabled: false,
+            const response = await fetchPlacePixel({
+                x: pixel.x,
+                y: pixel.y,
+                token: null,
+                cn: canvasId.toString(),
+                clr: colorIndex,
             });
-            return;
-        }
-        if (response.success) {
+
+            if (!response) {
+                // That's a problem. Probably need to show re-captcha.
+                // TODO. For now just disable bot.
+                dispatch({
+                    type: BOT_CONFIG_ENABLED,
+                    isEnabled: false,
+                });
+                return;
+            }
+
+            // Wait till 0 to place next pixel to be safe.
+            // since this is not shown anywhere, just replace it...
+            getState().chunkData.botState.placeNextPixelAt = new Date().getTime() + response.waitSeconds * 1000;
+
+            if (response.success) {
+                dispatch({
+                    colorIndex,
+                    pixel,
+                    type: PIXEL_UPDATE,
+                });
+            }
+        } finally {
             dispatch({
-                colorIndex,
-                pixel,
-                type: PIXEL_UPDATE,
+                type: BOT_PIXEL_BEING_PLACED,
+                isBeingPlaced: false,
             });
         }
     };
@@ -226,7 +288,12 @@ export function botStartProcessingImage(): ThunkAction<
             isImageProcessing: true,
         });
         try {
-            const canvasData = canvasesMetadata[activeCanvasId];
+            let canvasData = canvasesMetadata[activeCanvasId];
+            if (!canvasData) {
+                await dispatch(updateMetadata());
+                canvasesMetadata = getState().chunkData.canvasesMetadata;
+                canvasData = canvasesMetadata[activeCanvasId];
+            }
             const canvasDiffColorsArray = new Uint8Array(
                 outputImage.outputImageData.width * outputImage.outputImageData.height,
             );
@@ -254,7 +321,7 @@ export function botStartProcessingImage(): ThunkAction<
                     const offset = (xi + yi * outputImage.outputImageData.width);
 
                     // Get outputImage values...
-                    const idx = (outputImage.outputImageData.width * y + x) << 2;
+                    const idx = (outputImage.outputImageData.width * yi + xi) << 2;
                     const r = outputImage.outputImageData.data[idx + 0];
                     const g = outputImage.outputImageData.data[idx + 1];
                     const b = outputImage.outputImageData.data[idx + 2];
@@ -270,15 +337,22 @@ export function botStartProcessingImage(): ThunkAction<
 
                     // Add to array only if they are different or alpha is lower than magical number
                     canvasDiffColorsArray[offset] =
-                        colorIndexImage === colorIndexCanvas || a <= 30
+                        colorConverter.areColorsEqual(canvasData.colors, colorIndexImage, colorIndexCanvas)
+                            || a <= 30
                             ? -1
-                            : colorIndexCanvas;
+                            : colorIndexImage;
                 }
             }
 
             dispatch({
                 type: BOT_IMAGE_PROCESSED_DATA,
                 diffAgainstInputData: canvasDiffColorsArray,
+                imageMetadata: {
+                    height: outputImage.outputImageData.height,
+                    width: outputImage.outputImageData.width,
+                    x: placementConfiguration.xOffset,
+                    y: placementConfiguration.yOffset,
+                },
             });
 
         } finally {
@@ -301,6 +375,13 @@ export function botUpdateEnabled(isEnabled: boolean): ThunkAction<
             return;
         }
 
+        if (!isEnabled) {
+            dispatch({
+                type: BOT_IMAGE_PROCESSED_DATA,
+                diffAgainstInputData: undefined,
+            });
+        }
+
         dispatch({
             isEnabled,
             type: BOT_CONFIG_ENABLED,
@@ -315,6 +396,13 @@ export function botUpdateFeatureEnabled(isEnabled: boolean): ThunkAction<
     ActionTypes
 > {
     return async (dispatch, getState) => {
+        if (!isEnabled) {
+            dispatch({
+                type: BOT_IMAGE_PROCESSED_DATA,
+                diffAgainstInputData: undefined,
+            });
+        }
+
         dispatch({
             type: BOT_FEATURE_ENABLED,
             isFeatureEnabled: isEnabled,

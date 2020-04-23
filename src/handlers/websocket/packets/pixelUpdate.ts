@@ -11,10 +11,10 @@ const OP_CODE = 0xC1; // Chunk Update
 export default {
     OP_CODE,
     hydrate(data: DataView): PixelUpdatePacket {
-        const chunkX = data.getInt16(1);
-        const chunkY = data.getInt16(3);
-        const offset = data.getUint16(5);
-        const colorIndex = data.getUint8(7);
+        const chunkX = data.getUint8(1);
+        const chunkY = data.getUint8(2);
+        const offset = (data.getUint8(3) << 16) | data.getUint16(4);
+        const colorIndex = data.getUint8(6);
         return {
             chunk: {
                 chunkX,

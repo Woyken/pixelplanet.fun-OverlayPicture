@@ -9,9 +9,11 @@ import { AppState } from '../../store';
 import { connect } from 'react-redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { updateOverlayEnabled } from '../../actions/guiActions';
-import { botUpdateEnabled, botUpdateFeatureEnabled } from '../../actions/pixelData';
+import { botUpdateEnabled, botUpdateFeatureEnabled, botStartProcessingImage, botPlacePixel } from '../../actions/pixelData';
 import { ChunkDataState } from '../../store/chunkDataTypes';
 import logger from '../../handlers/logger';
+import autoBind from 'react-autobind';
+import { Cell } from '../../chunkHelper';
 
 interface OwnState {
     isModalMinimized: boolean;
@@ -28,17 +30,69 @@ interface StateProps {
 interface DispatchProps {
     isEnabled: (isEnabled: boolean) => void;
     isEnabledFeature: (isEnabled: boolean) => void;
+    startProcessingImage: () => void;
+    placePixel: (canvasId: number, pixel: Cell, colorIndex: number) => void;
 }
 
 type Props = StateProps & DispatchProps & OwnProps;
 
 class BotModal extends React.Component<Props, OwnState> {
+    private intervalHandle: number | undefined;
 
     constructor(props: Props) {
         super(props);
         this.state = {
             isModalMinimized: false,
         };
+
+        autoBind(this);
+    }
+
+    onUpdate(): void {
+        if (
+            !this.props.chunkState.botState.isFeatureEnabled
+            || !this.props.chunkState.botState.config.isEnabled
+        ) {
+            return;
+        }
+        if (
+            !this.props.chunkState.botState.canvasImageData.diffAgainstInputData
+            && !this.props.chunkState.botState.canvasImageData.isProcessing
+        ) {
+            this.props.startProcessingImage();
+            return;
+        }
+        if (!this.props.chunkState.botState.canvasImageData.diffAgainstInputData) {
+            return;
+    }
+        if (this.props.chunkState.botState.placeNextPixelAt > new Date().getTime()) {
+            return;
+        }
+
+        const pixelAt = this.props.chunkState.botState.canvasImageData.diffAgainstInputData.findIndex((c) => c !== -1 && c !== 255);
+        if (pixelAt === -1) {
+            // Looks like we're all done.
+            this.props.isEnabled(false);
+            return;
+        }
+        const xi = pixelAt % this.props.chunkState.botState.config.imageWidth;
+        const yi = Math.floor(pixelAt / this.props.chunkState.botState.config.imageWidth);
+        const x = xi + this.props.chunkState.botState.config.imageTopLeft.x;
+        const y = yi + this.props.chunkState.botState.config.imageTopLeft.y;
+        const colorIndex = this.props.chunkState.botState.canvasImageData.diffAgainstInputData[pixelAt];
+
+        this.props.placePixel(this.props.chunkState.activeCanvasId, { x, y }, colorIndex);
+        // Since we've tried placing this one, mark it as done.
+        this.props.chunkState.botState.canvasImageData.diffAgainstInputData[pixelAt] = -1;
+    }
+
+
+    componentDidMount(): void {
+        this.intervalHandle = window.setInterval(() => { this.onUpdate(); }, 200);
+    }
+
+    componentWillUnmount(): void {
+        clearInterval(this.intervalHandle);
     }
 
     render(): React.ReactNode {
@@ -149,6 +203,8 @@ function mapDispatchToProps(
     return {
         isEnabled: (isEnabled: boolean) => dispatch(botUpdateEnabled(isEnabled)),
         isEnabledFeature: (isEnabled: boolean) => dispatch(botUpdateFeatureEnabled(isEnabled)),
+        startProcessingImage: () => dispatch(botStartProcessingImage()),
+        placePixel: (canvasId: number, pixel: Cell, colorIndex: number) => dispatch(botPlacePixel(canvasId, pixel, colorIndex))
     };
 }
 

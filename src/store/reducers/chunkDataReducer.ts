@@ -5,9 +5,10 @@ import {
     PIXEL_UPDATE,
     CANVAS_RECEIVE_METADATA,
     RECEIVE_USER_DATA,
+    CANVAS_CHANGE_CANVAS,
 } from '../chunkDataTypes';
 import { chunkToIndex, pixelInChunkOffset, pixelToChunk } from '../../chunkHelper';
-import { BOT_FEATURE_ENABLED, BOT_CONFIG_ENABLED, BOT_IMAGE_PROCESSING, BOT_IMAGE_PROCESSED_DATA } from '../botState';
+import { BOT_FEATURE_ENABLED, BOT_CONFIG_ENABLED, BOT_IMAGE_PROCESSING, BOT_IMAGE_PROCESSED_DATA, BOT_PIXEL_BEING_PLACED } from '../botState';
 
 const initialState: ChunkDataState = {
     userData: {},
@@ -20,7 +21,14 @@ const initialState: ChunkDataState = {
         },
         config: {
             isEnabled: false,
+            imageHeight: 0,
+            imageWidth: 0,
+            imageTopLeft: {
+                x: 0,
+                y: 0,
+            },
         },
+        pixelBeingPlaced: false,
         isFeatureEnabled: false,
         placeNextPixelAt: 0,
     },
@@ -47,16 +55,54 @@ export function chunkDataReducer(
             const allChunks = [
                 ...state.loadedChunks,
             ];
-            allChunks[chunkToIndex(chunk)].data[index] = action.colorIndex;
+            const chunkData = allChunks[chunkToIndex(chunk)]?.data;
+            if (!chunkData) {
+                // We've got nothing loaded to update.
+                return state;
+            }
+            chunkData[index] = action.colorIndex;
+
+            let newBotState = state.botState;
+            if (
+                state.botState.canvasImageData.diffAgainstInputData
+                && action.pixel.x >= state.botState.config.imageTopLeft.x
+                && action.pixel.x < state.botState.config.imageTopLeft.x + state.botState.config.imageWidth
+                && action.pixel.y >= state.botState.config.imageTopLeft.y
+                && action.pixel.y < state.botState.config.imageTopLeft.y + state.botState.config.imageHeight
+            ) {
+                // the pixel is within bot's area.
+                // Just set it to correct value. Will resolve itself down the line.
+                const x = action.pixel.x - state.botState.config.imageTopLeft.x;
+                const y = action.pixel.y - state.botState.config.imageTopLeft.y;
+                const offset = (x + y * state.botState.config.imageWidth);
+                const newDiffData = new Uint8Array(state.botState.canvasImageData.diffAgainstInputData);
+                newDiffData[offset] = action.colorIndex;
+
+                newBotState = {
+                    ...state.botState,
+                    canvasImageData: {
+                        ...state.botState.canvasImageData,
+                        diffAgainstInputData: newDiffData,
+                    },
+                };
+            }
+
             return {
                 ...state,
                 loadedChunks: allChunks,
+                botState: newBotState,
             };
         }
         case CANVAS_RECEIVE_METADATA: {
             return {
                 ...state,
                 canvasesMetadata: action.canvasesMetadata,
+            };
+        }
+        case CANVAS_CHANGE_CANVAS: {
+            return {
+                ...state,
+                activeCanvasId: action.activeCanvasId,
             };
         }
         case RECEIVE_USER_DATA: {
@@ -107,14 +153,46 @@ export function chunkDataReducer(
             };
         }
         case BOT_IMAGE_PROCESSED_DATA: {
+            let newConfig = state.botState.config;
+            if (!action.diffAgainstInputData) {
+                newConfig = {
+                    ...state.botState.config,
+                    imageHeight: 0,
+                    imageWidth: 0,
+                    imageTopLeft: {
+                        x: 0,
+                        y: 0,
+                    },
+                };
+            } else if (action.imageMetadata) {
+                newConfig = {
+                    ...state.botState.config,
+                    imageHeight: action.imageMetadata.height,
+                    imageWidth: action.imageMetadata.width,
+                    imageTopLeft: {
+                        x: action.imageMetadata.x,
+                        y: action.imageMetadata.y,
+                    },
+                };
+            }
             return {
                 ...state,
                 botState: {
                     ...state.botState,
+                    config: newConfig,
                     canvasImageData: {
                         ...state.botState.canvasImageData,
                         diffAgainstInputData: action.diffAgainstInputData,
                     },
+                },
+            };
+        }
+        case BOT_PIXEL_BEING_PLACED: {
+            return {
+                ...state,
+                botState: {
+                    ...state.botState,
+                    pixelBeingPlaced: action.isBeingPlaced,
                 },
             };
         }
