@@ -10,7 +10,13 @@ import { ThunkAction } from 'redux-thunk';
 import { AppState, ActionTypes } from '../store';
 import { ChunkCell, chunkToIndex, Cell, pixelInChunkOffset, pixelToChunk } from '../chunkHelper';
 import { UserDataResponse, CanvasMetadataResponse } from './pixelPlanetResponseTypes';
-import { BOT_IMAGE_PROCESSING, BOT_CONFIG_ENABLED, BOT_IMAGE_PROCESSED_DATA, BOT_FEATURE_ENABLED, BOT_PIXEL_BEING_PLACED } from '../store/botState';
+import {
+    BOT_IMAGE_PROCESSING,
+    BOT_CONFIG_ENABLED,
+    BOT_IMAGE_PROCESSED_DATA,
+    BOT_FEATURE_ENABLED,
+    BOT_PIXEL_BEING_PLACED,
+} from '../store/botState';
 import colorConverter from '../colorConverter';
 
 export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<ArrayBuffer> {
@@ -70,9 +76,7 @@ export interface PixelPlaceParams {
     token: string | null;
 }
 
-export async function fetchPlacePixel(
-    params: PixelPlaceParams,
-): Promise<PixelPlaceResponse | undefined> {
+export async function fetchPlacePixel(params: PixelPlaceParams): Promise<PixelPlaceResponse | undefined> {
     const url = '/api/pixel';
     const response = await fetch(url, {
         credentials: 'include',
@@ -83,18 +87,16 @@ export async function fetchPlacePixel(
         method: 'POST',
     });
     if (response.ok) {
-        const pixelPlacedResponse = await response.json() as PixelPlaceResponse;
+        const pixelPlacedResponse = (await response.json()) as PixelPlaceResponse;
         return pixelPlacedResponse;
     }
     return;
 }
 
-export function loadChunkData(canvasId: number, chunk: ChunkCell): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function loadChunkData(
+    canvasId: number,
+    chunk: ChunkCell,
+): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState): Promise<void> => {
         const { chunkData } = getState();
         if (canvasId !== chunkData.activeCanvasId) {
@@ -123,22 +125,31 @@ export function updatePixel(pixel: Cell, colorIndex: number): ActionTypes {
         type: PIXEL_UPDATE,
         pixel,
         colorIndex,
-    }
+    };
 }
 
-export function updateMetadata(): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function setActiveCanvasByStringIdAfterMetadataFetch(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
+    return async (dispatch, getState) => {
+        const canvasStringId = getState().guiData.currentGameState.canvasStringId;
+
+        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
+        if (idx >= 0) {
+            dispatch({
+                type: CANVAS_CHANGE_CANVAS,
+                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
+            });
+        }
+    };
+}
+
+export function updateMetadata(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch) => {
         const response = await fetch('/api/me', {
             credentials: 'include',
         });
 
         if (response.ok) {
-            const me = await response.json() as UserDataResponse;
+            const me = (await response.json()) as UserDataResponse;
             const canvasesMetadata: CanvasMetadata[] = [];
             for (const key in me.canvases) {
                 if (me.canvases.hasOwnProperty(key)) {
@@ -181,38 +192,19 @@ export function updateMetadata(): ThunkAction<
     };
 }
 
-export function setActiveCanvasByStringIdAfterMetadataFetch(): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
-    return async (dispatch, getState) => {
-        const canvasStringId = getState().guiData.currentGameState.canvasStringId;
-
-        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
-        if (idx >= 0) {
-            dispatch({
-                type: CANVAS_CHANGE_CANVAS,
-                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
-            });
-        }
-    };
-}
-
-export function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: number): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function botPlacePixel(
+    canvasId: number,
+    pixel: Cell,
+    colorIndex: number,
+): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState): Promise<void> => {
         dispatch({
             type: BOT_PIXEL_BEING_PLACED,
             isBeingPlaced: true,
         });
         try {
-            let { loadedChunks, activeCanvasId, canvasesMetadata } = getState().chunkData;
+            const { loadedChunks, activeCanvasId } = getState().chunkData;
+            let { canvasesMetadata } = getState().chunkData;
             let canvasData = canvasesMetadata[activeCanvasId];
             if (!canvasData) {
                 await dispatch(updateMetadata());
@@ -270,14 +262,10 @@ export function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: number)
     };
 }
 
-export function botStartProcessingImage(): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function botStartProcessingImage(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
-        let { loadedChunks, activeCanvasId, canvasesMetadata } = getState().chunkData;
+        let { loadedChunks, canvasesMetadata } = getState().chunkData;
+        const { activeCanvasId } = getState().chunkData;
         const { outputImage } = getState().guiData.overlayImage;
         const { placementConfiguration } = getState().guiData;
         if (!outputImage.outputImageData) {
@@ -319,7 +307,7 @@ export function botStartProcessingImage(): ThunkAction<
                     }
                     const colorIndexCanvas = loadedChunk.data[pixelInChunk];
 
-                    const offset = (xi + yi * outputImage.outputImageData.width);
+                    const offset = xi + yi * outputImage.outputImageData.width;
 
                     // Get outputImage values...
                     const idx = (outputImage.outputImageData.width * yi + xi) << 2;
@@ -338,8 +326,7 @@ export function botStartProcessingImage(): ThunkAction<
 
                     // Add to array only if they are different or alpha is lower than magical number
                     canvasDiffColorsArray[offset] =
-                        colorConverter.areColorsEqual(canvasData.colors, colorIndexImage, colorIndexCanvas)
-                            || a <= 30
+                        colorConverter.areColorsEqual(canvasData.colors, colorIndexImage, colorIndexCanvas) || a <= 30
                             ? -1
                             : colorIndexImage;
                 }
@@ -355,7 +342,6 @@ export function botStartProcessingImage(): ThunkAction<
                     y: placementConfiguration.yOffset,
                 },
             });
-
         } finally {
             dispatch({
                 type: BOT_IMAGE_PROCESSING,
@@ -365,12 +351,7 @@ export function botStartProcessingImage(): ThunkAction<
     };
 }
 
-export function botUpdateEnabled(isEnabled: boolean): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function botUpdateEnabled(isEnabled: boolean): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         if (!getState().chunkData.botState.isFeatureEnabled) {
             return;
@@ -390,12 +371,7 @@ export function botUpdateEnabled(isEnabled: boolean): ThunkAction<
     };
 }
 
-export function botUpdateFeatureEnabled(isEnabled: boolean): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function botUpdateFeatureEnabled(isEnabled: boolean): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         if (!isEnabled) {
             dispatch({

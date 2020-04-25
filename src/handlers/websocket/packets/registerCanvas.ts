@@ -1,4 +1,4 @@
-const OP_CODE = 0xA0;
+const OP_CODE = 0xa0;
 
 export default {
     OP_CODE,

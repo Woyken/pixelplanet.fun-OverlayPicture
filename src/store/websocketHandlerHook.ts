@@ -28,4 +28,4 @@ export default ((store) => (next) => (action: ActionTypes) => {
     }
 
     return ret;
-}) as Middleware<any, CombinedState<{ chunkData: ChunkDataState; }>, any>;
+}) as Middleware<any, CombinedState<{ chunkData: ChunkDataState }>, any>;

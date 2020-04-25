@@ -1,5 +1,5 @@
-import { ChunkCell, Cell } from "../chunkHelper";
-import { BotState, BotActionTypes } from "./botState";
+import { ChunkCell, Cell } from '../chunkHelper';
+import { BotState, BotActionTypes } from './botState';
 
 export interface LoadedChunkData {
     data: Int8Array;
@@ -57,7 +57,7 @@ interface PixelPlace {
     type: typeof PIXEL_PLACE;
     success: boolean;
     canvasId: string;
-    coords: { x: number, y: number };
+    coords: { x: number; y: number };
 }
 
 interface PixelUpdate {

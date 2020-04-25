@@ -1,7 +1,15 @@
-import logger from "./handlers/logger";
+import logger from './handlers/logger';
+
+export class Configuration {
+    public imgUrl = '';
+    public xOffset = 0;
+    public yOffset = 0;
+    public transparency = 70;
+    public brighten = 15;
+    public convertColors = false;
+}
 
 class ConfigurationWithMethods {
-
     public createFromSerialized(serialized: string): Configuration | undefined {
         let initObj: any;
         try {
@@ -30,9 +38,7 @@ class ConfigurationWithMethods {
             }
             if (typeof initObj.transparency === 'number') {
                 config.transparency = initObj.transparency;
-                logger.log(
-                    `Read transparency ${config.transparency.toString(10)}`,
-                );
+                logger.log(`Read transparency ${config.transparency.toString(10)}`);
             }
         }
         return config;
@@ -40,11 +46,9 @@ class ConfigurationWithMethods {
 
     public createFromUrlHash(initializeFromUrlHash: string): Configuration | undefined {
         logger.log('initializing config');
-        const hashstr = initializeFromUrlHash.substr(1)
-                            .split(',');
+        const hashstr = initializeFromUrlHash.substr(1).split(',');
 
-        const serializedInitObj = decodeURIComponent(hashstr.slice(4)
-                                                        .join(','));
+        const serializedInitObj = decodeURIComponent(hashstr.slice(4).join(','));
 
         const newConf = this.createFromSerialized(serializedInitObj);
 
@@ -57,12 +61,3 @@ class ConfigurationWithMethods {
 }
 
 export const configurationMethods = new ConfigurationWithMethods();
-
-export class Configuration {
-    public imgUrl: string = '';
-    public xOffset: number = 0;
-    public yOffset: number = 0;
-    public transparency: number = 70;
-    public brighten: number = 15;
-    public convertColors: boolean = false;
-}

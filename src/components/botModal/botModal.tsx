@@ -9,18 +9,23 @@ import { AppState } from '../../store';
 import { connect } from 'react-redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { updateOverlayEnabled } from '../../actions/guiActions';
-import { botUpdateEnabled, botUpdateFeatureEnabled, botStartProcessingImage, botPlacePixel } from '../../actions/pixelData';
+import {
+    botUpdateEnabled,
+    botUpdateFeatureEnabled,
+    botStartProcessingImage,
+    botPlacePixel,
+} from '../../actions/pixelData';
 import { ChunkDataState } from '../../store/chunkDataTypes';
 import logger from '../../handlers/logger';
 import autoBind from 'react-autobind';
 import { Cell } from '../../chunkHelper';
+import { getSha256Hash } from '../../utils/crypto/crypto';
 
 interface OwnState {
     isModalMinimized: boolean;
 }
 
-interface OwnProps {
-}
+interface OwnProps {}
 
 interface StateProps {
     guiState: GuiParametersState;
@@ -49,27 +54,26 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 
     onUpdate(): void {
-        if (
-            !this.props.chunkState.botState.isFeatureEnabled
-            || !this.props.chunkState.botState.config.isEnabled
-        ) {
+        if (!this.props.chunkState.botState.isFeatureEnabled || !this.props.chunkState.botState.config.isEnabled) {
             return;
         }
         if (
-            !this.props.chunkState.botState.canvasImageData.diffAgainstInputData
-            && !this.props.chunkState.botState.canvasImageData.isProcessing
+            !this.props.chunkState.botState.canvasImageData.diffAgainstInputData &&
+            !this.props.chunkState.botState.canvasImageData.isProcessing
         ) {
             this.props.startProcessingImage();
             return;
         }
         if (!this.props.chunkState.botState.canvasImageData.diffAgainstInputData) {
             return;
-    }
+        }
         if (this.props.chunkState.botState.placeNextPixelAt > new Date().getTime()) {
             return;
         }
 
-        const pixelAt = this.props.chunkState.botState.canvasImageData.diffAgainstInputData.findIndex((c) => c !== -1 && c !== 255);
+        const pixelAt = this.props.chunkState.botState.canvasImageData.diffAgainstInputData.findIndex(
+            (c) => c !== -1 && c !== 255,
+        );
         if (pixelAt === -1) {
             // Looks like we're all done.
             this.props.isEnabled(false);
@@ -86,9 +90,10 @@ class BotModal extends React.Component<Props, OwnState> {
         this.props.chunkState.botState.canvasImageData.diffAgainstInputData[pixelAt] = -1;
     }
 
-
     componentDidMount(): void {
-        this.intervalHandle = window.setInterval(() => { this.onUpdate(); }, 200);
+        this.intervalHandle = window.setInterval(() => {
+            this.onUpdate();
+        }, 200);
     }
 
     componentWillUnmount(): void {
@@ -96,22 +101,21 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 
     render(): React.ReactNode {
-        const {
-            guiState,
-            chunkState,
-            isEnabled,
-        } = this.props;
+        const { guiState, chunkState, isEnabled } = this.props;
 
         return (
             <div id="PictureOverlay_BotConfigurationModal">
-                <Tooltip title={
-                    this.props.chunkState.botState.isFeatureEnabled
-                    ? 'Toggle on/off Bot'
-                    : 'This feature is not ready for public eyes and needs to be unlocked with personal code. Ask owner for this feature'
-                }>
+                <Tooltip
+                    title={
+                        this.props.chunkState.botState.isFeatureEnabled
+                            ? 'Toggle on/off Bot'
+                            : 'This feature is not ready for public eyes and needs to be unlocked with personal code. Ask owner for this feature'
+                    }
+                >
                     <FormControlLabel
                         control={
-                            <Checkbox color="primary"
+                            <Checkbox
+                                color="primary"
                                 checked={chunkState.botState.config.isEnabled}
                                 onChange={(e): void => isEnabled(e.target.checked)}
                             />
@@ -120,34 +124,38 @@ class BotModal extends React.Component<Props, OwnState> {
                         labelPlacement="end"
                     />
                 </Tooltip>
-                <div style={{
-                    display: guiState.overlayEnabled ? '' : 'none',
-                }}>
-                    <div style={{
-                        display: this.state.isModalMinimized ? 'none' : '',
-                    }}>
-                        {
-                            this.props.chunkState.botState.isFeatureEnabled
-                                ? undefined
-                                : <TextField
-                                    label="Unlock code"
-                                    type="string"
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                                        this.tryUnlockCode(e.target.value);
-                                    }}
-                                />
-                        }
+                <div
+                    style={{
+                        display: guiState.overlayEnabled ? '' : 'none',
+                    }}
+                >
+                    <div
+                        style={{
+                            display: this.state.isModalMinimized ? 'none' : '',
+                        }}
+                    >
+                        {this.props.chunkState.botState.isFeatureEnabled ? undefined : (
+                            <TextField
+                                label="Unlock code"
+                                type="string"
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                                    this.tryUnlockCode(e.target.value);
+                                }}
+                            />
+                        )}
                     </div>
                     <img
                         src={
-                            this.state.isModalMinimized ?
-                                'https://fonts.gstatic.com/s/i/materialicons/expand_more/v1/24px.svg' :
-                                'https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg'
+                            this.state.isModalMinimized
+                                ? 'https://fonts.gstatic.com/s/i/materialicons/expand_more/v1/24px.svg'
+                                : 'https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg'
                         }
-                        onClick={(): void => this.setState({
-                            ...this.state,
-                            isModalMinimized: !this.state.isModalMinimized,
-                        })}
+                        onClick={(): void =>
+                            this.setState({
+                                ...this.state,
+                                isModalMinimized: !this.state.isModalMinimized,
+                            })
+                        }
                     />
                 </div>
             </div>
@@ -159,7 +167,7 @@ class BotModal extends React.Component<Props, OwnState> {
             return;
         }
 
-        sha256(this.props.chunkState.userData.name)
+        getSha256Hash(this.props.chunkState.userData.name)
             .then((hash) => {
                 if (code === hash) {
                     this.props.isEnabledFeature(true);
@@ -168,25 +176,7 @@ class BotModal extends React.Component<Props, OwnState> {
             .catch(() => {
                 // ignore errors here.
             });
-
     }
-}
-
-async function sha256(message: string): Promise<string> {
-    // encode as UTF-8
-    const msgBuffer = new TextEncoder().encode(message);
-
-    // hash the message
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-
-    // convert ArrayBuffer to Array
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-    // convert bytes to hex string
-    const hashHex = hashArray
-        .map(b => (b.toString(16)))
-        .join('');
-    return hashHex;
 }
 
 function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
@@ -196,19 +186,14 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
     };
 }
 
-function mapDispatchToProps(
-    dispatch: ThunkDispatch<{}, {}, any>,
-    ownProps: OwnProps,
-): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
         isEnabled: (isEnabled: boolean) => dispatch(botUpdateEnabled(isEnabled)),
         isEnabledFeature: (isEnabled: boolean) => dispatch(botUpdateFeatureEnabled(isEnabled)),
         startProcessingImage: () => dispatch(botStartProcessingImage()),
-        placePixel: (canvasId: number, pixel: Cell, colorIndex: number) => dispatch(botPlacePixel(canvasId, pixel, colorIndex))
+        placePixel: (canvasId: number, pixel: Cell, colorIndex: number) =>
+            dispatch(botPlacePixel(canvasId, pixel, colorIndex)),
     };
 }
 
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(
-    mapStateToProps,
-    mapDispatchToProps,
-)(BotModal);
+export default connect<StateProps, DispatchProps, OwnProps, AppState>(mapStateToProps, mapDispatchToProps)(BotModal);

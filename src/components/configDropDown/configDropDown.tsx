@@ -11,8 +11,7 @@ interface OwnState {
     isActive: boolean;
 }
 
-interface OwnProps {
-}
+interface OwnProps {}
 interface StateProps {
     guiState: GuiParametersState;
 }
@@ -26,7 +25,6 @@ interface DispatchProps {
 type Props = StateProps & DispatchProps & OwnProps;
 
 class ConfigDropDown extends React.Component<Props, OwnState> {
-
     constructor(props: Props) {
         super(props);
         this.state = {
@@ -79,12 +77,14 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
     }
 
     toggle(enabled?: boolean): void {
-        this.setState((prevState): OwnState => {
-            return {
-                ...prevState,
-                isActive: enabled !== undefined ? enabled : !prevState.isActive,
-            };
-        });
+        this.setState(
+            (prevState): OwnState => {
+                return {
+                    ...prevState,
+                    isActive: enabled !== undefined ? enabled : !prevState.isActive,
+                };
+            },
+        );
     }
 }
 
@@ -94,10 +94,7 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
     };
 }
 
-function mapDispatchToProps(
-    dispatch: ThunkDispatch<{}, {}, any>,
-    ownProps: OwnProps,
-): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
         saveCurrentConfig: () => dispatch(saveCurrentConfiguration()),
         applyConfig: (config: SavedConfiguration) => dispatch(applySavedConfiguration(config)),

@@ -1,6 +1,6 @@
-import { ChunkCell } from "../../../chunkHelper";
+import { ChunkCell } from '../../../chunkHelper';
 
-const OP_CODE = 0xA3;
+const OP_CODE = 0xa3;
 
 export default {
     OP_CODE,

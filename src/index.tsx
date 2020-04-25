@@ -28,8 +28,13 @@ function init(): void {
     );
 
     webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex) => {
-        const { chunkData } = store.getState()
-        store.dispatch(updatePixel(chunkOffsetToPixel(chunk, pixelOffset, chunkData.canvasesMetadata[chunkData.activeCanvasId].size), colorIndex))
+        const { chunkData } = store.getState();
+        store.dispatch(
+            updatePixel(
+                chunkOffsetToPixel(chunk, pixelOffset, chunkData.canvasesMetadata[chunkData.activeCanvasId].size),
+                colorIndex,
+            ),
+        );
     };
     webSocketHandler.onRequestReloadMetadata = () => {
         store.dispatch((updateMetadata as any)());

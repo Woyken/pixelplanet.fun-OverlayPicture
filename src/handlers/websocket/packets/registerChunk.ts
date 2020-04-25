@@ -1,6 +1,6 @@
-import { ChunkCell } from "../../../chunkHelper";
+import { ChunkCell } from '../../../chunkHelper';
 
-const OP_CODE = 0xA1;
+const OP_CODE = 0xa1;
 
 export default {
     dehydrate(chunk: ChunkCell): ArrayBuffer {

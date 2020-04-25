@@ -1,5 +1,5 @@
-import { Action } from "redux";
-import { Cell } from "../chunkHelper";
+import { Action } from 'redux';
+import { Cell } from '../chunkHelper';
 
 export interface BotCanvasImageData {
     isProcessing: boolean;
@@ -43,7 +43,7 @@ interface BotSetImageProcessing extends Action {
 interface BotSetImageProcessedData extends Action {
     type: typeof BOT_IMAGE_PROCESSED_DATA;
     diffAgainstInputData?: Uint8Array;
-    imageMetadata?: { x: number, y: number, width: number, height: number };
+    imageMetadata?: { x: number; y: number; width: number; height: number };
 }
 
 interface BotConfigSetEnabled extends Action {

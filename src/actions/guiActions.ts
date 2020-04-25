@@ -1,11 +1,23 @@
-import { UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, SavedConfiguration, UPDATE_BOT_MODAL_VISIBLE } from "../store/guiTypes";
-import { AppState, ActionTypes } from "../store";
-import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import { pictureConverter } from "../pictureConverter";
-import logger from "../handlers/logger";
-import { configurationStore } from "../configurationStore";
-import { updateMetadata } from "./pixelData";
-import { CanvasMetadata, CANVAS_CHANGE_CANVAS } from "../store/chunkDataTypes";
+import {
+    UPDATE_IMAGE_MODIFIERS,
+    UPDATE_INPUT_IMAGE,
+    UPDATE_OUTPUT_IMAGE,
+    UPDATE_OUTPUT_IMAGE_STATUS,
+    UPDATE_IMAGE_PLACEMENT_CONFIGURATION,
+    UPDATE_GAME_STATE,
+    UPDATE_OVERLAY_ENABLED,
+    LOAD_SAVED_CONFIGURATIONS,
+    SAVE_CURRENT_CONFIGURATION,
+    SavedConfiguration,
+    UPDATE_BOT_MODAL_VISIBLE,
+} from '../store/guiTypes';
+import { AppState, ActionTypes } from '../store';
+import { ThunkAction, ThunkDispatch } from 'redux-thunk';
+import { pictureConverter } from '../pictureConverter';
+import logger from '../handlers/logger';
+import { configurationStore } from '../configurationStore';
+import { updateMetadata } from './pixelData';
+import { CanvasMetadata, CANVAS_CHANGE_CANVAS } from '../store/chunkDataTypes';
 
 export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     return {
@@ -14,12 +26,36 @@ export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
     };
 }
 
-export function startProcessingImage(): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function updateOutputImageStatus(isProcessing: boolean): ActionTypes {
+    return {
+        type: UPDATE_OUTPUT_IMAGE_STATUS,
+        isProcessing: isProcessing,
+    };
+}
+
+export function updateOutputImage(data?: ImageData): ActionTypes {
+    return {
+        type: UPDATE_OUTPUT_IMAGE,
+        imageData: data,
+    };
+}
+
+function updateImageModifiersInternal(
+    modificationsAvailable?: boolean,
+    doModifications?: boolean,
+    shouldConvertColors?: boolean,
+    imageBrightness?: number,
+): ActionTypes {
+    return {
+        type: UPDATE_IMAGE_MODIFIERS,
+        modificationsAvailable: modificationsAvailable,
+        doModifications: doModifications,
+        imageBrightness: imageBrightness,
+        shouldConvertColors: shouldConvertColors,
+    };
+}
+
+export function startProcessingImage(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         dispatch(updateOutputImageStatus(true));
         try {
@@ -57,7 +93,9 @@ export function startProcessingImage(): ThunkAction<
             let curState = getState();
             let currentCanvasMetadata: CanvasMetadata | undefined;
             for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
-                if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
+                if (
+                    curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId
+                ) {
                     currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
                 }
             }
@@ -65,7 +103,10 @@ export function startProcessingImage(): ThunkAction<
                 await dispatch(updateMetadata());
                 curState = getState();
                 for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
-                    if (curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId) {
+                    if (
+                        curState.guiData.currentGameState.canvasStringId ===
+                        curState.chunkData.canvasesMetadata[i].stringId
+                    ) {
                         currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
                     }
                 }
@@ -75,49 +116,41 @@ export function startProcessingImage(): ThunkAction<
                     return;
                 }
             }
-            const result = await pictureConverter.convertPictureFromUrl(currentCanvasMetadata.colors, currentCanvasMetadata.colorsReservedCount, buffer, ctx, curState.guiData.modifications.shouldConvertColors, curState.guiData.modifications.imageBrightness);
-            logger.log(`updating output image ${result.data.length}`)
+            const result = await pictureConverter.convertPictureFromUrl(
+                currentCanvasMetadata.colors,
+                currentCanvasMetadata.colorsReservedCount,
+                buffer,
+                ctx,
+                curState.guiData.modifications.shouldConvertColors,
+                curState.guiData.modifications.imageBrightness,
+            );
+            logger.log(`updating output image ${result.data.length}`);
             dispatch(updateOutputImage(result));
-        }
-        catch (err) {
+        } catch (err) {
             logger.logError(`Something went wrong while parsing picture: ${err}`);
             // Likely to happen when fetching image
             dispatch(updateOutputImage(undefined));
-        }
-        finally {
+        } finally {
             dispatch(updateOutputImageStatus(false));
         }
-    }
+    };
 }
 
-export function updateImageModifiers(modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function updateImageModifiers(
+    modificationsAvailable?: boolean,
+    doModifications?: boolean,
+    shouldConvertColors?: boolean,
+    imageBrightness?: number,
+): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
-        dispatch(updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness));
+        dispatch(
+            updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
+        );
         await dispatch(startProcessingImage());
     };
 }
 
-function updateImageModifiersInternal(modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): ActionTypes {
-    return {
-        type: UPDATE_IMAGE_MODIFIERS,
-        modificationsAvailable: modificationsAvailable,
-        doModifications: doModifications,
-        imageBrightness: imageBrightness,
-        shouldConvertColors: shouldConvertColors,
-    };
-}
-
-export function updateInputImage(url?: string, file?: File): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function updateInputImage(url?: string, file?: File): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         logger.log(`Updating input image (${url}, ${!!file})`);
         dispatch({
@@ -128,25 +161,28 @@ export function updateInputImage(url?: string, file?: File): ThunkAction<
         if (!url && !file) {
             logger.log(`Input image empty, clearing state...`);
             // Clear output image
-            dispatch(updateOutputImage())
+            dispatch(updateOutputImage());
             return;
         }
         if (url) {
             if (!(await pictureConverter.isImageValidCors(url))) {
-                logger.log(`Image url ${url} not valid cors, don't parse`)
+                logger.log(`Image url ${url} not valid cors, don't parse`);
                 // No point in trying to parse this out.
                 // Clear output image
                 dispatch(updateOutputImage());
                 dispatch(updateImageModifiersInternal(false));
                 return;
             }
-            logger.log(`Cors seems to be fine, continuing.`)
+            logger.log(`Cors seems to be fine, continuing.`);
             dispatch(updateImageModifiersInternal(true));
         }
         if (file) {
             dispatch(updateImageModifiersInternal(true, true));
         }
-        if (!file && (!getState().guiData.modifications.modificationsAvailable) || !getState().guiData.modifications.doModifications) {
+        if (
+            (!file && !getState().guiData.modifications.modificationsAvailable) ||
+            !getState().guiData.modifications.doModifications
+        ) {
             logger.log('Modifications are disabled. Not parsing.');
             // Modifications should not be made. Clean up output image.
             dispatch(updateOutputImage(undefined));
@@ -154,24 +190,14 @@ export function updateInputImage(url?: string, file?: File): ThunkAction<
         }
 
         await dispatch(startProcessingImage());
-    }
+    };
 }
 
-export function updateOutputImage(data?: ImageData): ActionTypes {
-    return {
-        type: UPDATE_OUTPUT_IMAGE,
-        imageData: data,
-    }
-}
-
-export function updateOutputImageStatus(isProcessing: boolean): ActionTypes {
-    return {
-        type: UPDATE_OUTPUT_IMAGE_STATUS,
-        isProcessing: isProcessing,
-    }
-}
-
-export function updateImagePlacementConfiguration(transparency?: number, xOffset?: number, yOffset?: number): ActionTypes {
+export function updateImagePlacementConfiguration(
+    transparency?: number,
+    xOffset?: number,
+    yOffset?: number,
+): ActionTypes {
     return {
         type: UPDATE_IMAGE_PLACEMENT_CONFIGURATION,
         transparency,
@@ -180,25 +206,39 @@ export function updateImagePlacementConfiguration(transparency?: number, xOffset
     };
 }
 
-export function updateGameState(canvasStringId?: string, centerX?: number, centerY?: number, zoomLevel?: number, isMouseDragging?: boolean): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function setActiveCanvasByStringId(
+    canvasStringId: string,
+): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
+    return async (dispatch, getState) => {
+        if (getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId]?.stringId === canvasStringId) {
+            return;
+        }
+        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
+        if (idx >= 0) {
+            dispatch({
+                type: CANVAS_CHANGE_CANVAS,
+                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
+            });
+            await dispatch(startProcessingImage());
+        }
+    };
+}
+
+export function updateGameState(
+    canvasStringId?: string,
+    centerX?: number,
+    centerY?: number,
+    zoomLevel?: number,
+    isMouseDragging?: boolean,
+): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         const state = getState();
         if (
-            (canvasStringId === undefined
-                || canvasStringId === state.guiData.currentGameState.canvasStringId)
-            && (centerX === undefined
-                || centerX === state.guiData.currentGameState.centerX)
-            && (centerY === undefined
-                || centerY === state.guiData.currentGameState.centerY)
-            && (zoomLevel === undefined
-                || zoomLevel === state.guiData.currentGameState.zoomLevel)
-            && (isMouseDragging === undefined
-                || isMouseDragging === state.guiData.currentGameState.isMouseDragging)
+            (canvasStringId === undefined || canvasStringId === state.guiData.currentGameState.canvasStringId) &&
+            (centerX === undefined || centerX === state.guiData.currentGameState.centerX) &&
+            (centerY === undefined || centerY === state.guiData.currentGameState.centerY) &&
+            (zoomLevel === undefined || zoomLevel === state.guiData.currentGameState.zoomLevel) &&
+            (isMouseDragging === undefined || isMouseDragging === state.guiData.currentGameState.isMouseDragging)
         ) {
             return;
         }
@@ -212,17 +252,16 @@ export function updateGameState(canvasStringId?: string, centerX?: number, cente
             isMouseDragging,
         });
 
-        if (canvasStringId)
-            await dispatch(setActiveCanvasByStringId(canvasStringId));
-    }
+        if (canvasStringId) await dispatch(setActiveCanvasByStringId(canvasStringId));
+    };
 }
 
-const storageItemName: string = 'OverlaySavedConfigurationsv2';
+const storageItemName = 'OverlaySavedConfigurationsv2';
 
 export function loadSavedConfigurations(): ActionTypes {
     const serializedSavedData = localStorage.getItem(storageItemName);
     if (serializedSavedData == null) {
-        // Nothing saved yet. 
+        // Nothing saved yet.
         // For backwards compatibility, check old storage location, just in case:
         const oldConfigs = configurationStore.getSavedConfigurationsState();
         if (oldConfigs.length > 0) {
@@ -235,8 +274,7 @@ export function loadSavedConfigurations(): ActionTypes {
             config: {
                 configs: oldConfigs,
             },
-        }
-
+        };
     }
 
     const data = JSON.parse(serializedSavedData) as SavedConfiguration[];
@@ -245,15 +283,10 @@ export function loadSavedConfigurations(): ActionTypes {
         config: {
             configs: data,
         },
-    }
+    };
 }
 
-export function saveCurrentConfiguration(): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function saveCurrentConfiguration(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         const state = getState();
         const imgUrl = state.guiData.overlayImage.inputImage.url;
@@ -264,7 +297,7 @@ export function saveCurrentConfiguration(): ThunkAction<
 
         const idx = state.guiData.savedConfigurations.configs.findIndex((v) => {
             return v.imageUrl === imgUrl;
-        })
+        });
         if (idx >= 0) {
             logger.log('Saving current configuration, same url already exists, replacing saved data.');
             // Already exists, need to replace existing one.
@@ -303,17 +336,12 @@ export function saveCurrentConfiguration(): ThunkAction<
     };
 }
 
-export function removeSavedConfiguration(imgUrl: string): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function removeSavedConfiguration(imgUrl: string): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
         const state = getState();
         const idx = state.guiData.savedConfigurations.configs.findIndex((v) => {
             return v.imageUrl === imgUrl;
-        })
+        });
         if (idx < 0) {
             logger.log('When removing saved config. Config with url was not found');
             return;
@@ -332,37 +360,26 @@ export function removeSavedConfiguration(imgUrl: string): ThunkAction<
     };
 }
 
-export function applySavedConfiguration(savedConfig: SavedConfiguration): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
+export function applySavedConfiguration(
+    savedConfig: SavedConfiguration,
+): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch, getState) => {
-        await dispatch(updateImageModifiersInternal(savedConfig.modifiers.modificationsAvailable, savedConfig.modifiers.doModifications, savedConfig.modifiers.shouldConvertColors, savedConfig.modifiers.imageBrightness));
+        await dispatch(
+            updateImageModifiersInternal(
+                savedConfig.modifiers.modificationsAvailable,
+                savedConfig.modifiers.doModifications,
+                savedConfig.modifiers.shouldConvertColors,
+                savedConfig.modifiers.imageBrightness,
+            ),
+        );
         await dispatch(updateInputImage(savedConfig.imageUrl));
-        await dispatch(updateImagePlacementConfiguration(savedConfig.placementConfiguration.transparency, savedConfig.placementConfiguration.xOffset, savedConfig.placementConfiguration.yOffset));
-    };
-}
-
-export function setActiveCanvasByStringId(canvasStringId: string): ThunkAction<
-    Promise<void>,
-    AppState,
-    null,
-    ActionTypes
-> {
-    return async (dispatch, getState) => {
-        if (getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId]?.stringId === canvasStringId) {
-            return;
-        }
-        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
-        if (idx >= 0) {
-            dispatch({
-                type: CANVAS_CHANGE_CANVAS,
-                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
-            });
-            await dispatch(startProcessingImage());
-        }
+        await dispatch(
+            updateImagePlacementConfiguration(
+                savedConfig.placementConfiguration.transparency,
+                savedConfig.placementConfiguration.xOffset,
+                savedConfig.placementConfiguration.yOffset,
+            ),
+        );
     };
 }
 

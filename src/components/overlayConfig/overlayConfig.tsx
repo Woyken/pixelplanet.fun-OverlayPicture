@@ -1,6 +1,6 @@
 import React from 'react';
 import TextField from '@material-ui/core/TextField';
-import Input from '@material-ui/core/Input'
+import Input from '@material-ui/core/Input';
 import { Configuration } from '../../configuration';
 import { Typography, Slider, FormControlLabel, Checkbox, Button } from '@material-ui/core';
 import urlHelper from '../../urlHelper';
@@ -11,10 +11,9 @@ import { ThunkDispatch } from 'redux-thunk';
 import { AppState } from '../../store';
 import { PlacementConfiguration, ImageModifiers, OverlayImageInput, GuiParametersState } from '../../store/guiTypes';
 
-interface OwnState { }
+interface OwnState {}
 
-interface OwnProps {
-}
+interface OwnProps {}
 
 interface StateProps {
     guiState: GuiParametersState;
@@ -23,7 +22,12 @@ interface StateProps {
 interface DispatchProps {
     updateConfig: (transparency?: number, x?: number, y?: number) => void;
     updateInputImage: (url?: string, file?: File) => void;
-    updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => void;
+    updateModifications: (
+        modificationsAvailable?: boolean,
+        doModifications?: boolean,
+        shouldConvertColors?: boolean,
+        imageBrightness?: number,
+    ) => void;
 }
 
 type Props = StateProps & DispatchProps & OwnProps;
@@ -36,50 +40,40 @@ class OverlayConfig extends React.Component<Props, OwnState> {
     }
 
     render(): React.ReactNode {
-        const {
-            guiState,
-            updateInputImage,
-            updateConfig,
-            updateModifications,
-        } = this.props;
+        const { guiState, updateInputImage, updateConfig, updateModifications } = this.props;
 
         return (
             <div>
-                {
-                    guiState.overlayImage.inputImage.file ?
-                        null
-                        :
-                        <div>
-                            <TextField
-                                label="Url"
-                                type="string"
-                                value={guiState.overlayImage.inputImage.url}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                                    updateInputImage(e.target.value);
-                                }}
-                            />
-                            <br />
-                        </div>
-                }
-                {
-                    guiState.overlayImage.inputImage.url ?
-                        null
-                        :
-                        <div>
-                            <Input
-                                type='file'
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    const theFile = e.target.files?.[0];
-                                    updateInputImage(undefined, theFile);
-                                }}
-                            />
-                            <br />
-                        </div>
-                }
+                {guiState.overlayImage.inputImage.file ? null : (
+                    <div>
+                        <TextField
+                            label="Url"
+                            type="string"
+                            value={guiState.overlayImage.inputImage.url}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                                updateInputImage(e.target.value);
+                            }}
+                        />
+                        <br />
+                    </div>
+                )}
+                {guiState.overlayImage.inputImage.url ? null : (
+                    <div>
+                        <Input
+                            type="file"
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                const theFile = e.target.files?.[0];
+                                updateInputImage(undefined, theFile);
+                            }}
+                        />
+                        <br />
+                    </div>
+                )}
                 <Button
                     onClick={() => {
                         updateInputImage('', undefined);
-                    }}>
+                    }}
+                >
                     Clear input
                 </Button>
                 <br />
@@ -111,7 +105,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                 <br />
                 <Typography id="transparency-slider" gutterBottom>
                     Transparency
-            </Typography>
+                </Typography>
                 <Slider
                     defaultValue={70}
                     getAriaValueText={(v): string => {
@@ -124,19 +118,22 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     max={100}
                     value={guiState.placementConfiguration.transparency}
                     onChange={(e, value): void => {
-                        if (typeof (value) !== 'number') {
+                        if (typeof value !== 'number') {
                             return;
                         }
                         updateConfig(value);
                     }}
                 />
-                <div style={{
-                    display: guiState.modifications.modificationsAvailable ? '' : 'none',
-                }}>
+                <div
+                    style={{
+                        display: guiState.modifications.modificationsAvailable ? '' : 'none',
+                    }}
+                >
                     <br />
                     <FormControlLabel
                         control={
-                            <Checkbox color="primary"
+                            <Checkbox
+                                color="primary"
                                 checked={guiState.modifications.shouldConvertColors}
                                 onChange={(e): void => {
                                     updateModifications(undefined, undefined, e.target.checked);
@@ -150,7 +147,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     <div style={{ display: guiState.modifications.shouldConvertColors ? '' : 'none' }}>
                         <Typography id="brightness-slider" gutterBottom>
                             Image brightness
-                    </Typography>
+                        </Typography>
                         <Slider
                             defaultValue={15}
                             getAriaValueText={(v): string => {
@@ -163,7 +160,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                             max={20}
                             value={guiState.modifications.imageBrightness}
                             onChange={(e, value): void => {
-                                if (typeof (value) !== 'number') {
+                                if (typeof value !== 'number') {
                                     return;
                                 }
                                 updateModifications(undefined, undefined, undefined, value);
@@ -172,11 +169,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     </div>
                 </div>
                 <br />
-                <Button
-                    onClick={(): void => this.onShareConfig()}
-                >
-                    Share overlay
-            </Button>
+                <Button onClick={(): void => this.onShareConfig()}>Share overlay</Button>
             </div>
         );
     }
@@ -199,21 +192,26 @@ Share this link with others to quickly share your overlay configuration.
     }
 }
 
-
 function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
     return {
         guiState: state.guiData,
     };
 }
 
-function mapDispatchToProps(
-    dispatch: ThunkDispatch<{}, {}, any>,
-    ownProps: OwnProps,
-): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
-        updateConfig: (transparency?: number, x?: number, y?: number) => dispatch(updateImagePlacementConfiguration(transparency, x, y)),
+        updateConfig: (transparency?: number, x?: number, y?: number) =>
+            dispatch(updateImagePlacementConfiguration(transparency, x, y)),
         updateInputImage: (url?: string, file?: File) => dispatch(updateInputImage(url, file)),
-        updateModifications: (modificationsAvailable?: boolean, doModifications?: boolean, shouldConvertColors?: boolean, imageBrightness?: number) => dispatch(updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness))
+        updateModifications: (
+            modificationsAvailable?: boolean,
+            doModifications?: boolean,
+            shouldConvertColors?: boolean,
+            imageBrightness?: number,
+        ) =>
+            dispatch(
+                updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
+            ),
     };
 }
 

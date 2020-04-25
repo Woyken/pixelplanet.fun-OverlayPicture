@@ -1,12 +1,12 @@
-import { ChunkCell } from "../../../chunkHelper";
+import { ChunkCell } from '../../../chunkHelper';
 
 type PixelUpdatePacket = {
-    chunk: ChunkCell,
+    chunk: ChunkCell;
     offset: number;
-    colorIndex: number,
+    colorIndex: number;
 };
 
-const OP_CODE = 0xC1; // Chunk Update
+const OP_CODE = 0xc1; // Chunk Update
 
 export default {
     OP_CODE,

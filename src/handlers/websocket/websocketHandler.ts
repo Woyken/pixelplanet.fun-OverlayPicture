@@ -7,13 +7,11 @@ import changedMe from './packets/changedMe';
 import registerCanvas from './packets/registerCanvas';
 
 class WebSocketHandler {
-    public onPixelUpdate?: (chunk: ChunkCell,
-        pixelOffsetInChunk: number,
-        colorIndex: number) => void;
+    public onPixelUpdate?: (chunk: ChunkCell, pixelOffsetInChunk: number, colorIndex: number) => void;
 
     public onRequestReloadMetadata?: () => void;
 
-    private canvasId: number = -1;
+    private canvasId = -1;
 
     private webSocket?: WebSocket;
     private watchingChunks: ChunkCell[] = [];
@@ -24,16 +22,17 @@ class WebSocketHandler {
         // Continuously retry connection.
         if (!this.retryTimerId) {
             this.retryTimerId = window.setInterval(() => {
-                if (this.webSocket &&
-                    (this.webSocket.readyState === WebSocket.CONNECTING ||
-                        this.webSocket.readyState === WebSocket.OPEN)) {
+                if (
+                    this.webSocket &&
+                    (this.webSocket.readyState === WebSocket.CONNECTING || this.webSocket.readyState === WebSocket.OPEN)
+                ) {
                     return;
                 }
                 this.connect();
             }, 5000);
         }
         this.webSocket = undefined;
-        const protocol = (location.protocol === 'https:') ? 'wss:' : 'ws:';
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         const url = `${protocol}//${location.hostname}${location.port ? `:${location.port}` : ''}/ws`;
 
         this.webSocket = new WebSocket(url);
@@ -50,9 +49,11 @@ class WebSocketHandler {
             this.webSocket?.send(buffer);
         }
 
-        if (this.watchingChunks.findIndex((v) => {
-            return v.chunkX === chunk.chunkX && v.chunkY === chunk.chunkY;
-        }) < 0) {
+        if (
+            this.watchingChunks.findIndex((v) => {
+                return v.chunkX === chunk.chunkX && v.chunkY === chunk.chunkY;
+            }) < 0
+        ) {
             this.watchingChunks.push(chunk);
         }
     }
@@ -106,7 +107,7 @@ class WebSocketHandler {
 
         switch (opcode) {
             case pixelUpdate.OP_CODE: {
-                const result = pixelUpdate.hydrate(data)
+                const result = pixelUpdate.hydrate(data);
                 this.onPixelUpdate?.(result.chunk, result.offset, result.colorIndex);
                 break;
             }

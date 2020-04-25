@@ -8,7 +8,13 @@ import {
     CANVAS_CHANGE_CANVAS,
 } from '../chunkDataTypes';
 import { chunkToIndex, pixelInChunkOffset, pixelToChunk } from '../../chunkHelper';
-import { BOT_FEATURE_ENABLED, BOT_CONFIG_ENABLED, BOT_IMAGE_PROCESSING, BOT_IMAGE_PROCESSED_DATA, BOT_PIXEL_BEING_PLACED } from '../botState';
+import {
+    BOT_FEATURE_ENABLED,
+    BOT_CONFIG_ENABLED,
+    BOT_IMAGE_PROCESSING,
+    BOT_IMAGE_PROCESSED_DATA,
+    BOT_PIXEL_BEING_PLACED,
+} from '../botState';
 
 const initialState: ChunkDataState = {
     userData: {},
@@ -34,15 +40,10 @@ const initialState: ChunkDataState = {
     },
 };
 
-export function chunkDataReducer(
-    state = initialState,
-    action: ActionTypes,
-): ChunkDataState {
+export function chunkDataReducer(state = initialState, action: ActionTypes): ChunkDataState {
     switch (action.type) {
         case CANVAS_LOAD_CHUNK_DATA: {
-            const allChunks = [
-                ...state.loadedChunks,
-            ];
+            const allChunks = [...state.loadedChunks];
             allChunks[chunkToIndex(action.chunk)] = action.chunkData;
             return {
                 ...state,
@@ -52,9 +53,7 @@ export function chunkDataReducer(
         case PIXEL_UPDATE: {
             const index = pixelInChunkOffset(action.pixel, state.canvasesMetadata[state.activeCanvasId].size);
             const chunk = pixelToChunk(action.pixel, state.canvasesMetadata[state.activeCanvasId].size);
-            const allChunks = [
-                ...state.loadedChunks,
-            ];
+            const allChunks = [...state.loadedChunks];
             const chunkData = allChunks[chunkToIndex(chunk)]?.data;
             if (!chunkData) {
                 // We've got nothing loaded to update.
@@ -64,17 +63,17 @@ export function chunkDataReducer(
 
             let newBotState = state.botState;
             if (
-                state.botState.canvasImageData.diffAgainstInputData
-                && action.pixel.x >= state.botState.config.imageTopLeft.x
-                && action.pixel.x < state.botState.config.imageTopLeft.x + state.botState.config.imageWidth
-                && action.pixel.y >= state.botState.config.imageTopLeft.y
-                && action.pixel.y < state.botState.config.imageTopLeft.y + state.botState.config.imageHeight
+                state.botState.canvasImageData.diffAgainstInputData &&
+                action.pixel.x >= state.botState.config.imageTopLeft.x &&
+                action.pixel.x < state.botState.config.imageTopLeft.x + state.botState.config.imageWidth &&
+                action.pixel.y >= state.botState.config.imageTopLeft.y &&
+                action.pixel.y < state.botState.config.imageTopLeft.y + state.botState.config.imageHeight
             ) {
                 // the pixel is within bot's area.
                 // Just set it to correct value. Will resolve itself down the line.
                 const x = action.pixel.x - state.botState.config.imageTopLeft.x;
                 const y = action.pixel.y - state.botState.config.imageTopLeft.y;
-                const offset = (x + y * state.botState.config.imageWidth);
+                const offset = x + y * state.botState.config.imageWidth;
                 const newDiffData = new Uint8Array(state.botState.canvasImageData.diffAgainstInputData);
                 newDiffData[offset] = action.colorIndex;
 

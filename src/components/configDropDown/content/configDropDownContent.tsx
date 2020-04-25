@@ -28,18 +28,16 @@ class ConfigDropDownContent extends React.Component<Props, OwnState> {
         const { isActive, configs } = this.props;
 
         return (
-        <div
-            id="PictureOverlay_ConfigDropDownContent"
-            style={{ display: isActive ? 'block' : 'none' }}
-        >
-            {configs.map(config =>
-                <ConfigDropDownElement
-                    config={config}
-                    key={config.imageUrl}
-                    onClickCallback={this.onConfigApply}
-                    onDeleteCallback={this.removeConfig}
-                />)}
-        </div>
+            <div id="PictureOverlay_ConfigDropDownContent" style={{ display: isActive ? 'block' : 'none' }}>
+                {configs.map((config) => (
+                    <ConfigDropDownElement
+                        config={config}
+                        key={config.imageUrl}
+                        onClickCallback={this.onConfigApply}
+                        onDeleteCallback={this.removeConfig}
+                    />
+                ))}
+            </div>
         );
     }
 

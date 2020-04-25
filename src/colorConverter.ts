@@ -1,14 +1,18 @@
 class ColorConverter {
-    public convertActualColorFromPalette(gamePalette: [number, number, number][], reservedOffset: number, r: number, g: number, b: number): number {
+    public convertActualColorFromPalette(
+        gamePalette: [number, number, number][],
+        reservedOffset: number,
+        r: number,
+        g: number,
+        b: number,
+    ): number {
         let lowestDiff = 99999999;
         let resultColor = -1;
         for (let i = reservedOffset; i < gamePalette.length; i++) {
             const value = gamePalette[i];
             const difference = Math.sqrt(
-                Math.pow(r - value[0], 2) +
-                Math.pow(g - value[1], 2) +
-                Math.pow(b - value[2], 2),
-                );
+                Math.pow(r - value[0], 2) + Math.pow(g - value[1], 2) + Math.pow(b - value[2], 2),
+            );
             if (difference < lowestDiff) {
                 lowestDiff = difference;
                 resultColor = i;

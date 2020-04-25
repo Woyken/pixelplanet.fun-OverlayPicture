@@ -22,8 +22,7 @@ class PictureConverter {
         brightenBy: number,
     ): Promise<ImageData> {
         const decodedPng = decode(pngBuffer);
-        const imageData = contextForBufferCreation.createImageData(
-            decodedPng.width, decodedPng.height);
+        const imageData = contextForBufferCreation.createImageData(decodedPng.width, decodedPng.height);
 
         if (decodedPng.palette) {
             logger.log('detected pallette png.');

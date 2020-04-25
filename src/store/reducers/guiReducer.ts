@@ -1,4 +1,17 @@
-import { GuiParametersState, ActionTypes, UPDATE_OUTPUT_IMAGE_STATUS, UPDATE_IMAGE_MODIFIERS, UPDATE_INPUT_IMAGE, UPDATE_OUTPUT_IMAGE, UPDATE_IMAGE_PLACEMENT_CONFIGURATION, UPDATE_GAME_STATE, UPDATE_OVERLAY_ENABLED, LOAD_SAVED_CONFIGURATIONS, SAVE_CURRENT_CONFIGURATION, UPDATE_BOT_MODAL_VISIBLE } from '../guiTypes';
+import {
+    GuiParametersState,
+    ActionTypes,
+    UPDATE_OUTPUT_IMAGE_STATUS,
+    UPDATE_IMAGE_MODIFIERS,
+    UPDATE_INPUT_IMAGE,
+    UPDATE_OUTPUT_IMAGE,
+    UPDATE_IMAGE_PLACEMENT_CONFIGURATION,
+    UPDATE_GAME_STATE,
+    UPDATE_OVERLAY_ENABLED,
+    LOAD_SAVED_CONFIGURATIONS,
+    SAVE_CURRENT_CONFIGURATION,
+    UPDATE_BOT_MODAL_VISIBLE,
+} from '../guiTypes';
 
 const initialState: GuiParametersState = {
     modifications: {
@@ -8,11 +21,10 @@ const initialState: GuiParametersState = {
         shouldConvertColors: false,
     },
     overlayImage: {
-        inputImage: {
-        },
+        inputImage: {},
         outputImage: {
             isProcessing: false,
-        }
+        },
     },
     placementConfiguration: {
         transparency: 70,
@@ -20,7 +32,7 @@ const initialState: GuiParametersState = {
         yOffset: 0,
     },
     currentGameState: {
-        canvasStringId: "0",
+        canvasStringId: '0',
         centerX: 0,
         centerY: 0,
         zoomLevel: 0,
@@ -33,10 +45,7 @@ const initialState: GuiParametersState = {
     isBotModalVisible: false,
 };
 
-export function guiDataReducer(
-    state = initialState,
-    action: ActionTypes,
-): GuiParametersState {
+export function guiDataReducer(state = initialState, action: ActionTypes): GuiParametersState {
     switch (action.type) {
         case UPDATE_OUTPUT_IMAGE_STATUS: {
             return {
@@ -81,9 +90,9 @@ export function guiDataReducer(
                     inputImage: {
                         file: action.file,
                         url: action.url,
-                    }
-                }
-            }
+                    },
+                },
+            };
         }
         case UPDATE_IMAGE_PLACEMENT_CONFIGURATION: {
             return {
@@ -123,10 +132,7 @@ export function guiDataReducer(
             return {
                 ...state,
                 savedConfigurations: {
-                    configs: [
-                        ...state.savedConfigurations.configs,
-                        action.config,
-                    ],
+                    configs: [...state.savedConfigurations.configs, action.config],
                 },
             };
         }

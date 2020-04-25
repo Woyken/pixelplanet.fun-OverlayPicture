@@ -55,7 +55,7 @@ class ConfigurationStore {
         }
 
         const saved = this.getSavedConfigurations();
-        let idx: number = -1;
+        let idx = -1;
         saved.filter((v, i) => {
             if (v.imgUrl === config.imgUrl) {
                 idx = i;
@@ -75,7 +75,7 @@ class ConfigurationStore {
 
     public remove(imgUrl: string): void {
         const saved = this.getSavedConfigurations();
-        let idx: number = -1;
+        let idx = -1;
         saved.filter((v, i) => {
             if (v.imgUrl === imgUrl) {
                 idx = i;

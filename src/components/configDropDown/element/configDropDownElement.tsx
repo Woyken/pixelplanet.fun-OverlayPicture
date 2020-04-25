@@ -20,19 +20,9 @@ class ConfigDropDownElement extends React.Component<Props, {}> {
 
     render(): React.ReactNode {
         return (
-            <div
-                className="PictureOverlay_ConfigDropDownElement"
-                onClick={this.onWholeElementClicked}
-            >
-                <img
-                    className="PictureOverlay_ConfigDropDownElImg"
-                    src={this.props.config.imageUrl}
-                />
-                <a
-                    className="PictureOverlay_ConfigDropDownElText"
-                >
-                    {this.props.config.imageUrl}
-                </a>
+            <div className="PictureOverlay_ConfigDropDownElement" onClick={this.onWholeElementClicked}>
+                <img className="PictureOverlay_ConfigDropDownElImg" src={this.props.config.imageUrl} />
+                <a className="PictureOverlay_ConfigDropDownElText">{this.props.config.imageUrl}</a>
                 <img
                     className="PictureOverlay_ConfigDropDownElDelete"
                     src="https://fonts.gstatic.com/s/i/materialicons/delete_forever/v1/24px.svg"

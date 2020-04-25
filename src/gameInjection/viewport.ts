@@ -1,4 +1,4 @@
-import autoBind from "react-autobind";
+import autoBind from 'react-autobind';
 
 const viewPortCheckingInterval = 100;
 
@@ -36,7 +36,6 @@ class Viewport {
         this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook);
         this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook);
         this.currentActiveViewport?.addEventListener('wheel', this.onWheelHook);
-
     }
 
     private removeHooks(): void {
