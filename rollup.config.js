@@ -78,6 +78,7 @@ export default {
           "useContext",
           "useReducer",
           "useRef",
+          "useState",
         ],
         "node_modules/react-dom/index.js": [
           "render",

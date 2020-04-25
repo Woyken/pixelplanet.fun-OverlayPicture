@@ -10,8 +10,11 @@ import { updateImagePlacementConfiguration, updateInputImage, updateImageModifie
 import { ThunkDispatch } from 'redux-thunk';
 import { AppState } from '../../store';
 import { PlacementConfiguration, ImageModifiers, OverlayImageInput, GuiParametersState } from '../../store/guiTypes';
+import ShareOverlayModal from '../shareOverlayModal/shareOverlayModal';
 
-interface OwnState {}
+interface OwnState {
+    isShareOverlayOpen: boolean;
+}
 
 interface OwnProps {}
 
@@ -35,6 +38,9 @@ type Props = StateProps & DispatchProps & OwnProps;
 class OverlayConfig extends React.Component<Props, OwnState> {
     constructor(props: Props) {
         super(props);
+        this.state = {
+            isShareOverlayOpen: false,
+        };
 
         autoBind(this);
     }
@@ -169,26 +175,15 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     </div>
                 </div>
                 <br />
-                <Button onClick={(): void => this.onShareConfig()}>Share overlay</Button>
+                <Button onClick={(): void => this.setState({ isShareOverlayOpen: !this.state.isShareOverlayOpen })}>
+                    Share overlay
+                </Button>
+                <ShareOverlayModal
+                    isOpen={this.state.isShareOverlayOpen}
+                    setIsOpen={(isOpen) => this.setState({ isShareOverlayOpen: isOpen })}
+                />
             </div>
         );
-    }
-
-    private onShareConfig(): void {
-        // tslint:disable-next-line:typedef
-        const { guiState } = this.props;
-
-        const shareConf = urlHelper.sharableConfigFromState(guiState);
-
-        const shareLink = urlHelper.getSharableLink(shareConf);
-
-        urlHelper.copyToClipboard(shareLink);
-
-        alert(`Copied link to your clipboard:
-${shareLink}
-
-Share this link with others to quickly share your overlay configuration.
-`);
     }
 }
 

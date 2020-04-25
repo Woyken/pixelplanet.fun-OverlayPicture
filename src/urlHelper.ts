@@ -12,19 +12,23 @@ class UrlHelper {
      * This will make game window jump a little bit
      * But that's the only way to make sure zoom level is captured correctly.
      */
-    public stickToGrid(): void {
+    public stickToGrid(targetX: number | null = null, targetY: number | null = null): void {
         const hashstr = window.location.hash.substr(1).split(',');
-        if (hashstr[3] === '0') {
+        const canvasId = hashstr[0];
+        const x = targetX !== null ? targetX : hashstr[1];
+        const y = targetY !== null ? targetY : hashstr[2];
+        const zoom = hashstr[3];
+        if (zoom === '0') {
             // If zoom is zero, don't try replacing href, it will freak out.
             return;
         }
         // Set 1 zoom level more, will update canvas.
-        location.href = `${window.location.href.split('#')[0]}#${hashstr[0]},${hashstr[1]},${hashstr[2]},${
-            parseInt(hashstr[3], 10) + 1
+        location.href = `${window.location.href.split('#')[0]}#${canvasId},${x},${y},${
+            parseInt(zoom, 10) + 1
         }`;
 
         // Set zoom level back to what it was.
-        location.href = `${window.location.href.split('#')[0]}#${hashstr[0]},${hashstr[1]},${hashstr[2]},${hashstr[3]}`;
+        location.href = `${window.location.href.split('#')[0]}#${canvasId},${x},${y},${zoom}`;
     }
 
     public getSharableLink(configuration: SharableConfig): string {
@@ -44,6 +48,7 @@ class UrlHelper {
 
     public deserializeSharedUrl(): SharableConfig | undefined {
         const hashstr = window.location.hash.substr(1).split(',');
+        logger.log(JSON.stringify(hashstr));
         if (hashstr.length <= 3) {
             return;
         }
@@ -54,6 +59,7 @@ class UrlHelper {
         // This might be error prone... For now leaving as is.
         try {
             const obj = JSON.parse(serializedObj) as SharableConfig;
+            logger.log('Successfully parsed shared config.');
             return obj;
         } catch (error) {
             logger.logError(`Could not parse shared url from hash: ${hashstr} - {${serializedObj}}. ${error}`);
@@ -61,9 +67,10 @@ class UrlHelper {
         return;
     }
 
-    public sharableConfigFromState(state: GuiParametersState): SharableConfig {
+    public sharableConfigFromState(state: GuiParametersState): SharableConfig | null {
         if (!state.overlayImage.inputImage.url) {
-            throw new Error('url is not set, cannot generate sharable config');
+            logger.logWarn('url is not set, cannot generate sharable config');
+            return null;
         }
         const result: SharableConfig = {
             modifications: state.modifications,
@@ -97,6 +104,7 @@ class UrlHelper {
         const dummy = document.createElement('input');
         document.body.appendChild(dummy);
         dummy.value = text;
+        dummy.style.zIndex = '10000';
         dummy.select();
         document.execCommand('copy');
         document.body.removeChild(dummy);
