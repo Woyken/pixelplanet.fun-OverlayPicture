@@ -26,7 +26,7 @@ class ColorConverter {
             return true;
         }
 
-        let areEqual = false;
+        let areEqual = true;
         areEqual = areEqual && gamePalette[c1][0] === gamePalette[c2][0];
         areEqual = areEqual && gamePalette[c1][1] === gamePalette[c2][1];
         areEqual = areEqual && gamePalette[c1][2] === gamePalette[c2][2];
