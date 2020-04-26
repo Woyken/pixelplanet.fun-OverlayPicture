@@ -3,7 +3,7 @@ import ConfigDropDownContent from './Content/configDropDownContent';
 import autoBind from 'react-autobind';
 import { GuiParametersState, SavedConfiguration } from '../../store/guiTypes';
 import { connect } from 'react-redux';
-import { AppState } from '../../store';
+import { AppState, ActionTypes } from '../../store';
 import { ThunkDispatch } from 'redux-thunk';
 import { saveCurrentConfiguration, applySavedConfiguration, removeSavedConfiguration } from '../../actions/guiActions';
 
@@ -60,7 +60,7 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
 
     onSaveActiveConfiguration(): void {
         // tslint:disable-next-line: typedef
-        const { guiState, saveCurrentConfig } = this.props;
+        const { saveCurrentConfig } = this.props;
         saveCurrentConfig();
     }
 
@@ -88,13 +88,13 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+function mapStateToProps(state: AppState): StateProps {
     return {
         guiState: state.guiData,
     };
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
     return {
         saveCurrentConfig: (): unknown => dispatch(saveCurrentConfiguration()),
         applyConfig: (config: SavedConfiguration): unknown => dispatch(applySavedConfiguration(config)),

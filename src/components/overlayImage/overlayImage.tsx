@@ -1,15 +1,13 @@
 import React from 'react';
-import { Configuration } from '../../configuration';
 import autoBind from 'react-autobind';
-import { pictureConverter } from '../../pictureConverter';
 import './overlayImage.scss';
 import { connect } from 'react-redux';
 import { OverlayImageOutput, PlacementConfiguration, GameState, OverlayImageInput } from '../../store/guiTypes';
-import { AppState } from '../../store';
+import { AppState, ActionTypes } from '../../store';
 import { ThunkDispatch } from 'redux-thunk';
 import logger from '../../handlers/logger';
 import { LoadedChunkData, CanvasMetadata } from '../../store/chunkDataTypes';
-import { pixelToChunk, ChunkCell, chunkToIndex, pixelInChunkOffset } from '../../chunkHelper';
+import { ChunkCell } from '../../chunkHelper';
 import { loadChunkData } from '../../actions/pixelData';
 
 interface OwnState {
@@ -49,7 +47,7 @@ class OverlayImage extends React.Component<Props, OwnState> {
         autoBind(this);
     }
 
-    async componentDidUpdate(prevProps: Readonly<Props>, prevState: Readonly<OwnState>): Promise<void> {
+    async componentDidUpdate(prevProps: Readonly<Props>): Promise<void> {
         if (prevProps !== this.props) {
             // Input has changed, update state.
             const { gameState, placementConfiguration } = this.props;
@@ -132,7 +130,7 @@ class OverlayImage extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+function mapStateToProps(state: AppState): StateProps {
     return {
         outputImage: state.guiData.overlayImage.outputImage,
         placementConfiguration: state.guiData.placementConfiguration,
@@ -144,7 +142,7 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
     };
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
     return {
         loadChunkData: (canvasId: number, chunk: ChunkCell): unknown => dispatch(loadChunkData(canvasId, chunk)),
     };

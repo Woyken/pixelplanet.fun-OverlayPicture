@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, DialogTitle, createStyles, makeStyles, Theme, TextField, Button } from '@material-ui/core';
-import { AppState } from '../../store';
+import { AppState, ActionTypes } from '../../store';
 import { GuiParametersState } from '../../store/guiTypes';
 import { connect } from 'react-redux';
 import urlHelper, { SharableConfig } from '../../urlHelper';
@@ -10,10 +10,7 @@ import {
     updateInputImage,
     updateImagePlacementConfiguration,
     updateImageModifiers,
-    updateOverlayEnabled,
-    loadSavedConfigurations,
 } from '../../actions/guiActions';
-import { updateMetadata } from '../../actions/pixelData';
 
 interface StateProps {
     guiState: GuiParametersState;
@@ -155,13 +152,13 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
     );
 };
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+function mapStateToProps(state: AppState): StateProps {
     return {
         guiState: state.guiData,
     };
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
     return {
         updateGame: (
             canvasStringId?: string,

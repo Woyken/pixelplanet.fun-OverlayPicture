@@ -42,11 +42,7 @@ export const CanvasImagePreview: React.FunctionComponent<CanvasImagePreviewProps
 
     return (
         <div>
-            <canvas
-                ref={imageCanvasRef}
-                width={props.width}
-                height={props.height}
-            />
+            <canvas ref={imageCanvasRef} width={props.width} height={props.height} />
         </div>
     );
 };

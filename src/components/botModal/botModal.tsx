@@ -1,14 +1,10 @@
 import React from 'react';
 import './botModal.scss';
-import OverlayConfig from '../overlayConfig/overlayConfig';
-import { Configuration } from '../../configuration';
-import ConfigDropDown from '../configDropDown/configDropDown';
 import { Checkbox, FormControlLabel, Tooltip, TextField } from '@material-ui/core';
 import { GuiParametersState } from '../../store/guiTypes';
-import { AppState } from '../../store';
+import { AppState, ActionTypes } from '../../store';
 import { connect } from 'react-redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { updateOverlayEnabled } from '../../actions/guiActions';
 import {
     botUpdateEnabled,
     botUpdateFeatureEnabled,
@@ -16,7 +12,6 @@ import {
     botPlacePixel,
 } from '../../actions/pixelData';
 import { ChunkDataState } from '../../store/chunkDataTypes';
-import logger from '../../handlers/logger';
 import autoBind from 'react-autobind';
 import { Cell } from '../../chunkHelper';
 import { getSha256Hash } from '../../utils/crypto/crypto';
@@ -188,14 +183,14 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+function mapStateToProps(state: AppState): StateProps {
     return {
         guiState: state.guiData,
         chunkState: state.chunkData,
     };
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
     return {
         isEnabled: (isEnabled: boolean): unknown => dispatch(botUpdateEnabled(isEnabled)),
         isEnabledFeature: (isEnabled: boolean): unknown => dispatch(botUpdateFeatureEnabled(isEnabled)),

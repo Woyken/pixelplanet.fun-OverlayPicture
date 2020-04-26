@@ -1,11 +1,10 @@
 import React from 'react';
 import './configurationModal.scss';
 import OverlayConfig from '../overlayConfig/overlayConfig';
-import { Configuration } from '../../configuration';
 import ConfigDropDown from '../configDropDown/configDropDown';
 import { Checkbox, FormControlLabel, Tooltip } from '@material-ui/core';
 import { GuiParametersState } from '../../store/guiTypes';
-import { AppState } from '../../store';
+import { AppState, ActionTypes } from '../../store';
 import { connect } from 'react-redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { updateOverlayEnabled, updateBotModalVisible } from '../../actions/guiActions';
@@ -103,13 +102,13 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+function mapStateToProps(state: AppState): StateProps {
     return {
         guiState: state.guiData,
     };
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
     return {
         isEnabled: (isEnabled: boolean): unknown => dispatch(updateOverlayEnabled(isEnabled)),
         openBotModal: (isVisible: boolean): unknown => dispatch(updateBotModalVisible(isVisible)),

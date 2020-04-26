@@ -1,15 +1,13 @@
 import React from 'react';
 import TextField from '@material-ui/core/TextField';
 import Input from '@material-ui/core/Input';
-import { Configuration } from '../../configuration';
 import { Typography, Slider, FormControlLabel, Checkbox, Button } from '@material-ui/core';
-import urlHelper from '../../urlHelper';
 import autoBind from 'react-autobind';
 import { connect } from 'react-redux';
 import { updateImagePlacementConfiguration, updateInputImage, updateImageModifiers } from '../../actions/guiActions';
 import { ThunkDispatch } from 'redux-thunk';
-import { AppState } from '../../store';
-import { PlacementConfiguration, ImageModifiers, OverlayImageInput, GuiParametersState } from '../../store/guiTypes';
+import { AppState, ActionTypes } from '../../store';
+import { GuiParametersState } from '../../store/guiTypes';
 import ShareOverlayModal from '../shareOverlayModal/shareOverlayModal';
 
 interface OwnState {
@@ -187,13 +185,13 @@ class OverlayConfig extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
+function mapStateToProps(state: AppState): StateProps {
     return {
         guiState: state.guiData,
     };
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
     return {
         updateConfig: (transparency?: number, x?: number, y?: number): unknown =>
             dispatch(updateImagePlacementConfiguration(transparency, x, y)),
