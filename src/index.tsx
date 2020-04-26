@@ -27,7 +27,7 @@ function init(): void {
         rootNode,
     );
 
-    webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex) => {
+    webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex): void => {
         const { chunkData } = store.getState();
         store.dispatch(
             updatePixel(
@@ -36,7 +36,7 @@ function init(): void {
             ),
         );
     };
-    webSocketHandler.onRequestReloadMetadata = () => {
+    webSocketHandler.onRequestReloadMetadata = (): void => {
         store.dispatch((updateMetadata as any)());
     };
     webSocketHandler.connect();

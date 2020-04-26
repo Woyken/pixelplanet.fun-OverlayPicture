@@ -97,7 +97,7 @@ class App extends React.Component<Props, OwnState> {
         });
 
         let isMoving = false;
-        viewport.onMouseMove = (e, c) => {
+        viewport.onMouseMove = (e, c): void => {
             if (e.buttons !== 1) {
                 return;
             }
@@ -111,7 +111,7 @@ class App extends React.Component<Props, OwnState> {
         // TODO this can be replaced with getter/setter on window.lastPosX
         // This would be nicer solution, rather than depending on mouse drag detection.
 
-        viewport.onMouseUp = (e, c) => {
+        viewport.onMouseUp = (e, c): void => {
             if (!isMoving) {
                 return;
             }
@@ -127,7 +127,7 @@ class App extends React.Component<Props, OwnState> {
         };
 
         let timeoutAfterScroll = -1;
-        viewport.onWheel = (e, c) => {
+        viewport.onWheel = (e, c): void => {
             if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
                 // if no picture provided, set coordinates to center of the screen
                 this.props.updateConfig(undefined, urlHelper.xCoord, urlHelper.yCoord);
@@ -238,22 +238,22 @@ function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnP
             centerY?: number,
             zoomLevel?: number,
             isMouseDragging?: boolean,
-        ) => dispatch(updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging)),
-        updateImage: (imgUrl: string) => dispatch(updateInputImage(imgUrl)),
-        updateConfig: (transparency?: number, x?: number, y?: number) =>
+        ): unknown => dispatch(updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging)),
+        updateImage: (imgUrl: string): unknown => dispatch(updateInputImage(imgUrl)),
+        updateConfig: (transparency?: number, x?: number, y?: number): unknown =>
             dispatch(updateImagePlacementConfiguration(transparency, x, y)),
         updateModifications: (
             modificationsAvailable?: boolean,
             doModifications?: boolean,
             shouldConvertColors?: boolean,
             imageBrightness?: number,
-        ) =>
+        ): unknown =>
             dispatch(
                 updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
             ),
-        updateOverlayEnabled: (isEnabled: boolean) => dispatch(updateOverlayEnabled(isEnabled)),
-        loadSavedConfigs: () => dispatch(loadSavedConfigurations()),
-        updateMetadata: () => dispatch(updateMetadata()),
+        updateOverlayEnabled: (isEnabled: boolean): unknown => dispatch(updateOverlayEnabled(isEnabled)),
+        loadSavedConfigs: (): unknown => dispatch(loadSavedConfigurations()),
+        updateMetadata: (): unknown => dispatch(updateMetadata()),
     };
 }
 

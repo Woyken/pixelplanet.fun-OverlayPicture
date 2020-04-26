@@ -111,8 +111,8 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
-        isEnabled: (isEnabled: boolean) => dispatch(updateOverlayEnabled(isEnabled)),
-        openBotModal: (isVisible: boolean) => dispatch(updateBotModalVisible(isVisible)),
+        isEnabled: (isEnabled: boolean): unknown => dispatch(updateOverlayEnabled(isEnabled)),
+        openBotModal: (isVisible: boolean): unknown => dispatch(updateBotModalVisible(isVisible)),
     };
 }
 

@@ -67,7 +67,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     <div>
                         <Input
                             type="file"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
                                 const theFile = e.target.files?.[0];
                                 updateInputImage(undefined, theFile);
                             }}
@@ -76,7 +76,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                     </div>
                 )}
                 <Button
-                    onClick={() => {
+                    onClick={(): void => {
                         updateInputImage('', undefined);
                     }}
                 >
@@ -180,7 +180,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                 </Button>
                 <ShareOverlayModal
                     isOpen={this.state.isShareOverlayOpen}
-                    setIsOpen={(isOpen) => this.setState({ isShareOverlayOpen: isOpen })}
+                    setIsOpen={(isOpen): void => this.setState({ isShareOverlayOpen: isOpen })}
                 />
             </div>
         );
@@ -195,15 +195,15 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
-        updateConfig: (transparency?: number, x?: number, y?: number) =>
+        updateConfig: (transparency?: number, x?: number, y?: number): unknown =>
             dispatch(updateImagePlacementConfiguration(transparency, x, y)),
-        updateInputImage: (url?: string, file?: File) => dispatch(updateInputImage(url, file)),
+        updateInputImage: (url?: string, file?: File): unknown => dispatch(updateInputImage(url, file)),
         updateModifications: (
             modificationsAvailable?: boolean,
             doModifications?: boolean,
             shouldConvertColors?: boolean,
             imageBrightness?: number,
-        ) =>
+        ): unknown =>
             dispatch(
                 updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
             ),

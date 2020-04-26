@@ -2,7 +2,7 @@ import { Dispatch, AnyAction, Store, CombinedState, MiddlewareAPI, Middleware } 
 import { ActionTypes, CANVAS_LOAD_CHUNK_DATA, CANVAS_CHANGE_CANVAS, ChunkDataState } from './chunkDataTypes';
 import webSocketHandler from '../handlers/websocket/websocketHandler';
 
-export default ((store) => (next) => (action: ActionTypes) => {
+export default ((store) => (next) => (action: ActionTypes): void => {
     // Start watching for chunk changes as soon as possible
     switch (action.type) {
         case CANVAS_LOAD_CHUNK_DATA: {

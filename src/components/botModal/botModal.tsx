@@ -188,10 +188,10 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
-        isEnabled: (isEnabled: boolean) => dispatch(botUpdateEnabled(isEnabled)),
-        isEnabledFeature: (isEnabled: boolean) => dispatch(botUpdateFeatureEnabled(isEnabled)),
-        startProcessingImage: () => dispatch(botStartProcessingImage()),
-        placePixel: (canvasId: number, pixel: Cell, colorIndex: number) =>
+        isEnabled: (isEnabled: boolean): unknown => dispatch(botUpdateEnabled(isEnabled)),
+        isEnabledFeature: (isEnabled: boolean): unknown => dispatch(botUpdateFeatureEnabled(isEnabled)),
+        startProcessingImage: (): unknown => dispatch(botStartProcessingImage()),
+        placePixel: (canvasId: number, pixel: Cell, colorIndex: number): unknown =>
             dispatch(botPlacePixel(canvasId, pixel, colorIndex)),
     };
 }

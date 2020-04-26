@@ -96,9 +96,9 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
-        saveCurrentConfig: () => dispatch(saveCurrentConfiguration()),
-        applyConfig: (config: SavedConfiguration) => dispatch(applySavedConfiguration(config)),
-        removeConfig: (imgUrl: string) => dispatch(removeSavedConfiguration(imgUrl)),
+        saveCurrentConfig: (): unknown => dispatch(saveCurrentConfiguration()),
+        applyConfig: (config: SavedConfiguration): unknown => dispatch(applySavedConfiguration(config)),
+        removeConfig: (imgUrl: string): unknown => dispatch(removeSavedConfiguration(imgUrl)),
     };
 }
 

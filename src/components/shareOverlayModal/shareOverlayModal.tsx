@@ -44,7 +44,13 @@ interface DispatchProps {
 
 type Props = StateProps & DispatchProps & OwnProps;
 
-function getModalStyle() {
+interface ModalStyle {
+    top: string;
+    left: string;
+    transform: string;
+}
+
+function getModalStyle(): ModalStyle {
     const top = 50;
     const left = 50;
 
@@ -163,16 +169,16 @@ function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnP
             centerY?: number,
             zoomLevel?: number,
             isMouseDragging?: boolean,
-        ) => dispatch(updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging)),
-        updateImage: (imgUrl: string) => dispatch(updateInputImage(imgUrl)),
-        updateConfig: (transparency?: number, x?: number, y?: number) =>
+        ): unknown => dispatch(updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging)),
+        updateImage: (imgUrl: string): unknown => dispatch(updateInputImage(imgUrl)),
+        updateConfig: (transparency?: number, x?: number, y?: number): unknown =>
             dispatch(updateImagePlacementConfiguration(transparency, x, y)),
         updateModifications: (
             modificationsAvailable?: boolean,
             doModifications?: boolean,
             shouldConvertColors?: boolean,
             imageBrightness?: number,
-        ) =>
+        ): unknown =>
             dispatch(
                 updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
             ),

@@ -129,7 +129,7 @@ export function updatePixel(pixel: Cell, colorIndex: number): ActionTypes {
 }
 
 export function setActiveCanvasByStringIdAfterMetadataFetch(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         const canvasStringId = getState().guiData.currentGameState.canvasStringId;
 
         const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
@@ -143,7 +143,7 @@ export function setActiveCanvasByStringIdAfterMetadataFetch(): ThunkAction<Promi
 }
 
 export function updateMetadata(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch) => {
+    return async (dispatch): Promise<void> => {
         const response = await fetch('/api/me', {
             credentials: 'include',
         });
@@ -263,7 +263,7 @@ export function botPlacePixel(
 }
 
 export function botStartProcessingImage(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         let { loadedChunks, canvasesMetadata } = getState().chunkData;
         const { activeCanvasId } = getState().chunkData;
         const { outputImage } = getState().guiData.overlayImage;
@@ -352,7 +352,7 @@ export function botStartProcessingImage(): ThunkAction<Promise<void>, AppState, 
 }
 
 export function botUpdateEnabled(isEnabled: boolean): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         if (!getState().chunkData.botState.isFeatureEnabled) {
             return;
         }
@@ -372,7 +372,7 @@ export function botUpdateEnabled(isEnabled: boolean): ThunkAction<Promise<void>,
 }
 
 export function botUpdateFeatureEnabled(isEnabled: boolean): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         if (!isEnabled) {
             dispatch({
                 type: BOT_IMAGE_PROCESSED_DATA,

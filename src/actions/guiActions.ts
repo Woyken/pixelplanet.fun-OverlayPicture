@@ -56,7 +56,7 @@ function updateImageModifiersInternal(
 }
 
 export function startProcessingImage(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         dispatch(updateOutputImageStatus(true));
         try {
             let buffer: ArrayBuffer;
@@ -70,12 +70,12 @@ export function startProcessingImage(): ThunkAction<Promise<void>, AppState, nul
                 logger.log('Parsing file input');
                 buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
                     const reader = new FileReader();
-                    reader.onload = (ev) => {
+                    reader.onload = (ev): void => {
                         const data = reader.result as ArrayBuffer;
                         logger.log(`File parsed as array ${data.byteLength}`);
                         resolve(data);
                     };
-                    reader.onerror = (ev) => {
+                    reader.onerror = (ev): void => {
                         logger.logError(`File parsing failed`);
                         reject('could not parse file');
                     };
@@ -142,7 +142,7 @@ export function updateImageModifiers(
     shouldConvertColors?: boolean,
     imageBrightness?: number,
 ): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         dispatch(
             updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
         );
@@ -151,7 +151,7 @@ export function updateImageModifiers(
 }
 
 export function updateInputImage(url?: string, file?: File): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         logger.log(`Updating input image (${url}, ${!!file})`);
         dispatch({
             type: UPDATE_INPUT_IMAGE,
@@ -209,7 +209,7 @@ export function updateImagePlacementConfiguration(
 export function setActiveCanvasByStringId(
     canvasStringId: string,
 ): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         if (getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId]?.stringId === canvasStringId) {
             return;
         }
@@ -231,7 +231,7 @@ export function updateGameState(
     zoomLevel?: number,
     isMouseDragging?: boolean,
 ): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         const state = getState();
         if (
             (canvasStringId === undefined || canvasStringId === state.guiData.currentGameState.canvasStringId) &&
@@ -287,7 +287,7 @@ export function loadSavedConfigurations(): ActionTypes {
 }
 
 export function saveCurrentConfiguration(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         const state = getState();
         const imgUrl = state.guiData.overlayImage.inputImage.url;
         if (!imgUrl) {
@@ -337,7 +337,7 @@ export function saveCurrentConfiguration(): ThunkAction<Promise<void>, AppState,
 }
 
 export function removeSavedConfiguration(imgUrl: string): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         const state = getState();
         const idx = state.guiData.savedConfigurations.configs.findIndex((v) => {
             return v.imageUrl === imgUrl;
@@ -363,7 +363,7 @@ export function removeSavedConfiguration(imgUrl: string): ThunkAction<Promise<vo
 export function applySavedConfiguration(
     savedConfig: SavedConfiguration,
 ): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState) => {
+    return async (dispatch, getState): Promise<void> => {
         await dispatch(
             updateImageModifiersInternal(
                 savedConfig.modifiers.modificationsAvailable,

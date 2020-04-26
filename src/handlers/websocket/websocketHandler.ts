@@ -18,7 +18,7 @@ class WebSocketHandler {
     private retryTimerId?: number;
     private isConnected = false;
 
-    public connect() {
+    public connect(): void {
         // Continuously retry connection.
         if (!this.retryTimerId) {
             this.retryTimerId = window.setInterval(() => {
@@ -43,7 +43,7 @@ class WebSocketHandler {
         this.webSocket.onerror = this.onError.bind(this);
     }
 
-    public watchChunk(chunk: ChunkCell) {
+    public watchChunk(chunk: ChunkCell): void {
         const buffer = registerChunk.dehydrate(chunk);
         if (this.isConnected) {
             this.webSocket?.send(buffer);
@@ -58,7 +58,7 @@ class WebSocketHandler {
         }
     }
 
-    private onOpen() {
+    private onOpen(): void {
         this.isConnected = true;
         if (this.retryTimerId) {
             clearInterval(this.retryTimerId);
@@ -74,7 +74,7 @@ class WebSocketHandler {
         }
     }
 
-    public setCanvas(canvasId: number) {
+    public setCanvas(canvasId: number): void {
         if (this.canvasId === canvasId || canvasId === -1) {
             return;
         }
@@ -87,7 +87,7 @@ class WebSocketHandler {
         }
     }
 
-    private onMessage(ev: MessageEvent) {
+    private onMessage(ev: MessageEvent): void {
         if (ev.data && typeof ev.data === 'string') {
             // Don't care about chat messages right now.
             return;
@@ -120,14 +120,14 @@ class WebSocketHandler {
         }
     }
 
-    private onClose(event: CloseEvent) {
+    private onClose(event: CloseEvent): void {
         this.isConnected = false;
         this.webSocket = undefined;
         logger.logWarn(`Socket was closed. Reconnecting... ${event.reason}`);
         this.connect();
     }
 
-    private onError(event: Event) {
+    private onError(event: Event): void {
         logger.logError(`Socket encountered error, closing socket ${event}`);
         this.webSocket?.close();
     }

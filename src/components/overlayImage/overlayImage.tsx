@@ -146,7 +146,7 @@ function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
     return {
-        loadChunkData: (canvasId: number, chunk: ChunkCell) => dispatch(loadChunkData(canvasId, chunk)),
+        loadChunkData: (canvasId: number, chunk: ChunkCell): unknown => dispatch(loadChunkData(canvasId, chunk)),
     };
 }
 
