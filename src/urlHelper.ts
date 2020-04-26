@@ -23,9 +23,7 @@ class UrlHelper {
             return;
         }
         // Set 1 zoom level more, will update canvas.
-        location.href = `${window.location.href.split('#')[0]}#${canvasId},${x},${y},${
-            parseInt(zoom, 10) + 1
-        }`;
+        location.href = `${window.location.href.split('#')[0]}#${canvasId},${x},${y},${parseInt(zoom, 10) + 1}`;
 
         // Set zoom level back to what it was.
         location.href = `${window.location.href.split('#')[0]}#${canvasId},${x},${y},${zoom}`;
