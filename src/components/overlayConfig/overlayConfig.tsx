@@ -1,7 +1,8 @@
 import React from 'react';
 import TextField from '@material-ui/core/TextField';
 import Input from '@material-ui/core/Input';
-import { Typography, Slider, FormControlLabel, Checkbox, Button } from '@material-ui/core';
+import { Typography, Slider, FormControlLabel, Checkbox, Button, Tooltip } from '@material-ui/core';
+import WarningIcon from '@material-ui/icons/Warning';
 import autoBind from 'react-autobind';
 import { connect } from 'react-redux';
 import { updateImagePlacementConfiguration, updateInputImage, updateImageModifiers } from '../../actions/guiActions';
@@ -45,6 +46,9 @@ class OverlayConfig extends React.Component<Props, OwnState> {
 
     render(): React.ReactNode {
         const { guiState, updateInputImage, updateConfig, updateModifications } = this.props;
+        const showWarningAboutCors =
+            !this.props.guiState.modifications.modificationsAvailable &&
+            !!this.props.guiState.overlayImage.inputImage.url;
 
         return (
             <div>
@@ -58,6 +62,11 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                                 updateInputImage(e.target.value);
                             }}
                         />
+                        {showWarningAboutCors ? (
+                            <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
+                                <WarningIcon />
+                            </Tooltip>
+                        ) : null}
                         <br />
                     </div>
                 )}
