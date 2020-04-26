@@ -20,6 +20,7 @@ import logger from '../../handlers/logger';
 import autoBind from 'react-autobind';
 import { Cell } from '../../chunkHelper';
 import { getSha256Hash } from '../../utils/crypto/crypto';
+import { CanvasImagePreview } from './canvasImagePreview/canvasImagePreview';
 
 interface OwnState {
     isModalMinimized: boolean;
@@ -102,6 +103,7 @@ class BotModal extends React.Component<Props, OwnState> {
 
     render(): React.ReactNode {
         const { guiState, chunkState, isEnabled } = this.props;
+        const canvasMetadata = chunkState.canvasesMetadata[chunkState.activeCanvasId];
 
         return (
             <div id="PictureOverlay_BotConfigurationModal">
@@ -134,7 +136,14 @@ class BotModal extends React.Component<Props, OwnState> {
                             display: this.state.isModalMinimized ? 'none' : '',
                         }}
                     >
-                        {this.props.chunkState.botState.isFeatureEnabled ? undefined : (
+                        {this.props.chunkState.botState.isFeatureEnabled ? (
+                            <CanvasImagePreview
+                                botImage={this.props.chunkState.botState.canvasImageData.diffAgainstInputData}
+                                colorPalette={canvasMetadata.colors}
+                                height={this.props.chunkState.botState.config.imageHeight}
+                                width={this.props.chunkState.botState.config.imageWidth}
+                            />
+                        ) : (
                             <TextField
                                 label="Unlock code"
                                 type="string"
