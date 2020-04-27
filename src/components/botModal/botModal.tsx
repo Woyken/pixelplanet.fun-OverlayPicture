@@ -19,6 +19,7 @@ import { CanvasImagePreview } from './canvasImagePreview/canvasImagePreview';
 
 interface OwnState {
     isModalMinimized: boolean;
+    botAlwaysWatching: boolean;
 }
 
 interface OwnProps {}
@@ -44,6 +45,7 @@ class BotModal extends React.Component<Props, OwnState> {
         super(props);
         this.state = {
             isModalMinimized: false,
+            botAlwaysWatching: false,
         };
 
         autoBind(this);
@@ -72,7 +74,15 @@ class BotModal extends React.Component<Props, OwnState> {
         );
         if (pixelAt === -1) {
             // Looks like we're all done.
-            this.props.isEnabled(false);
+            if (!this.state.botAlwaysWatching) {
+                this.props.isEnabled(false);
+            } else {
+                // restart bot. WARNING. this is very poor performance solution... Need to fix
+                setTimeout(() => {
+                    this.props.isEnabled(false);
+                    this.props.isEnabled(true);
+                }, 500);
+            }
             return;
         }
         const xi = pixelAt % this.props.chunkState.botState.config.imageWidth;
@@ -132,12 +142,29 @@ class BotModal extends React.Component<Props, OwnState> {
                         }}
                     >
                         {this.props.chunkState.botState.isFeatureEnabled ? (
-                            <CanvasImagePreview
-                                botImage={this.props.chunkState.botState.canvasImageData.diffAgainstInputData}
-                                colorPalette={canvasMetadata.colors}
-                                height={this.props.chunkState.botState.config.imageHeight}
-                                width={this.props.chunkState.botState.config.imageWidth}
-                            />
+                            <div>
+                                <Tooltip title={'Warning! When bot finishes, can cause massive amounts of lag!'}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                color="secondary"
+                                                checked={this.state.botAlwaysWatching}
+                                                onChange={(e): void =>
+                                                    this.setState({ botAlwaysWatching: e.target.checked })
+                                                }
+                                            />
+                                        }
+                                        label="Always watching mode"
+                                        labelPlacement="end"
+                                    />
+                                </Tooltip>
+                                <CanvasImagePreview
+                                    botImage={this.props.chunkState.botState.canvasImageData.diffAgainstInputData}
+                                    colorPalette={canvasMetadata.colors}
+                                    height={this.props.chunkState.botState.config.imageHeight}
+                                    width={this.props.chunkState.botState.config.imageWidth}
+                                />
+                            </div>
                         ) : (
                             <TextField
                                 label="Unlock code"
