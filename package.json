@@ -7,6 +7,7 @@
     "scripts": {
         "build": "rollup -c",
         "build:watch": "rollup -c --watch",
+        "open": "open-cli file://%cd%\\dist\\rollup.react.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix"
     },
@@ -47,6 +48,7 @@
         "eslint-plugin-prettier": "^3.1.3",
         "eslint-plugin-react": "^7.19.0",
         "fast-png": "^4.0.1",
+        "open-cli": "^6.0.1",
         "prettier": "^2.0.5",
         "react": "^16.2.0",
         "react-autobind": "^1.0.6",
