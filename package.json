@@ -5,7 +5,7 @@
     "description": "Add your picture as overlay to pixelplanet.fun",
     "main": "./dist/index.js",
     "scripts": {
-        "build": "rollup -c",
+        "build": "rollup -c & npm run open",
         "build:watch": "rollup -c --watch",
         "open": "open-cli file://%cd%\\dist\\rollup.react.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
