@@ -79,7 +79,7 @@ export interface PixelPlaceParams {
 export async function fetchPlacePixel(params: PixelPlaceParams): Promise<PixelPlaceResponse | undefined> {
     const url = '/api/pixel';
     const response = await fetch(url, {
-        credentials: 'include',
+        credentials: 'omit',
         body: JSON.stringify(params),
         headers: {
             'Content-Type': 'application/json',
@@ -227,7 +227,6 @@ export function botPlacePixel(
             isBeingPlaced: true,
         });
         try {
-            await dispatch(logout());
             const { loadedChunks, activeCanvasId } = getState().chunkData;
             let { canvasesMetadata } = getState().chunkData;
             let canvasData = canvasesMetadata[activeCanvasId];
