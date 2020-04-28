@@ -10,6 +10,29 @@ import replace from 'rollup-plugin-replace';
 
 import pkg from './package.json';
 
+import fs from 'fs';
+import nodeEval from 'node-eval';
+
+export function getModuleExports(moduleId) {
+    const id = require.resolve(moduleId);
+    const moduleOut = nodeEval(fs.readFileSync(id).toString(), id);
+    let result = [];
+    const excludeExports = /^(default|__)/;
+    if (moduleOut && typeof moduleOut === 'object') {
+        result = Object.keys(moduleOut).filter((name) => !excludeExports.test(name));
+    }
+
+    return result;
+}
+
+export function getNamedExports(moduleIds) {
+    const result = {};
+    moduleIds.forEach((id) => {
+        result[id] = getModuleExports(id);
+    });
+    return result;
+}
+
 const banner = `
 // ==UserScript==
 // @name         ${pkg.displayName}
@@ -51,31 +74,7 @@ export default {
         typescript(),
         commonjs({
             include: ['node_modules/**'],
-            namedExports: {
-                'node_modules/utf8/utf8.js': ['decode', 'encode'],
-                'node_modules/pako/index.js': ['Inflate', 'deflate'],
-                'node_modules/react/react.js': ['Children', 'Component', 'PropTypes', 'createElement'],
-                'node_modules/react/index.js': [
-                    'isValidElement',
-                    'Children',
-                    'cloneElement',
-                    'useMemo',
-                    'useEffect',
-                    'useLayoutEffect',
-                    'useContext',
-                    'useReducer',
-                    'useRef',
-                    'useState',
-                ],
-                'node_modules/react-dom/index.js': ['render', 'unstable_batchedUpdates'],
-                'node_modules/react-is/index.js': [
-                    'ForwardRef',
-                    'isFragment',
-                    'isValidElementType',
-                    'isContextConsumer',
-                ],
-                'node_modules/prop-types/index.js': ['elementType'],
-            },
+            namedExports: getNamedExports(['react', 'react-dom', 'react-is', 'utf8', 'pako', 'prop-types']),
         }),
         terser({
             output: {
