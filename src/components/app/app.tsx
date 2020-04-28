@@ -145,6 +145,11 @@ class App extends React.Component<Props, OwnState> {
                 timeoutAfterScroll = -1;
             }
 
+            if (urlHelper.zoomLevel <= 0) {
+                // Don't re-stick if too far way, gets anoying when you just want to look around
+                return;
+            }
+
             timeoutAfterScroll = setTimeout(() => {
                 clearTimeout(timeoutAfterScroll);
                 timeoutAfterScroll = -1;
