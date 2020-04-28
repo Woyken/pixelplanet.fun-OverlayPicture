@@ -142,6 +142,67 @@ export function setActiveCanvasByStringIdAfterMetadataFetch(): ThunkAction<Promi
     };
 }
 
+function receivedMetadata(me: UserDataResponse): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
+    return async (dispatch): Promise<void> => {
+        const canvasesMetadata: CanvasMetadata[] = [];
+        for (const key in me.canvases) {
+            if (me.canvases.hasOwnProperty(key)) {
+                const canvasMetadata = me.canvases[key];
+                canvasesMetadata.push({
+                    stringId: canvasMetadata.ident,
+                    title: canvasMetadata.title,
+                    colors: canvasMetadata.colors,
+                    colorsReservedCount: canvasMetadata.cli,
+                    timeoutOnEmpty: canvasMetadata.bcd,
+                    timeoutOnReplace: canvasMetadata.pcd,
+                    maxTimeout: canvasMetadata.cds,
+                    ranked: canvasMetadata.ranked,
+                    pixelsMinimalRequirement: canvasMetadata.req,
+                    sd: canvasMetadata.sd,
+                    size: canvasMetadata.size,
+                    description: canvasMetadata.desc,
+                    id: parseInt(key, 10),
+                });
+            }
+        }
+        dispatch({
+            type: CANVAS_RECEIVE_METADATA,
+            canvasesMetadata: canvasesMetadata,
+        });
+        await dispatch(setActiveCanvasByStringIdAfterMetadataFetch());
+        dispatch({
+            type: RECEIVE_USER_DATA,
+            userData: {
+                dailyRanking: me.dailyRanking,
+                dailyTotalPixels: me.dailyTotalPixels,
+                mailreg: me.mailreg,
+                name: me.name,
+                ranking: me.ranking,
+                totalPixels: me.totalPixels,
+                minecraftname: me.minecraftname,
+            },
+        });
+    };
+}
+
+export function logout(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
+    return async (dispatch, getState): Promise<void> => {
+        if (
+            getState().chunkData.userData.name === undefined &&
+            getState().chunkData.userData.totalPixels === undefined
+        ) {
+            return;
+        }
+        const response = await fetch('/api/auth/logout', {
+            credentials: 'include',
+        });
+        if (response.ok) {
+            const me = (await response.json()).me as UserDataResponse;
+            await dispatch(receivedMetadata(me));
+        }
+    };
+}
+
 export function updateMetadata(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
     return async (dispatch): Promise<void> => {
         const response = await fetch('/api/me', {
@@ -150,44 +211,7 @@ export function updateMetadata(): ThunkAction<Promise<void>, AppState, null, Act
 
         if (response.ok) {
             const me = (await response.json()) as UserDataResponse;
-            const canvasesMetadata: CanvasMetadata[] = [];
-            for (const key in me.canvases) {
-                if (me.canvases.hasOwnProperty(key)) {
-                    const canvasMetadata = me.canvases[key];
-                    canvasesMetadata.push({
-                        stringId: canvasMetadata.ident,
-                        title: canvasMetadata.title,
-                        colors: canvasMetadata.colors,
-                        colorsReservedCount: canvasMetadata.cli,
-                        timeoutOnEmpty: canvasMetadata.bcd,
-                        timeoutOnReplace: canvasMetadata.pcd,
-                        maxTimeout: canvasMetadata.cds,
-                        ranked: canvasMetadata.ranked,
-                        pixelsMinimalRequirement: canvasMetadata.req,
-                        sd: canvasMetadata.sd,
-                        size: canvasMetadata.size,
-                        description: canvasMetadata.desc,
-                        id: parseInt(key, 10),
-                    });
-                }
-            }
-            dispatch({
-                type: CANVAS_RECEIVE_METADATA,
-                canvasesMetadata: canvasesMetadata,
-            });
-            await dispatch(setActiveCanvasByStringIdAfterMetadataFetch());
-            dispatch({
-                type: RECEIVE_USER_DATA,
-                userData: {
-                    dailyRanking: me.dailyRanking,
-                    dailyTotalPixels: me.dailyTotalPixels,
-                    mailreg: me.mailreg,
-                    name: me.name,
-                    ranking: me.ranking,
-                    totalPixels: me.totalPixels,
-                    minecraftname: me.minecraftname,
-                },
-            });
+            await dispatch(receivedMetadata(me));
         }
     };
 }
@@ -203,6 +227,7 @@ export function botPlacePixel(
             isBeingPlaced: true,
         });
         try {
+            await dispatch(logout());
             const { loadedChunks, activeCanvasId } = getState().chunkData;
             let { canvasesMetadata } = getState().chunkData;
             let canvasData = canvasesMetadata[activeCanvasId];
