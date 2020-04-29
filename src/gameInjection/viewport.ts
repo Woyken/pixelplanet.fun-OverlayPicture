@@ -33,9 +33,9 @@ class Viewport {
     }
 
     private initHooks(): void {
-        this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook);
-        this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook);
-        this.currentActiveViewport?.addEventListener('wheel', this.onWheelHook);
+        this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook, { passive: true });
+        this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook, { passive: true });
+        this.currentActiveViewport?.addEventListener('wheel', this.onWheelHook, { passive: true });
     }
 
     private removeHooks(): void {

@@ -60,7 +60,7 @@ export class BotState {
 }
 
 export const botState = new BotState(
-    true,
+    false,
     0,
     false,
     new BotCanvasImageData(false),
