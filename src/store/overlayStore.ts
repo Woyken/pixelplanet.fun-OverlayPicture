@@ -5,21 +5,11 @@ export class ImageModifiers {
      * Can Image data be read at all? Depends on image source. CORS might not be enabled.
      */
     @observable modificationsAvailable: boolean;
-    /**
-     * User choice to show original image or apply modifications to it?
-     */
-    @observable doModifications: boolean;
     @observable shouldConvertColors: boolean;
     @observable imageBrightness: number;
 
-    constructor(
-        modificationsAvailable: boolean,
-        doModifications: boolean,
-        shouldConvertColors: boolean,
-        imageBrightness: number,
-    ) {
+    constructor(modificationsAvailable: boolean, shouldConvertColors: boolean, imageBrightness: number) {
         this.modificationsAvailable = modificationsAvailable;
-        this.doModifications = doModifications;
         this.imageBrightness = imageBrightness;
         this.shouldConvertColors = shouldConvertColors;
     }
@@ -100,6 +90,6 @@ export const overlayStore = new OverlayStore(
     true,
     new OverlayImage(new OverlayImageInput(), new OverlayImageOutput(false)),
     new PlacementConfiguration(0, 0, 80),
-    new ImageModifiers(false, false, false, 0),
+    new ImageModifiers(false, false, 0),
     false,
 );

@@ -20,14 +20,11 @@ export function updateOutputImage(data?: ImageData): void {
 
 function updateImageModifiersInternal(
     modificationsAvailable?: boolean,
-    doModifications?: boolean,
     shouldConvertColors?: boolean,
     imageBrightness?: number,
 ): void {
-    if (doModifications !== undefined) overlayStore.modifications.doModifications = doModifications;
     if (modificationsAvailable !== undefined)
         overlayStore.modifications.modificationsAvailable = modificationsAvailable;
-    if (doModifications !== undefined) overlayStore.modifications.doModifications = doModifications;
     if (shouldConvertColors !== undefined) overlayStore.modifications.shouldConvertColors = shouldConvertColors;
     if (imageBrightness !== undefined) overlayStore.modifications.imageBrightness = imageBrightness;
 }
@@ -106,12 +103,11 @@ export async function startProcessingImage(): Promise<void> {
 
 export async function updateImageModifiers(
     modificationsAvailable?: boolean,
-    doModifications?: boolean,
     shouldConvertColors?: boolean,
     imageBrightness?: number,
 ): Promise<void> {
     logger.log('updated image modifiers');
-    updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness);
+    updateImageModifiersInternal(modificationsAvailable, shouldConvertColors, imageBrightness);
     await startProcessingImage();
 }
 
@@ -138,9 +134,9 @@ export async function updateInputImage(url?: string, file?: File): Promise<void>
         updateImageModifiersInternal(true);
     }
     if (file) {
-        updateImageModifiersInternal(true, true);
+        updateImageModifiersInternal(true);
     }
-    if ((!file && !overlayStore.modifications.modificationsAvailable) || !overlayStore.modifications.doModifications) {
+    if (!file && !overlayStore.modifications.modificationsAvailable) {
         logger.log('Modifications are disabled. Not parsing.');
         // Modifications should not be made. Clean up output image.
         updateOutputImage(undefined);
@@ -211,7 +207,6 @@ export function loadSavedConfigurations(): void {
                 c.imageUrl,
                 new ImageModifiers(
                     c.modifiers.modificationsAvailable,
-                    c.modifiers.doModifications,
                     c.modifiers.shouldConvertColors,
                     c.modifiers.imageBrightness,
                 ),
@@ -241,7 +236,6 @@ export async function saveCurrentConfiguration(): Promise<void> {
         // Already exists, need to replace existing one.
         const conf = overlayStore.savedConfigs[idx];
         conf.modifiers.modificationsAvailable = overlayStore.modifications.modificationsAvailable;
-        conf.modifiers.doModifications = overlayStore.modifications.doModifications;
         conf.modifiers.shouldConvertColors = overlayStore.modifications.shouldConvertColors;
         conf.modifiers.imageBrightness = overlayStore.modifications.imageBrightness;
 
@@ -257,7 +251,6 @@ export async function saveCurrentConfiguration(): Promise<void> {
         imgUrl,
         new ImageModifiers(
             overlayStore.modifications.modificationsAvailable,
-            overlayStore.modifications.doModifications,
             overlayStore.modifications.shouldConvertColors,
             overlayStore.modifications.imageBrightness,
         ),
@@ -291,7 +284,6 @@ export async function removeSavedConfiguration(imgUrl: string): Promise<void> {
 export async function applySavedConfiguration(savedConfig: SavedConfiguration): Promise<void> {
     updateImageModifiersInternal(
         savedConfig.modifiers.modificationsAvailable,
-        savedConfig.modifiers.doModifications,
         savedConfig.modifiers.shouldConvertColors,
         savedConfig.modifiers.imageBrightness,
     );

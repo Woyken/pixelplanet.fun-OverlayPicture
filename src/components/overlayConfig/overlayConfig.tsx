@@ -135,7 +135,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                                 color="primary"
                                 checked={overlayStore.modifications.shouldConvertColors}
                                 onChange={(e): void => {
-                                    updateImageModifiers(undefined, undefined, e.target.checked);
+                                    updateImageModifiers(undefined, e.target.checked);
                                 }}
                             />
                         }
@@ -162,7 +162,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                                 if (typeof value !== 'number') {
                                     return;
                                 }
-                                updateImageModifiers(undefined, undefined, undefined, value);
+                                updateImageModifiers(undefined, undefined, value);
                             }}
                         />
                     </div>

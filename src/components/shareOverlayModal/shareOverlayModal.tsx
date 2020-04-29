@@ -84,7 +84,6 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
         updateInputImage(parsedShared.overlayImageUrl);
         updateImageModifiers(
             parsedShared.modifications.modificationsAvailable,
-            parsedShared.modifications.doModifications,
             parsedShared.modifications.shouldConvertColors,
             parsedShared.modifications.imageBrightness,
         );

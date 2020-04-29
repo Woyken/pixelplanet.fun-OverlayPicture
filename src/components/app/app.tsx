@@ -52,7 +52,6 @@ class App extends React.Component {
             updateInputImage(shared.overlayImageUrl);
             updateImageModifiers(
                 shared.modifications.modificationsAvailable,
-                shared.modifications.doModifications,
                 shared.modifications.shouldConvertColors,
                 shared.modifications.imageBrightness,
             );
