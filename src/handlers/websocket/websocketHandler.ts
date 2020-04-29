@@ -29,8 +29,10 @@ class WebSocketHandler {
                     return;
                 }
                 this.connect();
-            }, 5000);
+            }, 1000);
         }
+
+        this.socketRemoveCallbacks();
         this.webSocket = undefined;
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         const url = `${protocol}//${location.hostname}${location.port ? `:${location.port}` : ''}/ws`;
@@ -41,6 +43,16 @@ class WebSocketHandler {
         this.webSocket.onmessage = this.onMessage.bind(this);
         this.webSocket.onclose = this.onClose.bind(this);
         this.webSocket.onerror = this.onError.bind(this);
+    }
+
+    private socketRemoveCallbacks(): void {
+        if (!this.webSocket) return;
+
+        this.webSocket.onopen = null;
+        this.webSocket.onmessage = null;
+        this.webSocket.onclose = null;
+        this.webSocket.onerror = null;
+        this.webSocket.close();
     }
 
     public watchChunk(chunk: ChunkCell): void {
