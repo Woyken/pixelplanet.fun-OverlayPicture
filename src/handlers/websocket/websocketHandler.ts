@@ -128,7 +128,7 @@ class WebSocketHandler {
     }
 
     private onError(event: Event): void {
-        logger.logError(`Socket encountered error, closing socket ${event}`);
+        logger.logError(`Socket encountered error, closing socket ${JSON.stringify(event)}`);
         this.webSocket?.close();
     }
 }
