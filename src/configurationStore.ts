@@ -29,7 +29,6 @@ class ConfigurationStore {
             const n: SavedConfiguration = {
                 imageUrl: c.imgUrl,
                 modifiers: {
-                    doModifications: false,
                     shouldConvertColors: c.convertColors,
                     modificationsAvailable: false,
                     imageBrightness: c.brighten,
