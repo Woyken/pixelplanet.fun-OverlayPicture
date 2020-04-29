@@ -183,6 +183,18 @@ export async function updateGameState(
     if (canvasStringId !== undefined) await setActiveCanvasByStringId(canvasStringId);
 }
 
+export function updateGameStateFAF(
+    canvasStringId?: string,
+    centerX?: number,
+    centerY?: number,
+    zoomLevel?: number,
+    isMouseDragging?: boolean,
+): void {
+    updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging).catch((e) => {
+        logger.logWarn(`Game state update failed. ${e}`);
+    });
+}
+
 const storageItemName = 'OverlaySavedConfigurationsv2';
 
 export function loadSavedConfigurations(): void {

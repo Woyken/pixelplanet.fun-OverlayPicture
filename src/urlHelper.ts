@@ -7,6 +7,13 @@ export interface SharableConfig {
     overlayImageUrl: string;
 }
 
+export interface UrlData {
+    canvasStr: string;
+    xCoord: number;
+    yCoord: number;
+    zoomLevel: number;
+}
+
 class UrlHelper {
     /**
      * This will make game window jump a little bit
@@ -97,6 +104,26 @@ class UrlHelper {
         return parseInt(hashstr[3], 10);
     }
 
+    public get parsedUrlData(): UrlData {
+        if (this.cachedValue?.url === location.hash) {
+            return this.cachedValue.val;
+        }
+
+        const regex = /#(\w+),([+-]?\d+),([+-]?\d+),([+-]?\d+)/;
+        const matched = regex.exec(location.hash);
+        if (!matched) {
+            throw new Error(`Could not parse URL did pattern change?!? ${location.hash}`);
+        }
+        const value: UrlData = {
+            canvasStr: matched[1],
+            xCoord: parseInt(matched[2], 10),
+            yCoord: parseInt(matched[3], 10),
+            zoomLevel: parseInt(matched[4], 10),
+        };
+        this.cachedValue = { url: location.hash, val: value };
+        return value;
+    }
+
     public copyToClipboard(text: string): void {
         const dummy = document.createElement('input');
         document.body.appendChild(dummy);
@@ -106,6 +133,8 @@ class UrlHelper {
         document.execCommand('copy');
         document.body.removeChild(dummy);
     }
+
+    private cachedValue?: { url: string; val: UrlData };
 }
 
 export default new UrlHelper();
