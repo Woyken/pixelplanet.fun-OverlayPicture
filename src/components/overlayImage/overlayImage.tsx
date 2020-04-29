@@ -61,6 +61,11 @@ class OverlayImage extends React.Component<Props, OwnState> {
             // Input has changed, update state.
             this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
         });
+
+        observe(gameStore.gameState, 'zoomLevel', (change) => {
+            // Input has changed, update state.
+            this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
+        });
     }
 
     getImagePositionOffsetState(gameState: GameState, placementConfiguration: PlacementConfiguration): OwnState {
