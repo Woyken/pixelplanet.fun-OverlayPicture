@@ -1,31 +1,32 @@
-import { Dispatch, AnyAction, Store, CombinedState, MiddlewareAPI, Middleware } from 'redux';
-import { ActionTypes, CANVAS_LOAD_CHUNK_DATA, CANVAS_CHANGE_CANVAS, ChunkDataState } from './chunkDataTypes';
 import webSocketHandler from '../handlers/websocket/websocketHandler';
+import { chunkStore } from './chunkStore';
+import { indexToChunk, chunkOffsetToPixel } from '../chunkHelper';
+import { gameStore } from './gameStore';
+import { observe } from 'mobx';
+import { updatePixel, updateMetadata } from '../actions/pixelData';
 
-export default ((store) => (next) => (action: ActionTypes): ActionTypes => {
-    // Start watching for chunk changes as soon as possible
-    switch (action.type) {
-        case CANVAS_LOAD_CHUNK_DATA: {
-            webSocketHandler.watchChunk(action.chunk);
-            break;
+export function initWebSocketHooks(): void {
+    chunkStore.loadedChunks.observe((changes) => {
+        webSocketHandler.watchChunk(indexToChunk(changes.index));
+    });
+
+    observe(gameStore.gameState, 'activeCanvasStringId', (changes) => {
+        webSocketHandler.setCanvas(changes.newValue as any);
+    });
+
+    webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex): void => {
+        if (gameStore.gameState.activeCanvasId === undefined) {
+            return;
         }
+        updatePixel(
+            chunkOffsetToPixel(chunk, pixelOffset, gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId].size),
+            colorIndex,
+        );
+    };
 
-        default:
-            break;
-    }
+    webSocketHandler.onRequestReloadMetadata = (): void => {
+        updateMetadata();
+    };
 
-    // Execute other reducers
-    const ret = next(action);
-
-    // After reducers are done check if canvas was changed.
-    switch (action.type) {
-        case CANVAS_CHANGE_CANVAS: {
-            webSocketHandler.setCanvas(action.activeCanvasId);
-            break;
-        }
-        default:
-            break;
-    }
-
-    return ret;
-}) as Middleware<any, CombinedState<{ chunkData: ChunkDataState }>, any>;
+    webSocketHandler.connect();
+}

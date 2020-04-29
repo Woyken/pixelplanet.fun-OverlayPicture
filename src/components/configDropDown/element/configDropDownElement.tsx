@@ -1,7 +1,7 @@
 import React from 'react';
 import './configDropDownElement.scss';
 import autoBind from 'react-autobind';
-import { SavedConfiguration } from '../../../store/guiTypes';
+import { SavedConfiguration } from '../../../store/overlayStore';
 
 interface OwnProps {
     config: SavedConfiguration;

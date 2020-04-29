@@ -1,43 +1,21 @@
-import {
-    UPDATE_IMAGE_MODIFIERS,
-    UPDATE_INPUT_IMAGE,
-    UPDATE_OUTPUT_IMAGE,
-    UPDATE_OUTPUT_IMAGE_STATUS,
-    UPDATE_IMAGE_PLACEMENT_CONFIGURATION,
-    UPDATE_GAME_STATE,
-    UPDATE_OVERLAY_ENABLED,
-    LOAD_SAVED_CONFIGURATIONS,
-    SAVE_CURRENT_CONFIGURATION,
-    SavedConfiguration,
-    UPDATE_BOT_MODAL_VISIBLE,
-} from '../store/guiTypes';
-import { AppState, ActionTypes } from '../store';
-import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { pictureConverter } from '../pictureConverter';
 import logger from '../handlers/logger';
 import { configurationStore } from '../configurationStore';
 import { updateMetadata } from './pixelData';
-import { CanvasMetadata, CANVAS_CHANGE_CANVAS } from '../store/chunkDataTypes';
+import { overlayStore, SavedConfiguration, ImageModifiers, PlacementConfiguration } from '../store/overlayStore';
+import { CanvasMetadata, gameStore } from '../store/gameStore';
+import { botState } from '../store/botState';
 
-export function updateOverlayEnabled(isEnabled: boolean): ActionTypes {
-    return {
-        type: UPDATE_OVERLAY_ENABLED,
-        isEnabled,
-    };
+export function updateOverlayEnabled(isEnabled: boolean): void {
+    overlayStore.overlayEnabled = isEnabled;
 }
 
-export function updateOutputImageStatus(isProcessing: boolean): ActionTypes {
-    return {
-        type: UPDATE_OUTPUT_IMAGE_STATUS,
-        isProcessing: isProcessing,
-    };
+export function updateOutputImageStatus(isProcessing: boolean): void {
+    overlayStore.overlayImage.outputImage.isProcessing = isProcessing;
 }
 
-export function updateOutputImage(data?: ImageData): ActionTypes {
-    return {
-        type: UPDATE_OUTPUT_IMAGE,
-        imageData: data,
-    };
+export function updateOutputImage(data?: ImageData): void {
+    overlayStore.overlayImage.outputImage.outputImageData = data;
 }
 
 function updateImageModifiersInternal(
@@ -45,220 +23,173 @@ function updateImageModifiersInternal(
     doModifications?: boolean,
     shouldConvertColors?: boolean,
     imageBrightness?: number,
-): ActionTypes {
-    return {
-        type: UPDATE_IMAGE_MODIFIERS,
-        modificationsAvailable: modificationsAvailable,
-        doModifications: doModifications,
-        imageBrightness: imageBrightness,
-        shouldConvertColors: shouldConvertColors,
-    };
+): void {
+    if (doModifications !== undefined) overlayStore.modifications.doModifications = doModifications;
+    if (modificationsAvailable !== undefined)
+        overlayStore.modifications.modificationsAvailable = modificationsAvailable;
+    if (doModifications !== undefined) overlayStore.modifications.doModifications = doModifications;
+    if (shouldConvertColors !== undefined) overlayStore.modifications.shouldConvertColors = shouldConvertColors;
+    if (imageBrightness !== undefined) overlayStore.modifications.imageBrightness = imageBrightness;
 }
 
-export function startProcessingImage(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        dispatch(updateOutputImageStatus(true));
-        try {
-            let buffer: ArrayBuffer;
-            const url = getState().guiData.overlayImage.inputImage.url;
-            const file = getState().guiData.overlayImage.inputImage.file;
-            if (url) {
-                logger.log('Parsing url input');
-                const response = await fetch(url);
-                buffer = await response.arrayBuffer();
-            } else if (file) {
-                logger.log('Parsing file input');
-                buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev): void => {
-                        const data = reader.result as ArrayBuffer;
-                        logger.log(`File parsed as array ${data.byteLength}`);
-                        resolve(data);
-                    };
-                    reader.onerror = (ev): void => {
-                        logger.logError(`File parsing failed`);
-                        reject('could not parse file');
-                    };
-                    reader.readAsArrayBuffer(file);
-                });
-            } else {
-                // This shouldn't be possible.
-                throw new Error('Something unexpected happened');
-            }
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d')!;
-
-            logger.log(`Starting picture conversion ${buffer.byteLength}`);
-            let curState = getState();
-            let currentCanvasMetadata: CanvasMetadata | undefined;
-            for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
-                if (
-                    curState.guiData.currentGameState.canvasStringId === curState.chunkData.canvasesMetadata[i].stringId
-                ) {
-                    currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
-                }
-            }
-            if (!currentCanvasMetadata) {
-                await dispatch(updateMetadata());
-                curState = getState();
-                for (let i = 0; i < curState.chunkData.canvasesMetadata.length; i++) {
-                    if (
-                        curState.guiData.currentGameState.canvasStringId ===
-                        curState.chunkData.canvasesMetadata[i].stringId
-                    ) {
-                        currentCanvasMetadata = curState.chunkData.canvasesMetadata[i];
-                    }
-                }
-                // currentCanvasMetadata should be defined now
-                if (!currentCanvasMetadata) {
-                    logger.logError(`Can't fetch canvas metadata? Can't continue parsing the image...`);
-                    return;
-                }
-            }
-            const result = await pictureConverter.convertPictureFromUrl(
-                currentCanvasMetadata.colors,
-                currentCanvasMetadata.colorsReservedCount,
-                buffer,
-                ctx,
-                curState.guiData.modifications.shouldConvertColors,
-                curState.guiData.modifications.imageBrightness,
-            );
-            logger.log(`updating output image ${result.data.length}`);
-            dispatch(updateOutputImage(result));
-        } catch (err) {
-            logger.logError(`Something went wrong while parsing picture: ${err}`);
-            // Likely to happen when fetching image
-            dispatch(updateOutputImage(undefined));
-        } finally {
-            dispatch(updateOutputImageStatus(false));
+export async function startProcessingImage(): Promise<void> {
+    updateOutputImageStatus(true);
+    try {
+        let buffer: ArrayBuffer;
+        const url = overlayStore.overlayImage.inputImage.url;
+        const file = overlayStore.overlayImage.inputImage.file;
+        if (url) {
+            logger.log('Parsing url input');
+            const response = await fetch(url);
+            buffer = await response.arrayBuffer();
+        } else if (file) {
+            logger.log('Parsing file input');
+            buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (ev): void => {
+                    const data = reader.result as ArrayBuffer;
+                    logger.log(`File parsed as array ${data.byteLength}`);
+                    resolve(data);
+                };
+                reader.onerror = (ev): void => {
+                    logger.logError(`File parsing failed`);
+                    reject('could not parse file');
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        } else {
+            // This shouldn't be possible.
+            throw new Error('Something unexpected happened');
         }
-    };
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+
+        logger.log(`Starting picture conversion ${buffer.byteLength}`);
+        let currentCanvasMetadata: CanvasMetadata | undefined;
+        for (let i = 0; i < gameStore.canvasesMetadata.length; i++) {
+            if (gameStore.gameState.activeCanvasStringId === gameStore.canvasesMetadata[i].stringId) {
+                currentCanvasMetadata = gameStore.canvasesMetadata[i];
+            }
+        }
+        if (!currentCanvasMetadata) {
+            await updateMetadata();
+            for (let i = 0; i < gameStore.canvasesMetadata.length; i++) {
+                if (gameStore.gameState.activeCanvasStringId === gameStore.canvasesMetadata[i].stringId) {
+                    currentCanvasMetadata = gameStore.canvasesMetadata[i];
+                }
+            }
+            // currentCanvasMetadata should be defined now
+            if (!currentCanvasMetadata) {
+                logger.logError(`Can't fetch canvas metadata? Can't continue parsing the image...`);
+                return;
+            }
+        }
+        const result = await pictureConverter.convertPictureFromUrl(
+            currentCanvasMetadata.colors,
+            currentCanvasMetadata.colorsReservedCount,
+            buffer,
+            ctx,
+            overlayStore.modifications.shouldConvertColors,
+            overlayStore.modifications.imageBrightness,
+        );
+        logger.log(`updating output image ${result.data.length}`);
+        updateOutputImage(result);
+    } catch (err) {
+        logger.logError(`Something went wrong while parsing picture: ${err}`);
+        // Likely to happen when fetching image
+        updateOutputImage(undefined);
+    } finally {
+        updateOutputImageStatus(false);
+    }
 }
 
-export function updateImageModifiers(
+export async function updateImageModifiers(
     modificationsAvailable?: boolean,
     doModifications?: boolean,
     shouldConvertColors?: boolean,
     imageBrightness?: number,
-): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        dispatch(
-            updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
-        );
-        await dispatch(startProcessingImage());
-    };
+): Promise<void> {
+    logger.log('updated image modifiers');
+    updateImageModifiersInternal(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness);
+    await startProcessingImage();
 }
 
-export function updateInputImage(url?: string, file?: File): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        logger.log(`Updating input image (${url}, ${!!file})`);
-        dispatch({
-            type: UPDATE_INPUT_IMAGE,
-            file,
-            url,
-        });
-        if (!url && !file) {
-            logger.log(`Input image empty, clearing state...`);
+export async function updateInputImage(url?: string, file?: File): Promise<void> {
+    logger.log(`Updating input image (${url}, ${!!file})`);
+    overlayStore.overlayImage.inputImage.url = url;
+    overlayStore.overlayImage.inputImage.file = file;
+    if (!url && !file) {
+        logger.log(`Input image empty, clearing state...`);
+        // Clear output image
+        updateOutputImage();
+        return;
+    }
+    if (url) {
+        if (!(await pictureConverter.isImageValidCors(url))) {
+            logger.log(`Image url ${url} not valid cors, don't parse`);
+            // No point in trying to parse this out.
             // Clear output image
-            dispatch(updateOutputImage());
+            updateOutputImage();
+            updateImageModifiersInternal(false);
             return;
         }
-        if (url) {
-            if (!(await pictureConverter.isImageValidCors(url))) {
-                logger.log(`Image url ${url} not valid cors, don't parse`);
-                // No point in trying to parse this out.
-                // Clear output image
-                dispatch(updateOutputImage());
-                dispatch(updateImageModifiersInternal(false));
-                return;
-            }
-            logger.log(`Cors seems to be fine, continuing.`);
-            dispatch(updateImageModifiersInternal(true));
-        }
-        if (file) {
-            dispatch(updateImageModifiersInternal(true, true));
-        }
-        if (
-            (!file && !getState().guiData.modifications.modificationsAvailable) ||
-            !getState().guiData.modifications.doModifications
-        ) {
-            logger.log('Modifications are disabled. Not parsing.');
-            // Modifications should not be made. Clean up output image.
-            dispatch(updateOutputImage(undefined));
-            return;
-        }
+        logger.log(`Cors seems to be fine, continuing.`);
+        updateImageModifiersInternal(true);
+    }
+    if (file) {
+        updateImageModifiersInternal(true, true);
+    }
+    if ((!file && !overlayStore.modifications.modificationsAvailable) || !overlayStore.modifications.doModifications) {
+        logger.log('Modifications are disabled. Not parsing.');
+        // Modifications should not be made. Clean up output image.
+        updateOutputImage(undefined);
+        return;
+    }
 
-        await dispatch(startProcessingImage());
-    };
+    await startProcessingImage();
 }
 
-export function updateImagePlacementConfiguration(
-    transparency?: number,
-    xOffset?: number,
-    yOffset?: number,
-): ActionTypes {
-    return {
-        type: UPDATE_IMAGE_PLACEMENT_CONFIGURATION,
-        transparency,
-        xOffset,
-        yOffset,
-    };
+export function updateImagePlacementConfiguration(transparency?: number, xOffset?: number, yOffset?: number): void {
+    if (xOffset !== undefined) overlayStore.placementConfiguration.xOffset = xOffset;
+    if (yOffset !== undefined) overlayStore.placementConfiguration.yOffset = yOffset;
+    if (transparency !== undefined) overlayStore.placementConfiguration.transparency = transparency;
 }
 
-export function setActiveCanvasByStringId(
-    canvasStringId: string,
-): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        if (getState().chunkData.canvasesMetadata[getState().chunkData.activeCanvasId]?.stringId === canvasStringId) {
-            return;
-        }
-        const idx = getState().chunkData.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
-        if (idx >= 0) {
-            dispatch({
-                type: CANVAS_CHANGE_CANVAS,
-                activeCanvasId: getState().chunkData.canvasesMetadata[idx].id,
-            });
-            await dispatch(startProcessingImage());
-        }
-    };
+export async function setActiveCanvasByStringId(canvasStringId: string): Promise<void> {
+    if (
+        gameStore.gameState.activeCanvasId !== undefined &&
+        gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId]?.stringId === canvasStringId
+    ) {
+        return;
+    }
+    logger.log('updating active canvas id');
+    const idx = gameStore.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
+    if (idx >= 0) {
+        gameStore.gameState.activeCanvasId = gameStore.canvasesMetadata[idx].id;
+        await startProcessingImage();
+    }
 }
 
-export function updateGameState(
+export async function updateGameState(
     canvasStringId?: string,
     centerX?: number,
     centerY?: number,
     zoomLevel?: number,
     isMouseDragging?: boolean,
-): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        const state = getState();
-        if (
-            (canvasStringId === undefined || canvasStringId === state.guiData.currentGameState.canvasStringId) &&
-            (centerX === undefined || centerX === state.guiData.currentGameState.centerX) &&
-            (centerY === undefined || centerY === state.guiData.currentGameState.centerY) &&
-            (zoomLevel === undefined || zoomLevel === state.guiData.currentGameState.zoomLevel) &&
-            (isMouseDragging === undefined || isMouseDragging === state.guiData.currentGameState.isMouseDragging)
-        ) {
-            return;
-        }
+): Promise<void> {
+    if (canvasStringId !== undefined) gameStore.gameState.activeCanvasStringId = canvasStringId;
+    if (centerX !== undefined) gameStore.gameState.centerX = centerX;
+    if (centerY !== undefined) gameStore.gameState.centerY = centerY;
+    if (zoomLevel !== undefined) gameStore.gameState.zoomLevel = zoomLevel;
+    if (isMouseDragging !== undefined) gameStore.gameState.isMouseDragging = isMouseDragging;
 
-        dispatch({
-            type: UPDATE_GAME_STATE,
-            canvasStringId,
-            centerX,
-            centerY,
-            zoomLevel,
-            isMouseDragging,
-        });
-
-        if (canvasStringId) await dispatch(setActiveCanvasByStringId(canvasStringId));
-    };
+    if (canvasStringId !== undefined) await setActiveCanvasByStringId(canvasStringId);
 }
 
 const storageItemName = 'OverlaySavedConfigurationsv2';
 
-export function loadSavedConfigurations(): ActionTypes {
+export function loadSavedConfigurations(): void {
     const serializedSavedData = localStorage.getItem(storageItemName);
     if (serializedSavedData == null) {
         // Nothing saved yet.
@@ -269,123 +200,102 @@ export function loadSavedConfigurations(): ActionTypes {
             configurationStore.clear();
         }
         localStorage.setItem(storageItemName, JSON.stringify(oldConfigs));
-        return {
-            type: LOAD_SAVED_CONFIGURATIONS,
-            config: {
-                configs: oldConfigs,
-            },
-        };
+        overlayStore.savedConfigs.replace(oldConfigs);
+        return;
     }
 
-    const data = JSON.parse(serializedSavedData) as SavedConfiguration[];
-    return {
-        type: LOAD_SAVED_CONFIGURATIONS,
-        config: {
-            configs: data,
-        },
-    };
+    const loadedDataDoNotTrust = JSON.parse(serializedSavedData) as SavedConfiguration[];
+    const configs = loadedDataDoNotTrust.map(
+        (c) =>
+            new SavedConfiguration(
+                c.imageUrl,
+                new ImageModifiers(
+                    c.modifiers.modificationsAvailable,
+                    c.modifiers.doModifications,
+                    c.modifiers.shouldConvertColors,
+                    c.modifiers.imageBrightness,
+                ),
+                new PlacementConfiguration(
+                    c.placementConfiguration.xOffset,
+                    c.placementConfiguration.yOffset,
+                    c.placementConfiguration.transparency,
+                ),
+            ),
+    );
+    // TODO safer way to do
+    overlayStore.savedConfigs.replace(configs);
 }
 
-export function saveCurrentConfiguration(): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        const state = getState();
-        const imgUrl = state.guiData.overlayImage.inputImage.url;
-        if (!imgUrl) {
-            // If it's empty or undefined, we can't save it.
-            return;
-        }
+export async function saveCurrentConfiguration(): Promise<void> {
+    const imgUrl = overlayStore.overlayImage.inputImage.url;
+    if (!imgUrl) {
+        // If it's empty or undefined, we can't save it.
+        return;
+    }
 
-        const idx = state.guiData.savedConfigurations.configs.findIndex((v) => {
-            return v.imageUrl === imgUrl;
-        });
-        if (idx >= 0) {
-            logger.log('Saving current configuration, same url already exists, replacing saved data.');
-            // Already exists, need to replace existing one.
-            // For now just remove it from the lsit and readd as new.
-            const newList = state.guiData.savedConfigurations.configs;
-            newList.splice(idx, 1);
-            dispatch({
-                type: LOAD_SAVED_CONFIGURATIONS,
-                config: {
-                    configs: [
-                        ...newList,
-                        {
-                            imageUrl: imgUrl,
-                            modifiers: state.guiData.modifications,
-                            placementConfiguration: state.guiData.placementConfiguration,
-                        },
-                    ],
-                },
-            });
-            // Save it to the storage.
-            localStorage.setItem(storageItemName, JSON.stringify(getState().guiData.savedConfigurations.configs));
-            return;
-        }
-
-        dispatch({
-            type: SAVE_CURRENT_CONFIGURATION,
-            config: {
-                imageUrl: imgUrl,
-                modifiers: state.guiData.modifications,
-                placementConfiguration: state.guiData.placementConfiguration,
-            },
-        });
+    const idx = overlayStore.savedConfigs.findIndex((v) => {
+        return v.imageUrl === imgUrl;
+    });
+    if (idx >= 0) {
+        logger.log('Saving current configuration, same url already exists, replacing saved data.');
+        // Already exists, need to replace existing one.
+        overlayStore.savedConfigs.splice(idx, 1);
 
         // Save it to the storage.
-        localStorage.setItem(storageItemName, JSON.stringify(getState().guiData.savedConfigurations.configs));
-    };
+        localStorage.setItem(storageItemName, JSON.stringify(overlayStore.savedConfigs));
+        return;
+    }
+
+    const savedConfig = new SavedConfiguration(
+        imgUrl,
+        new ImageModifiers(
+            overlayStore.modifications.modificationsAvailable,
+            overlayStore.modifications.doModifications,
+            overlayStore.modifications.shouldConvertColors,
+            overlayStore.modifications.imageBrightness,
+        ),
+        new PlacementConfiguration(
+            overlayStore.placementConfiguration.xOffset,
+            overlayStore.placementConfiguration.yOffset,
+            overlayStore.placementConfiguration.transparency,
+        ),
+    );
+    overlayStore.savedConfigs.push(savedConfig);
+
+    // Save it to the storage.
+    localStorage.setItem(storageItemName, JSON.stringify(overlayStore.savedConfigs));
 }
 
-export function removeSavedConfiguration(imgUrl: string): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        const state = getState();
-        const idx = state.guiData.savedConfigurations.configs.findIndex((v) => {
-            return v.imageUrl === imgUrl;
-        });
-        if (idx < 0) {
-            logger.log('When removing saved config. Config with url was not found');
-            return;
-        }
-        // exists. remove it
-        const newList = state.guiData.savedConfigurations.configs;
-        newList.splice(idx, 1);
-        dispatch({
-            type: LOAD_SAVED_CONFIGURATIONS,
-            config: {
-                configs: newList,
-            },
-        });
-        // Save it to the storage.
-        localStorage.setItem(storageItemName, JSON.stringify(newList));
-    };
+export async function removeSavedConfiguration(imgUrl: string): Promise<void> {
+    const idx = overlayStore.savedConfigs.findIndex((v) => {
+        return v.imageUrl === imgUrl;
+    });
+    if (idx < 0) {
+        logger.log('When removing saved config. Config with url was not found');
+        return;
+    }
+    // exists. remove it
+    overlayStore.savedConfigs.splice(idx, 1);
+
+    // Save it to the storage.
+    localStorage.setItem(storageItemName, JSON.stringify(overlayStore.savedConfigs));
 }
 
-export function applySavedConfiguration(
-    savedConfig: SavedConfiguration,
-): ThunkAction<Promise<void>, AppState, null, ActionTypes> {
-    return async (dispatch, getState): Promise<void> => {
-        await dispatch(
-            updateImageModifiersInternal(
-                savedConfig.modifiers.modificationsAvailable,
-                savedConfig.modifiers.doModifications,
-                savedConfig.modifiers.shouldConvertColors,
-                savedConfig.modifiers.imageBrightness,
-            ),
-        );
-        await dispatch(updateInputImage(savedConfig.imageUrl));
-        await dispatch(
-            updateImagePlacementConfiguration(
-                savedConfig.placementConfiguration.transparency,
-                savedConfig.placementConfiguration.xOffset,
-                savedConfig.placementConfiguration.yOffset,
-            ),
-        );
-    };
+export async function applySavedConfiguration(savedConfig: SavedConfiguration): Promise<void> {
+    updateImageModifiersInternal(
+        savedConfig.modifiers.modificationsAvailable,
+        savedConfig.modifiers.doModifications,
+        savedConfig.modifiers.shouldConvertColors,
+        savedConfig.modifiers.imageBrightness,
+    );
+    await updateInputImage(savedConfig.imageUrl);
+    updateImagePlacementConfiguration(
+        savedConfig.placementConfiguration.transparency,
+        savedConfig.placementConfiguration.xOffset,
+        savedConfig.placementConfiguration.yOffset,
+    );
 }
 
-export function updateBotModalVisible(isVisible: boolean): ActionTypes {
-    return {
-        isVisible,
-        type: UPDATE_BOT_MODAL_VISIBLE,
-    };
+export function updateBotModalVisible(isVisible: boolean): void {
+    overlayStore.isBotModalVisible = isVisible;
 }

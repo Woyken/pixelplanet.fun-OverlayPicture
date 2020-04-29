@@ -42,7 +42,7 @@ export function chunkToIndex(chunk: ChunkCell): number {
     return (chunk.chunkY << 8) | chunk.chunkX;
 }
 
-export function indexToChunk(chunkIndex: number, canvasSize: number): ChunkCell {
+export function indexToChunk(chunkIndex: number): ChunkCell {
     const y = chunkIndex >> 8;
     const x = chunkIndex - (y << 8);
     return { chunkX: x, chunkY: y };

@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import { Modal, DialogTitle, createStyles, makeStyles, Theme, TextField, Button } from '@material-ui/core';
-import { AppState, ActionTypes } from '../../store';
-import { GuiParametersState } from '../../store/guiTypes';
-import { connect } from 'react-redux';
 import urlHelper, { SharableConfig } from '../../urlHelper';
-import { ThunkDispatch } from 'redux-thunk';
-import {
-    updateGameState,
-    updateInputImage,
-    updateImagePlacementConfiguration,
-    updateImageModifiers,
-} from '../../actions/guiActions';
+import { observer, inject } from 'mobx-react';
+import { OverlayStore } from '../../store/overlayStore';
+import { updateInputImage, updateImagePlacementConfiguration, updateImageModifiers } from '../../actions/guiActions';
 
 interface StateProps {
-    guiState: GuiParametersState;
+    overlayStore: OverlayStore;
 }
 
 interface OwnProps {
@@ -21,23 +14,7 @@ interface OwnProps {
     setIsOpen: (isOpen: boolean) => void;
 }
 
-interface DispatchProps {
-    updateGame: (
-        canvasId?: string,
-        centerX?: number,
-        centerY?: number,
-        zoomLevel?: number,
-        isMouseDragging?: boolean,
-    ) => void;
-    updateImage: (imgUrl: string) => void;
-    updateConfig: (transparency?: number, x?: number, y?: number) => void;
-    updateModifications: (
-        modificationsAvailable?: boolean,
-        doModifications?: boolean,
-        shouldConvertColors?: boolean,
-        imageBrightness?: number,
-    ) => void;
-}
+interface DispatchProps {}
 
 type Props = StateProps & DispatchProps & OwnProps;
 
@@ -80,7 +57,7 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
     const [modalStyle] = useState(getModalStyle);
     const [sharedInput, setSharedInput] = useState<string | undefined>(undefined);
     const [parsedShared, setParsedShared] = useState<SharableConfig | null>(null);
-    const shareConf = urlHelper.sharableConfigFromState(props.guiState);
+    const shareConf = urlHelper.sharableConfigFromState(props.overlayStore);
 
     const handleClose = (): void => {
         props.setIsOpen(false);
@@ -104,14 +81,14 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
     const applySharedOverlay = (): void => {
         if (!parsedShared) return;
 
-        props.updateImage(parsedShared.overlayImageUrl);
-        props.updateModifications(
+        updateInputImage(parsedShared.overlayImageUrl);
+        updateImageModifiers(
             parsedShared.modifications.modificationsAvailable,
             parsedShared.modifications.doModifications,
             parsedShared.modifications.shouldConvertColors,
             parsedShared.modifications.imageBrightness,
         );
-        props.updateConfig(
+        updateImagePlacementConfiguration(
             parsedShared.placementConfiguration.transparency,
             parsedShared.placementConfiguration.xOffset,
             parsedShared.placementConfiguration.yOffset,
@@ -152,37 +129,4 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
     );
 };
 
-function mapStateToProps(state: AppState): StateProps {
-    return {
-        guiState: state.guiData,
-    };
-}
-
-function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
-    return {
-        updateGame: (
-            canvasStringId?: string,
-            centerX?: number,
-            centerY?: number,
-            zoomLevel?: number,
-            isMouseDragging?: boolean,
-        ): unknown => dispatch(updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging)),
-        updateImage: (imgUrl: string): unknown => dispatch(updateInputImage(imgUrl)),
-        updateConfig: (transparency?: number, x?: number, y?: number): unknown =>
-            dispatch(updateImagePlacementConfiguration(transparency, x, y)),
-        updateModifications: (
-            modificationsAvailable?: boolean,
-            doModifications?: boolean,
-            shouldConvertColors?: boolean,
-            imageBrightness?: number,
-        ): unknown =>
-            dispatch(
-                updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
-            ),
-    };
-}
-
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(
-    mapStateToProps,
-    mapDispatchToProps,
-)(ShareOverlayModal);
+export default observer(ShareOverlayModal);

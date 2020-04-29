@@ -1,5 +1,5 @@
 import { Configuration, configurationMethods } from './configuration';
-import { SavedConfiguration } from './store/guiTypes';
+import { SavedConfiguration } from './store/overlayStore';
 
 class ConfigurationStore {
     private readonly storageItemName: string = 'OverlaySavedConfigs';

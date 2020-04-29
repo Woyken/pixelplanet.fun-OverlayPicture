@@ -70,11 +70,11 @@ export default {
             'process.env.NODE_ENV': JSON.stringify('production'),
         }),
         external(),
-        resolve(),
+        resolve({ preferBuiltins: false }),
         typescript(),
         commonjs({
             include: ['node_modules/**'],
-            namedExports: getNamedExports(['react', 'react-dom', 'react-is', 'utf8', 'pako', 'prop-types']),
+            namedExports: getNamedExports(['react', 'react-dom', 'react-is', 'pako', 'prop-types', 'utf8']),
         }),
         terser({
             output: {

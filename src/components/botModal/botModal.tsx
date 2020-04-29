@@ -1,21 +1,21 @@
 import React from 'react';
 import './botModal.scss';
 import { Checkbox, FormControlLabel, Tooltip, TextField } from '@material-ui/core';
-import { GuiParametersState } from '../../store/guiTypes';
-import { AppState, ActionTypes } from '../../store';
-import { connect } from 'react-redux';
-import { ThunkDispatch } from 'redux-thunk';
 import {
     botUpdateEnabled,
     botUpdateFeatureEnabled,
     botStartProcessingImage,
     botPlacePixel,
 } from '../../actions/pixelData';
-import { ChunkDataState } from '../../store/chunkDataTypes';
 import autoBind from 'react-autobind';
 import { Cell } from '../../chunkHelper';
 import { getSha256Hash } from '../../utils/crypto/crypto';
 import { CanvasImagePreview } from './canvasImagePreview/canvasImagePreview';
+import { observer } from 'mobx-react';
+import { botState } from '../../store/botState';
+import { startProcessingImage } from '../../actions/guiActions';
+import { gameStore } from '../../store/gameStore';
+import { overlayStore } from '../../store/overlayStore';
 
 interface OwnState {
     isModalMinimized: boolean;
@@ -24,24 +24,11 @@ interface OwnState {
 
 interface OwnProps {}
 
-interface StateProps {
-    guiState: GuiParametersState;
-    chunkState: ChunkDataState;
-}
-
-interface DispatchProps {
-    isEnabled: (isEnabled: boolean) => void;
-    isEnabledFeature: (isEnabled: boolean) => void;
-    startProcessingImage: () => void;
-    placePixel: (canvasId: number, pixel: Cell, colorIndex: number) => void;
-}
-
-type Props = StateProps & DispatchProps & OwnProps;
-
-class BotModal extends React.Component<Props, OwnState> {
+@observer
+class BotModal extends React.Component<OwnProps, OwnState> {
     private intervalHandle: number | undefined;
 
-    constructor(props: Props) {
+    constructor(props: OwnProps) {
         super(props);
         this.state = {
             isModalMinimized: false,
@@ -52,48 +39,46 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 
     onUpdate(): void {
-        if (!this.props.chunkState.botState.isFeatureEnabled || !this.props.chunkState.botState.config.isEnabled) {
+        if (!botState.isFeatureEnabled || !botState.config.isEnabled) {
             return;
         }
-        if (
-            !this.props.chunkState.botState.canvasImageData.diffAgainstInputData &&
-            !this.props.chunkState.botState.canvasImageData.isProcessing
-        ) {
-            this.props.startProcessingImage();
+        if (!botState.canvasImageData.diffAgainstInputData && !botState.canvasImageData.isProcessing) {
+            botStartProcessingImage();
             return;
         }
-        if (!this.props.chunkState.botState.canvasImageData.diffAgainstInputData) {
+        if (!botState.canvasImageData.diffAgainstInputData) {
             return;
         }
-        if (this.props.chunkState.botState.placeNextPixelAt > new Date().getTime()) {
+        if (botState.placeNextPixelAt > new Date().getTime()) {
             return;
         }
 
-        const pixelAt = this.props.chunkState.botState.canvasImageData.diffAgainstInputData.findIndex(
-            (c) => c !== -1 && c !== 255,
-        );
+        const pixelAt = botState.canvasImageData.diffAgainstInputData.findIndex((c) => c !== -1 && c !== 255);
         if (pixelAt === -1) {
             // Looks like we're all done.
             if (!this.state.botAlwaysWatching) {
-                this.props.isEnabled(false);
+                botUpdateEnabled(false);
             } else {
                 // restart bot. WARNING. this is very poor performance solution... Need to fix
                 setTimeout(() => {
-                    this.props.isEnabled(false);
-                    this.props.isEnabled(true);
+                    botUpdateEnabled(false);
+                    botUpdateEnabled(true);
                 }, 500);
             }
             return;
         }
-        const xi = pixelAt % this.props.chunkState.botState.config.imageWidth;
-        const yi = Math.floor(pixelAt / this.props.chunkState.botState.config.imageWidth);
-        const x = xi + this.props.chunkState.botState.config.imageTopLeft.x;
-        const y = yi + this.props.chunkState.botState.config.imageTopLeft.y;
-        const colorIndex = this.props.chunkState.botState.canvasImageData.diffAgainstInputData[pixelAt];
+        const xi = pixelAt % botState.config.imageWidth;
+        const yi = Math.floor(pixelAt / botState.config.imageWidth);
+        const x = xi + botState.config.imageTopLeft.x;
+        const y = yi + botState.config.imageTopLeft.y;
+        const colorIndex = botState.canvasImageData.diffAgainstInputData[pixelAt];
 
-        this.props.placePixel(this.props.chunkState.activeCanvasId, { x, y }, colorIndex);
+        if (gameStore.gameState.activeCanvasId === undefined) {
+            return;
+        }
+        botPlacePixel(gameStore.gameState.activeCanvasId, { x, y }, colorIndex);
         // Since we've tried placing this one, mark it as done.
-        this.props.chunkState.botState.canvasImageData.diffAgainstInputData[pixelAt] = -1;
+        botState.canvasImageData.diffAgainstInputData[pixelAt] = -1;
     }
 
     componentDidMount(): void {
@@ -107,14 +92,16 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 
     render(): React.ReactNode {
-        const { guiState, chunkState, isEnabled } = this.props;
-        const canvasMetadata = chunkState.canvasesMetadata[chunkState.activeCanvasId];
+        if (gameStore.gameState.activeCanvasId === undefined) {
+            return null;
+        }
+        const canvasMetadata = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
 
         return (
             <div id="PictureOverlay_BotConfigurationModal">
                 <Tooltip
                     title={
-                        this.props.chunkState.botState.isFeatureEnabled
+                        botState.isFeatureEnabled
                             ? 'Toggle on/off Bot'
                             : 'This feature is not ready for public eyes and needs to be unlocked with personal code. Ask owner for this feature'
                     }
@@ -123,8 +110,8 @@ class BotModal extends React.Component<Props, OwnState> {
                         control={
                             <Checkbox
                                 color="primary"
-                                checked={chunkState.botState.config.isEnabled}
-                                onChange={(e): void => isEnabled(e.target.checked)}
+                                checked={botState.config.isEnabled}
+                                onChange={(e): unknown => botUpdateEnabled(e.target.checked)}
                             />
                         }
                         label="Enable Bot"
@@ -133,7 +120,7 @@ class BotModal extends React.Component<Props, OwnState> {
                 </Tooltip>
                 <div
                     style={{
-                        display: guiState.overlayEnabled ? '' : 'none',
+                        display: overlayStore.overlayEnabled ? '' : 'none',
                     }}
                 >
                     <div
@@ -141,7 +128,7 @@ class BotModal extends React.Component<Props, OwnState> {
                             display: this.state.isModalMinimized ? 'none' : '',
                         }}
                     >
-                        {this.props.chunkState.botState.isFeatureEnabled ? (
+                        {botState.isFeatureEnabled ? (
                             <div>
                                 <Tooltip title={'Warning! When bot finishes, can cause massive amounts of lag!'}>
                                     <FormControlLabel
@@ -159,10 +146,10 @@ class BotModal extends React.Component<Props, OwnState> {
                                     />
                                 </Tooltip>
                                 <CanvasImagePreview
-                                    botImage={this.props.chunkState.botState.canvasImageData.diffAgainstInputData}
+                                    botImage={botState.canvasImageData.diffAgainstInputData}
                                     colorPalette={canvasMetadata.colors}
-                                    height={this.props.chunkState.botState.config.imageHeight}
-                                    width={this.props.chunkState.botState.config.imageWidth}
+                                    height={botState.config.imageHeight}
+                                    width={botState.config.imageWidth}
                                 />
                             </div>
                         ) : (
@@ -194,14 +181,14 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 
     tryUnlockCode(code: string): void {
-        if (!this.props.chunkState.userData.name) {
+        if (!gameStore.userData.name) {
             return;
         }
 
-        getSha256Hash(this.props.chunkState.userData.name)
+        getSha256Hash(gameStore.userData.name)
             .then((hash) => {
                 if (code === hash) {
-                    this.props.isEnabledFeature(true);
+                    botUpdateFeatureEnabled(true);
                 }
             })
             .catch(() => {
@@ -210,21 +197,4 @@ class BotModal extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState): StateProps {
-    return {
-        guiState: state.guiData,
-        chunkState: state.chunkData,
-    };
-}
-
-function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
-    return {
-        isEnabled: (isEnabled: boolean): unknown => dispatch(botUpdateEnabled(isEnabled)),
-        isEnabledFeature: (isEnabled: boolean): unknown => dispatch(botUpdateFeatureEnabled(isEnabled)),
-        startProcessingImage: (): unknown => dispatch(botStartProcessingImage()),
-        placePixel: (canvasId: number, pixel: Cell, colorIndex: number): unknown =>
-            dispatch(botPlacePixel(canvasId, pixel, colorIndex)),
-    };
-}
-
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(mapStateToProps, mapDispatchToProps)(BotModal);
+export default BotModal;

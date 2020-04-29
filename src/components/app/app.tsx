@@ -12,66 +12,35 @@ import {
     updateOverlayEnabled,
     loadSavedConfigurations,
 } from '../../actions/guiActions';
-import { ThunkDispatch } from 'redux-thunk';
-import { AppState } from '../../store';
-import { connect } from 'react-redux';
-import { GuiParametersState } from '../../store/guiTypes';
 import logger from '../../handlers/logger';
 import viewport from '../../gameInjection/viewport';
 import { updateMetadata } from '../../actions/pixelData';
 import BotModal from '../botModal/botModal';
+import { observer } from 'mobx-react';
+import { overlayStore } from '../../store/overlayStore';
+import { gameStore } from '../../store/gameStore';
 
-interface OwnState {}
-
-interface OwnProps {}
-
-interface StateProps {
-    guiState: GuiParametersState;
-}
-
-interface DispatchProps {
-    updateGame: (
-        canvasId?: string,
-        centerX?: number,
-        centerY?: number,
-        zoomLevel?: number,
-        isMouseDragging?: boolean,
-    ) => void;
-    updateImage: (imgUrl: string) => void;
-    updateConfig: (transparency?: number, x?: number, y?: number) => void;
-    updateModifications: (
-        modificationsAvailable?: boolean,
-        doModifications?: boolean,
-        shouldConvertColors?: boolean,
-        imageBrightness?: number,
-    ) => void;
-    updateOverlayEnabled: (isEnabled: boolean) => void;
-    loadSavedConfigs: () => void;
-    updateMetadata: () => void;
-}
-
-type Props = StateProps & DispatchProps & OwnProps;
-
-class App extends React.Component<Props, OwnState> {
-    constructor(props: Props) {
+@observer
+class App extends React.Component {
+    constructor(props: {}) {
         super(props);
 
         this.state = {};
 
         // App was just loaded. Set initial values.
-        this.props.updateGame(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
-        this.props.loadSavedConfigs();
+        updateGameState(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
+        loadSavedConfigurations();
 
         // TODO: move this logic out somewhere else.
         window.addEventListener('hashchange', () => {
             // If url is not set, update current coordinates to follow middle of screen
-            if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
-                this.props.updateConfig(undefined, urlHelper.xCoord, urlHelper.yCoord);
+            if (!overlayStore.overlayImage.inputImage.url && !overlayStore.overlayImage.inputImage.file) {
+                updateImagePlacementConfiguration(undefined, urlHelper.xCoord, urlHelper.yCoord);
             }
 
-            if (this.props.guiState.currentGameState.canvasStringId !== urlHelper.canvasStr) {
+            if (gameStore.gameState.activeCanvasStringId !== urlHelper.canvasStr) {
                 logger.log('Canvas has changed!');
-                this.props.updateGame(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
+                updateGameState(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
                 urlHelper.stickToGrid();
             }
 
@@ -80,20 +49,20 @@ class App extends React.Component<Props, OwnState> {
                 return;
             }
 
-            this.props.updateImage(shared.overlayImageUrl);
-            this.props.updateModifications(
+            updateInputImage(shared.overlayImageUrl);
+            updateImageModifiers(
                 shared.modifications.modificationsAvailable,
                 shared.modifications.doModifications,
                 shared.modifications.shouldConvertColors,
                 shared.modifications.imageBrightness,
             );
-            this.props.updateConfig(
+            updateImagePlacementConfiguration(
                 shared.placementConfiguration.transparency,
                 shared.placementConfiguration.xOffset,
                 shared.placementConfiguration.yOffset,
             );
 
-            this.props.updateGame(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
+            updateGameState(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
         });
 
         let isMoving = false;
@@ -105,7 +74,7 @@ class App extends React.Component<Props, OwnState> {
                 return;
             }
             isMoving = true;
-            this.props.updateGame(urlHelper.canvasStr, undefined, undefined, undefined, isMoving);
+            updateGameState(urlHelper.canvasStr, undefined, undefined, undefined, isMoving);
         };
 
         // TODO this can be replaced with getter/setter on window.lastPosX
@@ -119,23 +88,23 @@ class App extends React.Component<Props, OwnState> {
             const x = (window as any).lastPosX || urlHelper.xCoord;
             const y = (window as any).lastPosY || urlHelper.yCoord;
             // if no picture provided, set coordinates to center of the screen
-            if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
-                this.props.updateConfig(undefined, Math.round(x), Math.round(y));
+            if (!overlayStore.overlayImage.inputImage.url && !overlayStore.overlayImage.inputImage.file) {
+                updateImagePlacementConfiguration(undefined, Math.round(x), Math.round(y));
             } else {
             }
-            this.props.updateGame(undefined, x, y, undefined, isMoving);
+            updateGameState(undefined, x, y, undefined, isMoving);
         };
 
         let timeoutAfterScroll = -1;
         viewport.onWheel = (e, c): void => {
-            if (!this.props.guiState.overlayImage.inputImage.url && !this.props.guiState.overlayImage.inputImage.file) {
+            if (!overlayStore.overlayImage.inputImage.url && !overlayStore.overlayImage.inputImage.file) {
                 // if no picture provided, set coordinates to center of the screen
-                this.props.updateConfig(undefined, urlHelper.xCoord, urlHelper.yCoord);
+                updateImagePlacementConfiguration(undefined, urlHelper.xCoord, urlHelper.yCoord);
             } else {
             }
-            this.props.updateGame(undefined, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
+            updateGameState(undefined, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
 
-            if (!this.props.guiState.overlayEnabled) {
+            if (!overlayStore.overlayEnabled) {
                 // Should not re-stick/snap to grid if overlay is disabled.
                 return;
             }
@@ -153,10 +122,7 @@ class App extends React.Component<Props, OwnState> {
             timeoutAfterScroll = setTimeout(() => {
                 clearTimeout(timeoutAfterScroll);
                 timeoutAfterScroll = -1;
-                if (
-                    this.props.guiState.overlayImage.inputImage.url ||
-                    this.props.guiState.overlayImage.inputImage.file
-                ) {
+                if (overlayStore.overlayImage.inputImage.url || overlayStore.overlayImage.inputImage.file) {
                     urlHelper.stickToGrid();
                 }
             }, 1000) as any;
@@ -185,7 +151,7 @@ class App extends React.Component<Props, OwnState> {
             switch (key) {
                 case 79 /* O key */: {
                     event.stopImmediatePropagation();
-                    this.props.updateOverlayEnabled(!this.props.guiState.overlayEnabled);
+                    updateOverlayEnabled(!overlayStore.overlayEnabled);
                     break;
                 }
 
@@ -198,68 +164,14 @@ class App extends React.Component<Props, OwnState> {
     }
 
     render(): React.ReactNode {
-        const { guiState } = this.props;
         return (
             <div>
-                {guiState.overlayEnabled ? <OverlayImage /> : undefined}
+                {overlayStore.overlayEnabled ? <OverlayImage /> : undefined}
                 <ConfigurationModal />
-                {guiState.isBotModalVisible ? <BotModal /> : undefined}
+                {overlayStore.isBotModalVisible ? <BotModal /> : undefined}
             </div>
         );
     }
-
-    modifyAvailableChanged(available: boolean): void {
-        this.setState(
-            (prevState): OwnState => {
-                return {
-                    ...prevState,
-                    modifyImageAvailable: available,
-                };
-            },
-        );
-    }
-
-    onApplyConfig(config: Configuration): void {
-        this.setState((prevState) => {
-            return {
-                ...prevState,
-                activeConfiguration: config,
-            };
-        });
-    }
 }
 
-function mapStateToProps(state: AppState, ownProps: OwnProps): StateProps {
-    return {
-        guiState: state.guiData,
-    };
-}
-
-function mapDispatchToProps(dispatch: ThunkDispatch<{}, {}, any>, ownProps: OwnProps): DispatchProps {
-    return {
-        updateGame: (
-            canvasStringId?: string,
-            centerX?: number,
-            centerY?: number,
-            zoomLevel?: number,
-            isMouseDragging?: boolean,
-        ): unknown => dispatch(updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging)),
-        updateImage: (imgUrl: string): unknown => dispatch(updateInputImage(imgUrl)),
-        updateConfig: (transparency?: number, x?: number, y?: number): unknown =>
-            dispatch(updateImagePlacementConfiguration(transparency, x, y)),
-        updateModifications: (
-            modificationsAvailable?: boolean,
-            doModifications?: boolean,
-            shouldConvertColors?: boolean,
-            imageBrightness?: number,
-        ): unknown =>
-            dispatch(
-                updateImageModifiers(modificationsAvailable, doModifications, shouldConvertColors, imageBrightness),
-            ),
-        updateOverlayEnabled: (isEnabled: boolean): unknown => dispatch(updateOverlayEnabled(isEnabled)),
-        loadSavedConfigs: (): unknown => dispatch(loadSavedConfigurations()),
-        updateMetadata: (): unknown => dispatch(updateMetadata()),
-    };
-}
-
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(mapStateToProps, mapDispatchToProps)(App);
+export default App;

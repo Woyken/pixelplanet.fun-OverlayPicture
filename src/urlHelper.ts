@@ -1,5 +1,5 @@
-import { PlacementConfiguration, ImageModifiers, GuiParametersState } from './store/guiTypes';
 import logger from './handlers/logger';
+import { OverlayStore, ImageModifiers, PlacementConfiguration } from './store/overlayStore';
 
 export interface SharableConfig {
     modifications: ImageModifiers;
@@ -65,7 +65,7 @@ class UrlHelper {
         return;
     }
 
-    public sharableConfigFromState(state: GuiParametersState): SharableConfig | null {
+    public sharableConfigFromState(state: OverlayStore): SharableConfig | null {
         if (!state.overlayImage.inputImage.url) {
             logger.logWarn('url is not set, cannot generate sharable config');
             return null;

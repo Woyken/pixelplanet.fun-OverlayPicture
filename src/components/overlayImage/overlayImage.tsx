@@ -1,14 +1,13 @@
 import React from 'react';
 import autoBind from 'react-autobind';
 import './overlayImage.scss';
-import { connect } from 'react-redux';
-import { OverlayImageOutput, PlacementConfiguration, GameState, OverlayImageInput } from '../../store/guiTypes';
-import { AppState, ActionTypes } from '../../store';
-import { ThunkDispatch } from 'redux-thunk';
 import logger from '../../handlers/logger';
-import { LoadedChunkData, CanvasMetadata } from '../../store/chunkDataTypes';
 import { ChunkCell } from '../../chunkHelper';
 import { loadChunkData } from '../../actions/pixelData';
+import { GameState, gameStore } from '../../store/gameStore';
+import { overlayStore, PlacementConfiguration } from '../../store/overlayStore';
+import { observe } from 'mobx';
+import { observer } from 'mobx-react';
 
 interface OwnState {
     zoom: number;
@@ -18,44 +17,50 @@ interface OwnState {
 
 interface OwnProps {}
 
-interface StateProps {
-    placementConfiguration: PlacementConfiguration;
-    outputImage: OverlayImageOutput;
-    gameState: GameState;
-    inputImage: OverlayImageInput;
-    loadedChunks: LoadedChunkData[];
-    canvasesMetadata: CanvasMetadata[];
-    activeCanvasId: number;
-}
+interface StateProps {}
 
-interface DispatchProps {
-    loadChunkData(canvasId: number, chunk: ChunkCell): void;
-}
+interface DispatchProps {}
 
 type Props = StateProps & DispatchProps & OwnProps;
 
+@observer
 class OverlayImage extends React.Component<Props, OwnState> {
     private imageCanvasRef: React.RefObject<HTMLCanvasElement>;
     private imageImageRef: React.RefObject<HTMLImageElement>;
 
     constructor(props: Props) {
         super(props);
-        this.state = this.getImagePositionOffsetState(props.gameState, props.placementConfiguration);
+        this.state = this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration);
         this.imageCanvasRef = React.createRef();
         this.imageImageRef = React.createRef();
 
         autoBind(this);
-    }
 
-    async componentDidUpdate(prevProps: Readonly<Props>): Promise<void> {
-        if (prevProps !== this.props) {
+        observe(overlayStore.overlayImage.outputImage, 'outputImageData', (change) => {
+            if (change.newValue !== change.oldValue) {
+                this.updateSource();
+            }
+        });
+
+        observe(overlayStore.placementConfiguration, 'xOffset', (change) => {
             // Input has changed, update state.
-            const { gameState, placementConfiguration } = this.props;
-            this.setState(this.getImagePositionOffsetState(gameState, placementConfiguration));
-        }
-        if (this.props.outputImage.outputImageData !== prevProps.outputImage.outputImageData) {
-            await this.updateSource();
-        }
+            this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
+        });
+
+        observe(overlayStore.placementConfiguration, 'yOffset', (change) => {
+            // Input has changed, update state.
+            this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
+        });
+
+        observe(gameStore.gameState, 'centerX', (change) => {
+            // Input has changed, update state.
+            this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
+        });
+
+        observe(gameStore.gameState, 'centerY', (change) => {
+            // Input has changed, update state.
+            this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
+        });
     }
 
     getImagePositionOffsetState(gameState: GameState, placementConfiguration: PlacementConfiguration): OwnState {
@@ -68,19 +73,17 @@ class OverlayImage extends React.Component<Props, OwnState> {
     }
 
     render(): React.ReactNode {
-        const { outputImage, placementConfiguration, inputImage, gameState } = this.props;
-
         const { zoom, leftOffset, topOffset } = this.state;
 
-        const opacity = placementConfiguration.transparency / 100;
+        const opacity = overlayStore.placementConfiguration.transparency / 100;
 
         return (
             <div
                 style={{
-                    display: gameState.isMouseDragging ? 'none' : '',
+                    display: gameStore.gameState.isMouseDragging ? 'none' : '',
                 }}
             >
-                {outputImage.outputImageData ? (
+                {overlayStore.overlayImage.outputImage.outputImageData ? (
                     <canvas
                         ref={this.imageCanvasRef}
                         className="PictureOverlay_OverlayImage"
@@ -90,14 +93,14 @@ class OverlayImage extends React.Component<Props, OwnState> {
                             left: leftOffset,
                             top: topOffset,
                         }}
-                        width={outputImage.outputImageData?.width}
-                        height={outputImage.outputImageData?.height}
+                        width={overlayStore.overlayImage.outputImage.outputImageData?.width}
+                        height={overlayStore.overlayImage.outputImage.outputImageData?.height}
                     />
                 ) : (
                     <img
                         ref={this.imageImageRef}
                         className="PictureOverlay_OverlayImage"
-                        src={inputImage.url}
+                        src={overlayStore.overlayImage.inputImage.url}
                         style={{
                             opacity,
                             transform: `scale(${zoom})`,
@@ -111,11 +114,10 @@ class OverlayImage extends React.Component<Props, OwnState> {
     }
 
     async updateSource(): Promise<void> {
-        const { outputImage } = this.props;
-        if (!outputImage.outputImageData) {
+        if (!overlayStore.overlayImage.outputImage.outputImageData) {
             return;
         }
-        logger.log(`updating image source, repainting canvas... ${outputImage.outputImageData.data.length}`);
+        logger.log(`updating image source, repainting canvas... ${overlayStore.overlayImage.outputImage.outputImageData.data.length}`);
         const canvas = this.imageCanvasRef.current;
         if (!canvas) {
             logger.logError('canvas is null');
@@ -124,31 +126,10 @@ class OverlayImage extends React.Component<Props, OwnState> {
         // const image = this.refs.image as HTMLImageElement;
         const ctx = canvas.getContext('2d');
 
-        ctx?.clearRect(0, 0, outputImage.outputImageData.width, outputImage.outputImageData.height);
+        ctx?.clearRect(0, 0, overlayStore.overlayImage.outputImage.outputImageData.width, overlayStore.overlayImage.outputImage.outputImageData.height);
 
-        ctx?.putImageData(outputImage.outputImageData, 0, 0);
+        ctx?.putImageData(overlayStore.overlayImage.outputImage.outputImageData, 0, 0);
     }
 }
 
-function mapStateToProps(state: AppState): StateProps {
-    return {
-        outputImage: state.guiData.overlayImage.outputImage,
-        placementConfiguration: state.guiData.placementConfiguration,
-        gameState: state.guiData.currentGameState,
-        inputImage: state.guiData.overlayImage.inputImage,
-        loadedChunks: state.chunkData.loadedChunks,
-        canvasesMetadata: state.chunkData.canvasesMetadata,
-        activeCanvasId: state.chunkData.activeCanvasId,
-    };
-}
-
-function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
-    return {
-        loadChunkData: (canvasId: number, chunk: ChunkCell): unknown => dispatch(loadChunkData(canvasId, chunk)),
-    };
-}
-
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(
-    mapStateToProps,
-    mapDispatchToProps,
-)(OverlayImage);
+export default OverlayImage;

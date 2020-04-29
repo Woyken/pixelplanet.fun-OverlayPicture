@@ -1,10 +1,8 @@
 import React from 'react';
 import ConfigDropDownContent from './Content/configDropDownContent';
 import autoBind from 'react-autobind';
-import { GuiParametersState, SavedConfiguration } from '../../store/guiTypes';
-import { connect } from 'react-redux';
-import { AppState, ActionTypes } from '../../store';
-import { ThunkDispatch } from 'redux-thunk';
+import { observer } from 'mobx-react';
+import { overlayStore, SavedConfiguration } from '../../store/overlayStore';
 import { saveCurrentConfiguration, applySavedConfiguration, removeSavedConfiguration } from '../../actions/guiActions';
 
 interface OwnState {
@@ -12,20 +10,10 @@ interface OwnState {
 }
 
 interface OwnProps {}
-interface StateProps {
-    guiState: GuiParametersState;
-}
 
-interface DispatchProps {
-    saveCurrentConfig: () => void;
-    applyConfig: (config: SavedConfiguration) => void;
-    removeConfig: (imgUrl: string) => void;
-}
-
-type Props = StateProps & DispatchProps & OwnProps;
-
-class ConfigDropDown extends React.Component<Props, OwnState> {
-    constructor(props: Props) {
+@observer
+class ConfigDropDown extends React.Component<OwnProps, OwnState> {
+    constructor(props: OwnProps) {
         super(props);
         this.state = {
             isActive: false,
@@ -36,7 +24,6 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
 
     render(): React.ReactNode {
         // tslint:disable-next-line:typedef
-        const { guiState } = this.props;
         const { isActive } = this.state;
         return (
             <div>
@@ -51,7 +38,7 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
                 <ConfigDropDownContent
                     onApplyConfig={this.onApplyConfig}
                     onRemoveConfig={this.onRemoveConfig}
-                    configs={guiState.savedConfigurations.configs}
+                    configs={overlayStore.savedConfigs}
                     isActive={isActive}
                 />
             </div>
@@ -59,21 +46,17 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
     }
 
     onSaveActiveConfiguration(): void {
-        // tslint:disable-next-line: typedef
-        const { saveCurrentConfig } = this.props;
-        saveCurrentConfig();
+        saveCurrentConfiguration();
     }
 
     onApplyConfig(config: SavedConfiguration): void {
         this.toggle(false);
 
-        const { applyConfig } = this.props;
-        applyConfig(config);
+        applySavedConfiguration(config);
     }
 
     onRemoveConfig(config: SavedConfiguration): void {
-        const { removeConfig } = this.props;
-        removeConfig(config.imageUrl);
+        removeSavedConfiguration(config.imageUrl);
     }
 
     toggle(enabled?: boolean): void {
@@ -88,21 +71,4 @@ class ConfigDropDown extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState): StateProps {
-    return {
-        guiState: state.guiData,
-    };
-}
-
-function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
-    return {
-        saveCurrentConfig: (): unknown => dispatch(saveCurrentConfiguration()),
-        applyConfig: (config: SavedConfiguration): unknown => dispatch(applySavedConfiguration(config)),
-        removeConfig: (imgUrl: string): unknown => dispatch(removeSavedConfiguration(imgUrl)),
-    };
-}
-
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(
-    mapStateToProps,
-    mapDispatchToProps,
-)(ConfigDropDown);
+export default ConfigDropDown;

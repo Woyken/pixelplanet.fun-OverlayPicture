@@ -3,11 +3,9 @@ import './configurationModal.scss';
 import OverlayConfig from '../overlayConfig/overlayConfig';
 import ConfigDropDown from '../configDropDown/configDropDown';
 import { Checkbox, FormControlLabel, Tooltip } from '@material-ui/core';
-import { GuiParametersState } from '../../store/guiTypes';
-import { AppState, ActionTypes } from '../../store';
-import { connect } from 'react-redux';
-import { ThunkDispatch } from 'redux-thunk';
 import { updateOverlayEnabled, updateBotModalVisible } from '../../actions/guiActions';
+import { overlayStore } from '../../store/overlayStore';
+import { observer } from 'mobx-react';
 
 interface OwnState {
     isModalMinimized: boolean;
@@ -15,19 +13,9 @@ interface OwnState {
 
 interface OwnProps {}
 
-interface StateProps {
-    guiState: GuiParametersState;
-}
-
-interface DispatchProps {
-    isEnabled: (isEnabled: boolean) => void;
-    openBotModal: (isVisible: boolean) => void;
-}
-
-type Props = StateProps & DispatchProps & OwnProps;
-
-class ConfigurationModal extends React.Component<Props, OwnState> {
-    constructor(props: Props) {
+@observer
+class ConfigurationModal extends React.Component<OwnProps, OwnState> {
+    constructor(props: OwnProps) {
         super(props);
         this.state = {
             isModalMinimized: false,
@@ -35,8 +23,6 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
     }
 
     render(): React.ReactNode {
-        const { guiState, isEnabled } = this.props;
-
         return (
             <div id="PictureOverlay_ConfigurationModalRoot">
                 <Tooltip title="Toggle on/off Overlay. Shortcut: O">
@@ -44,8 +30,8 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
                         control={
                             <Checkbox
                                 color="primary"
-                                checked={guiState.overlayEnabled}
-                                onChange={(e): void => isEnabled(e.target.checked)}
+                                checked={overlayStore.overlayEnabled}
+                                onChange={(e): void => updateOverlayEnabled(e.target.checked)}
                             />
                         }
                         label="Image Overlay"
@@ -54,7 +40,7 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
                 </Tooltip>
                 <div
                     style={{
-                        display: guiState.overlayEnabled ? '' : 'none',
+                        display: overlayStore.overlayEnabled ? '' : 'none',
                     }}
                 >
                     <div
@@ -66,17 +52,15 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
                             <OverlayConfig />
                         </div>
 
-                        {this.props.guiState.modifications.modificationsAvailable &&
-                        this.props.guiState.modifications.shouldConvertColors ? (
+                        {overlayStore.modifications.modificationsAvailable &&
+                        overlayStore.modifications.shouldConvertColors ? (
                             <Tooltip title="Open BOT window">
                                 <img
                                     style={{ position: 'absolute', right: '0.4em' }}
                                     width="4%"
                                     height="4%"
                                     src="https://fonts.gstatic.com/s/i/materialicons/accessible_forward/v4/24px.svg"
-                                    onClick={(): void =>
-                                        this.props.openBotModal(!this.props.guiState.isBotModalVisible)
-                                    }
+                                    onClick={(): void => updateBotModalVisible(!overlayStore.isBotModalVisible)}
                                 />
                             </Tooltip>
                         ) : null}
@@ -102,20 +86,4 @@ class ConfigurationModal extends React.Component<Props, OwnState> {
     }
 }
 
-function mapStateToProps(state: AppState): StateProps {
-    return {
-        guiState: state.guiData,
-    };
-}
-
-function mapDispatchToProps(dispatch: ThunkDispatch<AppState, null, ActionTypes>): DispatchProps {
-    return {
-        isEnabled: (isEnabled: boolean): unknown => dispatch(updateOverlayEnabled(isEnabled)),
-        openBotModal: (isVisible: boolean): unknown => dispatch(updateBotModalVisible(isVisible)),
-    };
-}
-
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(
-    mapStateToProps,
-    mapDispatchToProps,
-)(ConfigurationModal);
+export default ConfigurationModal;
