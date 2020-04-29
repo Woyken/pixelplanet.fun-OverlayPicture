@@ -8,6 +8,8 @@ import BotModal from '../botModal/botModal';
 import { observer } from 'mobx-react';
 import { overlayStore } from '../../store/overlayStore';
 import { initWindowEventHooks } from '../../handlers/eventHooks';
+import { updateMetadata } from '../../actions/pixelData';
+import logger from '../../handlers/logger';
 
 @observer
 class App extends React.Component {
@@ -19,6 +21,7 @@ class App extends React.Component {
         // App was just loaded. Set initial values.
         updateGameStateFAF(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
         loadSavedConfigurations();
+        updateMetadata().catch(() => logger.logWarn(`Failed to fetch initial metadata`));
 
         initWindowEventHooks();
 
