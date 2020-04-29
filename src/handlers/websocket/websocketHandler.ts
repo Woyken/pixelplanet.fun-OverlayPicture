@@ -56,6 +56,7 @@ class WebSocketHandler {
     }
 
     public watchChunk(chunk: ChunkCell): void {
+        logger.log(`subscribing to chunk ${JSON.stringify(chunk)}`);
         const buffer = registerChunk.dehydrate(chunk);
         if (this.isConnected) {
             this.webSocket?.send(buffer);

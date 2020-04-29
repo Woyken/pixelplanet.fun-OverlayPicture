@@ -7,11 +7,11 @@ import { updatePixel, updateMetadata } from '../actions/pixelData';
 
 export function initWebSocketHooks(): void {
     chunkStore.loadedChunks.observe((changes) => {
-        webSocketHandler.watchChunk(indexToChunk(changes.index));
+        webSocketHandler.watchChunk(indexToChunk(changes.object[changes.index].chunkIdx));
     });
 
-    observe(gameStore.gameState, 'activeCanvasStringId', (changes) => {
-        webSocketHandler.setCanvas(changes.newValue as any);
+    observe(gameStore.gameState, 'activeCanvasId', (changes) => {
+        if (changes.newValue) webSocketHandler.setCanvas(changes.newValue);
     });
 
     webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex): void => {
