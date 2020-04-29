@@ -10,6 +10,7 @@ import colorConverter from '../colorConverter';
 export async function botUpdateFeatureEnabled(isEnabled: boolean): Promise<void> {
     if (!isEnabled) {
         botState.canvasImageData.processedPixelsTodo.replace([]);
+        botState.config.isEnabled = false;
     }
     botState.isFeatureEnabled = isEnabled;
 }
@@ -175,13 +176,16 @@ async function botStartWorkAsync(): Promise<void> {
         await botStartProcessingImage();
 
         if (botState.canvasImageData.processedPixelsTodo.length <= 0) {
-            // TODO...
-            // Mo more pixels to place.
-            logger.logWarn('no pixels to place');
-            return;
+            if (botState.config.isWatching) {
+                logger.log('nothing to place, but keeping awake, watching for new pixels.');
+            } else {
+                // No more pixels to place.
+                logger.logWarn('no pixels to place');
+                return;
+            }
         }
         // Main loop until nothing left to place.
-        while (botState.canvasImageData.processedPixelsTodo.length > 0) {
+        while (botState.canvasImageData.processedPixelsTodo.length > 0 || botState.config.isWatching) {
             if (gameStore.gameState.activeCanvasId === undefined) {
                 return;
             }
@@ -191,7 +195,16 @@ async function botStartWorkAsync(): Promise<void> {
             const pixelPlacingTimeout = Math.max(canvasData.timeoutOnEmpty, canvasData.timeoutOnReplace);
             // Wait until there's only few seconds left in timeout
             await waitFor(timeUntilEmpty - pixelPlacingTimeout * Math.random());
-            while (botState.pixelPlaceTimeEmpty - new Date().getTime() < canvasData.maxTimeout - pixelPlacingTimeout) {
+
+            if (botState.config.isWatching && botState.canvasImageData.processedPixelsTodo.length <= 0) {
+                logger.log(`Waiting for few seconds between checks.`);
+                await waitFor(2000);
+            }
+
+            while (
+                botState.canvasImageData.processedPixelsTodo.length > 0 &&
+                botState.pixelPlaceTimeEmpty - new Date().getTime() < canvasData.maxTimeout - pixelPlacingTimeout
+            ) {
                 if (!botState.isFeatureEnabled || !botState.config.isEnabled) {
                     logger.log(`bot worker disabled in the middle of it`);
                     return;
@@ -209,9 +222,10 @@ async function botStartWorkAsync(): Promise<void> {
         logger.logWarn('JOB IS DONE');
     } catch (error) {
         logger.logError(`Bot worker process has failed ${error}`);
-        botState.config.isEnabled = false;
     } finally {
         botState.canvasImageData.isBotWorkingInProgress = false;
+        botState.config.isEnabled = false;
+        botState.config.isWatching = false;
     }
 }
 
@@ -222,6 +236,7 @@ export async function botUpdateEnabled(isEnabled: boolean): Promise<void> {
 
     if (!isEnabled) {
         botState.canvasImageData.processedPixelsTodo.replace([]);
+        botState.config.isWatching = false;
     }
     botState.config.isEnabled = isEnabled;
     if (isEnabled) await botStartWorkAsync();

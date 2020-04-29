@@ -4,7 +4,7 @@ import colorConverter from '../colorConverter';
 import { gameStore, CanvasMetadata } from '../store/gameStore';
 import logger from '../handlers/logger';
 import { chunkStore, LoadedChunkData } from '../store/chunkStore';
-import { botState } from '../store/botState';
+import { botState, PixelToPlace } from '../store/botState';
 import { overlayStore } from '../store/overlayStore';
 
 export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<ArrayBuffer> {
@@ -96,6 +96,37 @@ export async function loadChunkData(canvasId: number, chunk: ChunkCell): Promise
     }
 }
 
+function getPixelFromOutput(x: number, y: number): number | undefined {
+    const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
+    if (!outputImageData) return;
+    if (gameStore.gameState.activeCanvasId == undefined) return;
+    const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+    if (!canvasData) {
+        logger.logError('canvasData is null');
+        return;
+    }
+    const xi = x - overlayStore.placementConfiguration.xOffset;
+    const yi = y - overlayStore.placementConfiguration.yOffset;
+    const idx = (outputImageData.width * yi + xi) << 2;
+    const r = outputImageData.data[idx + 0];
+    const g = outputImageData.data[idx + 1];
+    const b = outputImageData.data[idx + 2];
+    const a = outputImageData.data[idx + 3];
+
+    const colorIndexImage = colorConverter.convertActualColorFromPalette(
+        canvasData.colors,
+        canvasData.colorsReservedCount,
+        r,
+        g,
+        b,
+    );
+
+    // If alpha is below 30 ignore it.
+    if (a > 30) {
+        return colorIndexImage;
+    }
+}
+
 function updatePixelForBot(x: number, y: number, color: number): void {
     if (
         x >= botState.config.imageTopLeft.x &&
@@ -103,10 +134,15 @@ function updatePixelForBot(x: number, y: number, color: number): void {
         y >= botState.config.imageTopLeft.y &&
         y < botState.config.imageTopLeft.y + botState.config.imageHeight
     ) {
+        logger.log(`Pixel is within bot's area`);
         // the pixel is within bot's area.
         // Just set it to correct value. Will resolve itself down the line.
         const result = botState.canvasImageData.processedPixelsTodo.find((p) => p.pos.x === x && p.pos.y === y);
-        if (result) result.colorIndex = color;
+        const colorToPlace = getPixelFromOutput(x, y);
+        if (colorToPlace !== undefined && colorToPlace !== color) {
+            if (result) result.colorIndex = colorToPlace;
+            else botState.canvasImageData.processedPixelsTodo.push(new PixelToPlace({ x, y }, colorToPlace));
+        }
     }
 }
 
@@ -114,12 +150,14 @@ export function updatePixel(pixel: Cell, colorIndex: number): void {
     if (gameStore.gameState.activeCanvasId === undefined) {
         return;
     }
+    logger.log(`Pixel update ${JSON.stringify(pixel)} ${colorIndex}`);
     const index = pixelInChunkOffset(pixel, gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId].size);
     const chunk = pixelToChunk(pixel, gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId].size);
 
     const chunkData = chunkStore.getChunk(chunkToIndex(chunk))?.data;
     if (!chunkData) {
         // We've got nothing loaded to update.
+        logger.log(`Don't have chunk data for it`);
         return;
     }
     chunkData[index] = colorIndex;

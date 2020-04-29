@@ -17,7 +17,6 @@ import {
 
 interface OwnState {
     isModalMinimized: boolean;
-    botAlwaysWatching: boolean;
 }
 
 interface OwnProps {}
@@ -30,7 +29,6 @@ class BotModal extends React.Component<OwnProps, OwnState> {
         super(props);
         this.state = {
             isModalMinimized: false,
-            botAlwaysWatching: false,
         };
 
         autoBind(this);
@@ -79,18 +77,18 @@ class BotModal extends React.Component<OwnProps, OwnState> {
                     >
                         {botState.isFeatureEnabled ? (
                             <div>
-                                <Tooltip title={'Warning! When bot finishes, can cause massive amounts of lag!'}>
+                                <Tooltip title={'When bot finishes, keep on looking after the picture'}>
                                     <FormControlLabel
                                         control={
                                             <Checkbox
                                                 color="secondary"
-                                                checked={this.state.botAlwaysWatching}
-                                                onChange={(e): void =>
-                                                    this.setState({ botAlwaysWatching: e.target.checked })
-                                                }
+                                                checked={botState.config.isWatching}
+                                                onChange={(e): void => {
+                                                    botState.config.isWatching = e.target.checked;
+                                                }}
                                             />
                                         }
-                                        label="Always watching mode"
+                                        label="Protection mode"
                                         labelPlacement="end"
                                     />
                                 </Tooltip>

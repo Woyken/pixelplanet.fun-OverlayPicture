@@ -33,6 +33,7 @@ class BotCell implements Cell {
 
 export class BotConfiguration {
     @observable isEnabled: boolean;
+    @observable isWatching = false;
     @observable imageWidth: number;
     @observable imageHeight: number;
     @observable imageTopLeft: BotCell;
