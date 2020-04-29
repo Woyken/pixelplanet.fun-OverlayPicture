@@ -4,7 +4,7 @@ import { configurationStore } from '../configurationStore';
 import { updateMetadata } from './pixelData';
 import { overlayStore, SavedConfiguration, ImageModifiers, PlacementConfiguration } from '../store/overlayStore';
 import { CanvasMetadata, gameStore } from '../store/gameStore';
-import { botState } from '../store/botState';
+import { botUpdateEnabled } from './botActions';
 
 export function updateOverlayEnabled(isEnabled: boolean): void {
     overlayStore.overlayEnabled = isEnabled;
@@ -162,6 +162,7 @@ export async function setActiveCanvasByStringId(canvasStringId: string): Promise
     logger.log('updating active canvas id');
     const idx = gameStore.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
     if (idx >= 0) {
+        await botUpdateEnabled(false);
         gameStore.gameState.activeCanvasId = gameStore.canvasesMetadata[idx].id;
         await startProcessingImage();
     }
