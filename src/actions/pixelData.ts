@@ -232,7 +232,7 @@ export async function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: n
 
         // Wait till 0 to place next pixel to be safe.
         // since this is not shown anywhere, just replace it...
-        botState.placeNextPixelAt = new Date().getTime() + response.waitSeconds * 1000;
+        botState.pixelPlaceTimeEmpty = new Date().getTime() + response.waitSeconds * 1000;
 
         if (response.success) {
             updatePixel(pixel, colorIndex);

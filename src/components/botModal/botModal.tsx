@@ -49,7 +49,7 @@ class BotModal extends React.Component<OwnProps, OwnState> {
         if (!botState.canvasImageData.diffAgainstInputData) {
             return;
         }
-        if (botState.placeNextPixelAt > new Date().getTime()) {
+        if (botState.pixelPlaceTimeEmpty > new Date().getTime()) {
             return;
         }
 

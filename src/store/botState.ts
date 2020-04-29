@@ -39,20 +39,20 @@ export class BotState {
     /**
      * Timestamp in ms when next pixel placement should be done.
      */
-    @observable placeNextPixelAt: number;
+    @observable pixelPlaceTimeEmpty: number;
     @observable pixelBeingPlaced: boolean;
     @observable canvasImageData: BotCanvasImageData;
     @observable config: BotConfiguration;
 
     constructor(
         isFeatureEnabled: boolean,
-        placeNextPixelAt: number,
+        pixelPlaceTimeEmpty: number,
         pixelBeingPlaced: boolean,
         canvasImageData: BotCanvasImageData,
         config: BotConfiguration,
     ) {
         this.isFeatureEnabled = isFeatureEnabled;
-        this.placeNextPixelAt = placeNextPixelAt;
+        this.pixelPlaceTimeEmpty = pixelPlaceTimeEmpty;
         this.pixelBeingPlaced = pixelBeingPlaced;
         this.canvasImageData = canvasImageData;
         this.config = config;
