@@ -1,9 +1,20 @@
-import { observable } from 'mobx';
+import { observable, IObservableArray } from 'mobx';
 import { Cell } from '../chunkHelper';
 
+export class PixelToPlace {
+    @observable pos: Cell;
+    @observable colorIndex: number;
+
+    constructor(pos: Cell, colorIndex: number) {
+        this.pos = pos;
+        this.colorIndex = colorIndex;
+    }
+}
+
 export class BotCanvasImageData {
+    @observable isBotWorkingInProgress = false;
     @observable isProcessing: boolean;
-    @observable diffAgainstInputData?: Uint8Array;
+    @observable processedPixelsTodo: IObservableArray<PixelToPlace> = observable([]);
 
     constructor(isProcessing: boolean) {
         this.isProcessing = isProcessing;

@@ -1,4 +1,4 @@
-import { botState } from '../store/botState';
+import { botState, PixelToPlace } from '../store/botState';
 import { overlayStore } from '../store/overlayStore';
 import logger from '../handlers/logger';
 import { gameStore } from '../store/gameStore';
@@ -7,32 +7,23 @@ import { pixelToChunk, chunkToIndex, pixelInChunkOffset, Cell } from '../chunkHe
 import { chunkStore } from '../store/chunkStore';
 import colorConverter from '../colorConverter';
 
-export async function botUpdateEnabled(isEnabled: boolean): Promise<void> {
-    if (!botState.isFeatureEnabled) {
-        return;
-    }
-
-    if (!isEnabled) {
-        botState.canvasImageData.diffAgainstInputData = undefined;
-    }
-    botState.config.isEnabled = isEnabled;
-}
-
 export async function botUpdateFeatureEnabled(isEnabled: boolean): Promise<void> {
     if (!isEnabled) {
-        botState.canvasImageData.diffAgainstInputData = undefined;
+        botState.canvasImageData.processedPixelsTodo.replace([]);
     }
     botState.isFeatureEnabled = isEnabled;
 }
 
 export async function botStartProcessingImage(): Promise<void> {
-    if (!overlayStore.overlayImage.outputImage.outputImageData) {
+    if (!overlayStore.overlayImage.outputImage.outputImageData || botState.canvasImageData.isProcessing) {
         return;
     }
 
     botState.canvasImageData.isProcessing = true;
     try {
         logger.log('bot processing');
+        // Reset old pixels.
+        botState.canvasImageData.processedPixelsTodo.replace([]);
         if (gameStore.gameState.activeCanvasId === undefined) {
             await updateMetadata();
             if (gameStore.gameState.activeCanvasId === undefined) {
@@ -46,8 +37,8 @@ export async function botStartProcessingImage(): Promise<void> {
             return;
         }
         const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
-        const canvasDiffColorsArray = new Uint8Array(outputImageData.width * outputImageData.height);
         const placementConfiguration = overlayStore.placementConfiguration;
+        // TODO if we want to have some sort of pattern for placing, this is the place for it.
         for (let xi = 0; xi < outputImageData.width; xi++) {
             for (let yi = 0; yi < outputImageData.height; yi++) {
                 const x = xi + placementConfiguration.xOffset;
@@ -68,7 +59,6 @@ export async function botStartProcessingImage(): Promise<void> {
                     }
                 }
                 const colorIndexCanvas = loadedChunk.data[pixelInChunk];
-                const offset = xi + yi * outputImageData.width;
 
                 // Get outputImage values...
                 const idx = (outputImageData.width * yi + xi) << 2;
@@ -85,11 +75,10 @@ export async function botStartProcessingImage(): Promise<void> {
                     b,
                 );
 
-                // Add to array only if they are different or alpha is lower than magical number
-                canvasDiffColorsArray[offset] =
-                    colorConverter.areColorsEqual(canvasData.colors, colorIndexImage, colorIndexCanvas) || a <= 30
-                        ? -1
-                        : colorIndexImage;
+                // If alpha is below 30 ignore it.
+                if (a > 30 && !colorConverter.areColorsEqual(canvasData.colors, colorIndexImage, colorIndexCanvas)) {
+                    botState.canvasImageData.processedPixelsTodo.push(new PixelToPlace({ x, y }, colorIndexImage));
+                }
             }
         }
 
@@ -97,7 +86,6 @@ export async function botStartProcessingImage(): Promise<void> {
         botState.config.imageWidth = outputImageData.width;
         botState.config.imageTopLeft.x = placementConfiguration.xOffset;
         botState.config.imageTopLeft.y = placementConfiguration.yOffset;
-        botState.canvasImageData.diffAgainstInputData = canvasDiffColorsArray;
     } finally {
         logger.log('bot processing end');
         botState.canvasImageData.isProcessing = false;
@@ -159,4 +147,82 @@ export async function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: n
     } finally {
         botState.pixelBeingPlaced = false;
     }
+}
+
+async function waitFor(ms: number): Promise<void> {
+    if (ms < 0) return;
+
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, ms);
+    });
+}
+
+async function botStartWorkAsync(): Promise<void> {
+    if (!botState.isFeatureEnabled || !botState.config.isEnabled) {
+        return;
+    }
+    if (botState.canvasImageData.isBotWorkingInProgress) {
+        logger.logError('Trying to start bot while already in progress?');
+        return;
+    }
+    botState.canvasImageData.isBotWorkingInProgress = true;
+
+    try {
+        logger.log('Starting bot worker');
+        // Make sure we have output we can work with.
+        await botStartProcessingImage();
+
+        if (botState.canvasImageData.processedPixelsTodo.length <= 0) {
+            // TODO...
+            // Mo more pixels to place.
+            logger.logWarn('no pixels to place');
+            return;
+        }
+        // Main loop until nothing left to place.
+        while (botState.canvasImageData.processedPixelsTodo.length > 0) {
+            if (gameStore.gameState.activeCanvasId === undefined) {
+                return;
+            }
+            const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+
+            const timeUntilEmpty = botState.pixelPlaceTimeEmpty - new Date().getTime();
+            const pixelPlacingTimeout = Math.max(canvasData.timeoutOnEmpty, canvasData.timeoutOnReplace);
+            // Wait until there's only few seconds left in timeout
+            await waitFor(timeUntilEmpty - pixelPlacingTimeout * Math.random());
+            while (botState.pixelPlaceTimeEmpty - new Date().getTime() < canvasData.maxTimeout - pixelPlacingTimeout) {
+                if (!botState.isFeatureEnabled || !botState.config.isEnabled) {
+                    logger.log(`bot worker disabled in the middle of it`);
+                    return;
+                }
+                // keep on placing pixels while timeout is reached.
+                const pixelTodo =
+                    botState.canvasImageData.processedPixelsTodo[
+                        botState.canvasImageData.processedPixelsTodo.length - 1
+                    ];
+                logger.log(`about to place ${JSON.stringify(pixelTodo)}`);
+                await botPlacePixel(gameStore.gameState.activeCanvasId, pixelTodo.pos, pixelTodo.colorIndex);
+                botState.canvasImageData.processedPixelsTodo.remove(pixelTodo);
+            }
+        }
+        logger.logWarn('JOB IS DONE');
+    } catch (error) {
+        logger.logError(`Bot worker process has failed ${error}`);
+        botState.config.isEnabled = false;
+    } finally {
+        botState.canvasImageData.isBotWorkingInProgress = false;
+    }
+}
+
+export async function botUpdateEnabled(isEnabled: boolean): Promise<void> {
+    if (!botState.isFeatureEnabled) {
+        return;
+    }
+
+    if (!isEnabled) {
+        botState.canvasImageData.processedPixelsTodo.replace([]);
+    }
+    botState.config.isEnabled = isEnabled;
+    if (isEnabled) await botStartWorkAsync();
 }

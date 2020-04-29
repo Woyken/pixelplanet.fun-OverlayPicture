@@ -96,6 +96,20 @@ export async function loadChunkData(canvasId: number, chunk: ChunkCell): Promise
     }
 }
 
+function updatePixelForBot(x: number, y: number, color: number): void {
+    if (
+        x >= botState.config.imageTopLeft.x &&
+        x < botState.config.imageTopLeft.x + botState.config.imageWidth &&
+        y >= botState.config.imageTopLeft.y &&
+        y < botState.config.imageTopLeft.y + botState.config.imageHeight
+    ) {
+        // the pixel is within bot's area.
+        // Just set it to correct value. Will resolve itself down the line.
+        const result = botState.canvasImageData.processedPixelsTodo.find((p) => p.pos.x === x && p.pos.y === y);
+        if (result) result.colorIndex = color;
+    }
+}
+
 export function updatePixel(pixel: Cell, colorIndex: number): void {
     if (gameStore.gameState.activeCanvasId === undefined) {
         return;
@@ -110,22 +124,7 @@ export function updatePixel(pixel: Cell, colorIndex: number): void {
     }
     chunkData[index] = colorIndex;
 
-    if (
-        botState.canvasImageData.diffAgainstInputData &&
-        pixel.x >= botState.config.imageTopLeft.x &&
-        pixel.x < botState.config.imageTopLeft.x + botState.config.imageWidth &&
-        pixel.y >= botState.config.imageTopLeft.y &&
-        pixel.y < botState.config.imageTopLeft.y + botState.config.imageHeight
-    ) {
-        // the pixel is within bot's area.
-        // Just set it to correct value. Will resolve itself down the line.
-        const x = pixel.x - botState.config.imageTopLeft.x;
-        const y = pixel.y - botState.config.imageTopLeft.y;
-        const offset = x + y * botState.config.imageWidth;
-        const newDiffData = new Uint8Array(botState.canvasImageData.diffAgainstInputData);
-        newDiffData[offset] = colorIndex;
-        botState.canvasImageData.diffAgainstInputData = newDiffData;
-    }
+    updatePixelForBot(pixel.x, pixel.y, colorIndex);
 }
 
 export async function setActiveCanvasByStringIdAfterMetadataFetch(): Promise<void> {

@@ -36,55 +36,6 @@ class BotModal extends React.Component<OwnProps, OwnState> {
         autoBind(this);
     }
 
-    onUpdate(): void {
-        if (!botState.isFeatureEnabled || !botState.config.isEnabled) {
-            return;
-        }
-        if (!botState.canvasImageData.diffAgainstInputData && !botState.canvasImageData.isProcessing) {
-            botStartProcessingImage();
-            return;
-        }
-        if (!botState.canvasImageData.diffAgainstInputData) {
-            return;
-        }
-        if (botState.pixelPlaceTimeEmpty > new Date().getTime()) {
-            return;
-        }
-
-        const pixelAt = botState.canvasImageData.diffAgainstInputData.findIndex((c) => c !== -1 && c !== 255);
-        if (pixelAt === -1) {
-            // Looks like we're all done.
-            if (!this.state.botAlwaysWatching) {
-                botUpdateEnabled(false);
-            } else {
-                // restart bot. WARNING. this is very poor performance solution... Need to fix
-                setTimeout(() => {
-                    botUpdateEnabled(false);
-                    botUpdateEnabled(true);
-                }, 500);
-            }
-            return;
-        }
-        const xi = pixelAt % botState.config.imageWidth;
-        const yi = Math.floor(pixelAt / botState.config.imageWidth);
-        const x = xi + botState.config.imageTopLeft.x;
-        const y = yi + botState.config.imageTopLeft.y;
-        const colorIndex = botState.canvasImageData.diffAgainstInputData[pixelAt];
-
-        if (gameStore.gameState.activeCanvasId === undefined) {
-            return;
-        }
-        botPlacePixel(gameStore.gameState.activeCanvasId, { x, y }, colorIndex);
-        // Since we've tried placing this one, mark it as done.
-        botState.canvasImageData.diffAgainstInputData[pixelAt] = -1;
-    }
-
-    componentDidMount(): void {
-        this.intervalHandle = window.setInterval(() => {
-            this.onUpdate();
-        }, 200);
-    }
-
     componentWillUnmount(): void {
         clearInterval(this.intervalHandle);
     }
@@ -143,12 +94,12 @@ class BotModal extends React.Component<OwnProps, OwnState> {
                                         labelPlacement="end"
                                     />
                                 </Tooltip>
-                                <CanvasImagePreview
+                                {/* <CanvasImagePreview
                                     botImage={botState.canvasImageData.diffAgainstInputData}
                                     colorPalette={canvasMetadata.colors}
                                     height={botState.config.imageHeight}
                                     width={botState.config.imageWidth}
-                                />
+                                /> */}
                             </div>
                         ) : (
                             <TextField
