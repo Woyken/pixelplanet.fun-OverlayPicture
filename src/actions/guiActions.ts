@@ -239,8 +239,15 @@ export async function saveCurrentConfiguration(): Promise<void> {
     if (idx >= 0) {
         logger.log('Saving current configuration, same url already exists, replacing saved data.');
         // Already exists, need to replace existing one.
-        overlayStore.savedConfigs.splice(idx, 1);
+        const conf = overlayStore.savedConfigs[idx];
+        conf.modifiers.modificationsAvailable = overlayStore.modifications.modificationsAvailable;
+        conf.modifiers.doModifications = overlayStore.modifications.doModifications;
+        conf.modifiers.shouldConvertColors = overlayStore.modifications.shouldConvertColors;
+        conf.modifiers.imageBrightness = overlayStore.modifications.imageBrightness;
 
+        conf.placementConfiguration.xOffset = overlayStore.placementConfiguration.xOffset;
+        conf.placementConfiguration.yOffset = overlayStore.placementConfiguration.yOffset;
+        conf.placementConfiguration.transparency = overlayStore.placementConfiguration.transparency;
         // Save it to the storage.
         localStorage.setItem(storageItemName, JSON.stringify(overlayStore.savedConfigs));
         return;
