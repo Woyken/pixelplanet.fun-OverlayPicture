@@ -46,7 +46,6 @@ class UrlHelper {
 
     public deserializeSharedUrl(): SharableConfig | undefined {
         const hashstr = window.location.hash.substr(1).split(',');
-        logger.log(JSON.stringify(hashstr));
         if (hashstr.length <= 3) {
             return;
         }
