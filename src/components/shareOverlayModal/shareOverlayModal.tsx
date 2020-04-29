@@ -54,10 +54,10 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
     const [modalStyle] = useState(getModalStyle);
     const [sharedInput, setSharedInput] = useState<string | undefined>(undefined);
     const [parsedShared, setParsedShared] = useState<SharableConfig | null>(null);
-    const shareConf = urlHelper.sharableConfigFromState(props.overlayStore);
 
     // We don't need anything here if modal is not visible.
     if (!props.isOpen) return null;
+    const shareConf = urlHelper.sharableConfigFromState(props.overlayStore);
 
     const handleClose = (): void => {
         props.setIsOpen(false);
