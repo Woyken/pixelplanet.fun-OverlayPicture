@@ -1,21 +1,19 @@
 import React from 'react';
 import './botModal.scss';
 import { Checkbox, FormControlLabel, Tooltip, TextField } from '@material-ui/core';
-import {
-    botUpdateEnabled,
-    botUpdateFeatureEnabled,
-    botStartProcessingImage,
-    botPlacePixel,
-} from '../../actions/pixelData';
 import autoBind from 'react-autobind';
-import { Cell } from '../../chunkHelper';
 import { getSha256Hash } from '../../utils/crypto/crypto';
 import { CanvasImagePreview } from './canvasImagePreview/canvasImagePreview';
 import { observer } from 'mobx-react';
 import { botState } from '../../store/botState';
-import { startProcessingImage } from '../../actions/guiActions';
 import { gameStore } from '../../store/gameStore';
 import { overlayStore } from '../../store/overlayStore';
+import {
+    botStartProcessingImage,
+    botUpdateEnabled,
+    botPlacePixel,
+    botUpdateFeatureEnabled,
+} from '../../actions/botActions';
 
 interface OwnState {
     isModalMinimized: boolean;
