@@ -11,7 +11,7 @@ class WebSocketHandler {
 
     public onRequestReloadMetadata?: () => void;
 
-    private canvasId = -1;
+    private canvasId: number | null = null;
 
     private webSocket?: WebSocket;
     private watchingChunks: ChunkCell[] = [];
@@ -78,17 +78,21 @@ class WebSocketHandler {
             this.retryTimerId = undefined;
         }
         logger.log('Starting listening for changes via websocket');
-        const buffer = registerChunks.dehydrate(this.watchingChunks);
-        if (this.isConnected) {
-            this.webSocket?.send(buffer);
-        }
-        if (this.isConnected && this.canvasId !== -1) {
+
+        if (this.isConnected && this.canvasId !== null) {
             this.webSocket?.send(registerCanvas.dehydrate(this.canvasId));
+        }
+
+        if (this.watchingChunks.length > 0) {
+            const buffer = registerChunks.dehydrate(this.watchingChunks);
+            if (this.isConnected) {
+                this.webSocket?.send(buffer);
+            }
         }
     }
 
     public setCanvas(canvasId: number): void {
-        if (this.canvasId === canvasId || canvasId === -1) {
+        if (this.canvasId === canvasId || canvasId === null) {
             return;
         }
         // Clear all watching chunks. Map has changed...

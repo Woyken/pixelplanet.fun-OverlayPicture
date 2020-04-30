@@ -11,7 +11,7 @@ export function initWebSocketHooks(): void {
     });
 
     observe(gameStore.gameState, 'activeCanvasId', (changes) => {
-        if (changes.newValue) webSocketHandler.setCanvas(changes.newValue);
+        if (changes.newValue !== undefined) webSocketHandler.setCanvas(changes.newValue);
     });
 
     webSocketHandler.onPixelUpdate = (chunk, pixelOffset, colorIndex): void => {
