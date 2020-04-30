@@ -41,6 +41,7 @@ export async function botStartProcessingImage(): Promise<void> {
         const placementConfiguration = overlayStore.placementConfiguration;
         // TODO if we want to have some sort of pattern for placing, this is the place for it.
         for (let xi = 0; xi < outputImageData.width; xi++) {
+            logger.log(`Processing... ${xi}/${outputImageData.width} (* ${outputImageData.height})`)
             for (let yi = 0; yi < outputImageData.height; yi++) {
                 const x = xi + placementConfiguration.xOffset;
                 const y = yi + placementConfiguration.yOffset;
