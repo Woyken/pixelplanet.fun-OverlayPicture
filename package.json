@@ -9,7 +9,8 @@
         "build:watch": "rollup -c --watch",
         "open": "open-cli file://%cd%\\dist\\rollup.react.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix"
+        "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
+        "postinstall": "rd /s /q .\\node_modules\\@types\\node"
     },
     "keywords": [
         "pixelplanet.fun",
