@@ -9,9 +9,9 @@ export default {
         const view = new Uint8Array(buffer);
         view[0] = OP_CODE;
         view[1] = 0;
-        for (let i = 0; i < chunks.length * 2; i += 2) {
-            view[i + 2] = chunks[i].chunkY;
-            view[i + 3] = chunks[i].chunkX;
+        for (let i = 0; i < chunks.length; i++) {
+            view[i * 2 + 2] = chunks[i].chunkY;
+            view[i * 2 + 3] = chunks[i].chunkX;
         }
         return buffer;
     },
