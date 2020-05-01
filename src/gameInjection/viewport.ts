@@ -1,7 +1,7 @@
 import logger from '../handlers/logger';
 
 class Viewport {
-    private currentActiveViewport: HTMLCanvasElement | undefined;
+    public currentActiveViewport: HTMLCanvasElement | undefined;
 
     public onMouseMove: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
     public onMouseUp: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;

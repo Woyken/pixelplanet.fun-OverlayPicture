@@ -2,15 +2,12 @@ import React from 'react';
 import autoBind from 'react-autobind';
 import './overlayImage.scss';
 import logger from '../../handlers/logger';
-import { ChunkCell } from '../../chunkHelper';
-import { loadChunkData } from '../../actions/pixelData';
 import { GameState, gameStore } from '../../store/gameStore';
 import { overlayStore, PlacementConfiguration } from '../../store/overlayStore';
 import { observe } from 'mobx';
 import { observer } from 'mobx-react';
 
 interface OwnState {
-    zoom: number;
     topOffset: number;
     leftOffset: number;
 }
@@ -62,23 +59,25 @@ class OverlayImage extends React.Component<Props, OwnState> {
             this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
         });
 
-        observe(gameStore.gameState, 'zoomLevel', (change) => {
+        observe(gameStore.gameState, 'viewScale', (change) => {
             // Input has changed, update state.
             this.setState(this.getImagePositionOffsetState(gameStore.gameState, overlayStore.placementConfiguration));
         });
     }
 
     getImagePositionOffsetState(gameState: GameState, placementConfiguration: PlacementConfiguration): OwnState {
-        const zoom = Math.pow(2, gameState.zoomLevel / 10);
         return {
-            zoom,
-            leftOffset: window.innerWidth / 2 - (gameState.centerX - placementConfiguration.xOffset) * zoom,
-            topOffset: window.innerHeight / 2 - (gameState.centerY - placementConfiguration.yOffset) * zoom,
+            leftOffset:
+                window.innerWidth / 2 -
+                (gameState.centerX - placementConfiguration.xOffset) * gameStore.gameState.viewScale,
+            topOffset:
+                window.innerHeight / 2 -
+                (gameState.centerY - placementConfiguration.yOffset) * gameStore.gameState.viewScale,
         };
     }
 
     render(): React.ReactNode {
-        const { zoom, leftOffset, topOffset } = this.state;
+        const { leftOffset, topOffset } = this.state;
 
         const opacity = overlayStore.placementConfiguration.transparency / 100;
 
@@ -94,7 +93,7 @@ class OverlayImage extends React.Component<Props, OwnState> {
                         className="PictureOverlay_OverlayImage"
                         style={{
                             opacity,
-                            transform: `scale(${zoom})`,
+                            transform: `scale(${gameStore.gameState.viewScale})`,
                             left: leftOffset,
                             top: topOffset,
                         }}
@@ -108,7 +107,7 @@ class OverlayImage extends React.Component<Props, OwnState> {
                         src={overlayStore.overlayImage.inputImage.url}
                         style={{
                             opacity,
-                            transform: `scale(${zoom})`,
+                            transform: `scale(${gameStore.gameState.viewScale})`,
                             left: leftOffset,
                             top: topOffset,
                         }}
@@ -122,7 +121,9 @@ class OverlayImage extends React.Component<Props, OwnState> {
         if (!overlayStore.overlayImage.outputImage.outputImageData) {
             return;
         }
-        logger.log(`updating image source, repainting canvas... ${overlayStore.overlayImage.outputImage.outputImageData.data.length}`);
+        logger.log(
+            `updating image source, repainting canvas... ${overlayStore.overlayImage.outputImage.outputImageData.data.length}`,
+        );
         const canvas = this.imageCanvasRef.current;
         if (!canvas) {
             logger.logError('canvas is null');
@@ -131,7 +132,12 @@ class OverlayImage extends React.Component<Props, OwnState> {
         // const image = this.refs.image as HTMLImageElement;
         const ctx = canvas.getContext('2d');
 
-        ctx?.clearRect(0, 0, overlayStore.overlayImage.outputImage.outputImageData.width, overlayStore.overlayImage.outputImage.outputImageData.height);
+        ctx?.clearRect(
+            0,
+            0,
+            overlayStore.overlayImage.outputImage.outputImageData.width,
+            overlayStore.overlayImage.outputImage.outputImageData.height,
+        );
 
         ctx?.putImageData(overlayStore.overlayImage.outputImage.outputImageData, 0, 0);
     }

@@ -178,7 +178,6 @@ export async function updateGameState(
     if (canvasStringId !== undefined) gameStore.gameState.activeCanvasStringId = canvasStringId;
     if (centerX !== undefined) gameStore.gameState.centerX = centerX;
     if (centerY !== undefined) gameStore.gameState.centerY = centerY;
-    if (zoomLevel !== undefined) gameStore.gameState.zoomLevel = zoomLevel;
     if (isMouseDragging !== undefined) gameStore.gameState.isMouseDragging = isMouseDragging;
 
     if (canvasStringId !== undefined) await setActiveCanvasByStringId(canvasStringId);

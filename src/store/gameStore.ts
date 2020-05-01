@@ -1,5 +1,6 @@
 import { observable, IObservableArray } from 'mobx';
 import { CanvasMetadataResponse } from '../actions/pixelPlanetResponseTypes';
+import { Cell } from '../chunkHelper';
 
 export class UserData {
     @observable name?: null | string;
@@ -12,15 +13,20 @@ export class UserData {
 }
 
 export class GameState {
-    @observable zoomLevel: number;
+    @observable scale = 1;
+    @observable viewScale = 1;
+    /**
+     * Pixel where mouse is hovering
+     * When setting it change whole object, since it's just an interface.
+     */
+    @observable hoverPixel: Cell = { x: 0, y: 0 };
     @observable centerX: number;
     @observable centerY: number;
     @observable isMouseDragging: boolean;
     @observable activeCanvasStringId?: string;
     @observable activeCanvasId?: number;
 
-    constructor(zoomLevel: number, centerX: number, centerY: number, isMouseDragging: boolean) {
-        this.zoomLevel = zoomLevel;
+    constructor(centerX: number, centerY: number, isMouseDragging: boolean) {
         this.centerX = centerX;
         this.centerY = centerY;
         this.isMouseDragging = isMouseDragging;
@@ -102,4 +108,4 @@ export class GameStore {
     }
 }
 
-export const gameStore = new GameStore(new GameState(0, 0, 0, false), new UserData());
+export const gameStore = new GameStore(new GameState(0, 0, false), new UserData());
