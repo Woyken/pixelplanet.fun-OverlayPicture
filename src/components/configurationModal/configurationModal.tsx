@@ -2,10 +2,11 @@ import React from 'react';
 import './configurationModal.scss';
 import OverlayConfig from '../overlayConfig/overlayConfig';
 import ConfigDropDown from '../configDropDown/configDropDown';
-import { Checkbox, FormControlLabel, Tooltip } from '@material-ui/core';
+import { Checkbox, FormControlLabel, Tooltip, Button } from '@material-ui/core';
 import { updateOverlayEnabled, updateBotModalVisible } from '../../actions/guiActions';
 import { overlayStore } from '../../store/overlayStore';
 import { observer } from 'mobx-react';
+import urlHelper from '../../urlHelper';
 
 interface OwnState {
     isModalMinimized: boolean;
@@ -66,6 +67,18 @@ class ConfigurationModal extends React.Component<OwnProps, OwnState> {
                         ) : null}
 
                         <ConfigDropDown />
+                        {overlayStore.isRestickingNeeded ? (
+                            <Tooltip title="Whoops. Something went wrong with offset/scale calculations... To fix the overlay image offset click this.">
+                                <Button
+                                    onClick={(): void => {
+                                        overlayStore.isRestickingNeeded = false;
+                                        urlHelper.stickToGrid();
+                                    }}
+                                >
+                                    Woopsie. Reset scale!
+                                </Button>
+                            </Tooltip>
+                        ) : null}
                     </div>
                     <img
                         src={

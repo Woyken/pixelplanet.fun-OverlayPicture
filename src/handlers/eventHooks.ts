@@ -64,9 +64,22 @@ function setScaleForZoompoint(zoomScale: number, zoomPoint?: Cell): void {
     gameStore.gameState.scale = newZoomScale;
     gameStore.gameState.viewScale = viewScale;
 
-    // const urlScale = Math.round(Math.log2(viewScale) * 10);
-    // const urlX = Math.round(gameStore.gameState.centerX);
-    // const urlY = Math.round(gameStore.gameState.centerY);
+    if (overlayStore.overlayEnabled) {
+        // Fallback. On some pc's mouse wheel updates seem to get lost between this script and PixelPlanet scroll hooks. Very strange...
+        const urlScale = Math.round(Math.log2(viewScale) * 10);
+
+        const urlData = urlHelper.parsedUrlData;
+        if (Math.abs(urlScale - urlData.zoomLevel) > 1) {
+            // scale seems a bit off. Need a way to recalculate? For not just use old reattach...
+            logger.logError(`Scale calculations seem to gone off rails... Refreshing canvas url...`);
+            urlHelper.stickToGrid();
+            overlayStore.isRestickingNeeded = false;
+        } else if (Math.abs(Math.round(gameStore.gameState.centerX) - urlData.xCoord) > 1) {
+            overlayStore.isRestickingNeeded = true;
+        } else if (Math.abs(Math.round(gameStore.gameState.centerY) - urlData.yCoord) > 1) {
+            overlayStore.isRestickingNeeded = true;
+        }
+    }
 }
 
 function zoomIn(zoomPoint?: Cell): void {

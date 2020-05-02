@@ -70,6 +70,7 @@ export class OverlayStore {
     @observable placementConfiguration: PlacementConfiguration;
     @observable modifications: ImageModifiers;
     @observable isBotModalVisible: boolean;
+    @observable isRestickingNeeded = false;
 
     constructor(
         overlayEnabled: boolean,
