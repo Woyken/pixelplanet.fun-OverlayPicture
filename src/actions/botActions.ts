@@ -41,7 +41,7 @@ export async function botStartProcessingImage(): Promise<void> {
         const placementConfiguration = overlayStore.placementConfiguration;
         // TODO if we want to have some sort of pattern for placing, this is the place for it.
         for (let xi = 0; xi < outputImageData.width; xi++) {
-            logger.log(`Processing... ${xi}/${outputImageData.width} (* ${outputImageData.height})`)
+            logger.log(`Processing... ${xi}/${outputImageData.width} (* ${outputImageData.height})`);
             for (let yi = 0; yi < outputImageData.height; yi++) {
                 const x = xi + placementConfiguration.xOffset;
                 const y = yi + placementConfiguration.yOffset;
@@ -211,10 +211,7 @@ async function botStartWorkAsync(): Promise<void> {
                     return;
                 }
                 // keep on placing pixels while timeout is reached.
-                const pixelTodo =
-                    botState.canvasImageData.processedPixelsTodo[
-                        botState.canvasImageData.processedPixelsTodo.length - 1
-                    ];
+                const pixelTodo = botState.canvasImageData.processedPixelsTodo[0];
                 logger.log(`about to place ${JSON.stringify(pixelTodo)}`);
                 await botPlacePixel(gameStore.gameState.activeCanvasId, pixelTodo.pos, pixelTodo.colorIndex);
                 botState.canvasImageData.processedPixelsTodo.remove(pixelTodo);
