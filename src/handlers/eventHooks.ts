@@ -207,6 +207,11 @@ export function initWindowEventHooks(): void {
     // This would be nicer solution, rather than depending on mouse drag detection.
 
     viewport.onMouseUp = (e, c): void => {
+        // On click turn off following cursor
+        if (overlayStore.isFollowMouseActive) {
+            overlayStore.isFollowMouseActive = false;
+        }
+
         if (!isMoving) {
             return;
         }

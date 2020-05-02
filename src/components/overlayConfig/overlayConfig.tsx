@@ -8,6 +8,8 @@ import ShareOverlayModal from '../shareOverlayModal/shareOverlayModal';
 import { observer } from 'mobx-react';
 import { overlayStore } from '../../store/overlayStore';
 import { updateInputImage, updateImagePlacementConfiguration, updateImageModifiers } from '../../actions/guiActions';
+import { gameStore } from '../../store/gameStore';
+import { observe } from 'mobx';
 
 interface OwnState {
     isShareOverlayOpen: boolean;
@@ -30,6 +32,14 @@ class OverlayConfig extends React.Component<Props, OwnState> {
         };
 
         autoBind(this);
+    }
+
+    componentDidMount(): void {
+        observe(gameStore.gameState, 'hoverPixel', (change) => {
+            if (overlayStore.isFollowMouseActive) {
+                updateImagePlacementConfiguration(undefined, change.newValue.x, change.newValue.y);
+            }
+        });
     }
 
     render(): React.ReactNode {
@@ -88,7 +98,6 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                         updateImagePlacementConfiguration(undefined, numValue);
                     }}
                 />
-                <br />
                 <TextField
                     label="Y"
                     type="number"
@@ -101,6 +110,14 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                         updateImagePlacementConfiguration(undefined, undefined, numValue);
                     }}
                 />
+                <br />
+                <Button
+                    onClick={(): void => {
+                        overlayStore.isFollowMouseActive = !overlayStore.isFollowMouseActive;
+                    }}
+                >
+                    Position with mouse
+                </Button>
                 <br />
                 <Typography id="transparency-slider" gutterBottom>
                     Transparency

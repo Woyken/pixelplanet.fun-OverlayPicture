@@ -69,6 +69,7 @@ export class OverlayStore {
     @observable overlayImage: OverlayImage;
     @observable placementConfiguration: PlacementConfiguration;
     @observable modifications: ImageModifiers;
+    @observable isFollowMouseActive = false;
     @observable isBotModalVisible: boolean;
     @observable isRestickingNeeded = false;
 
