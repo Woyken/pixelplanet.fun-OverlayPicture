@@ -21,6 +21,7 @@ export async function botStartProcessingImage(): Promise<void> {
     }
 
     botState.canvasImageData.isProcessing = true;
+    botState.canvasImageData.processingPercentage = 0;
     try {
         logger.log('bot processing');
         // Reset old pixels.
@@ -39,10 +40,13 @@ export async function botStartProcessingImage(): Promise<void> {
         }
         const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
         const placementConfiguration = overlayStore.placementConfiguration;
+        const pixelsToProcessCount = outputImageData.width * outputImageData.height;
         // TODO if we want to have some sort of pattern for placing, this is the place for it.
         for (let xi = 0; xi < outputImageData.width; xi++) {
             logger.log(`Processing... ${xi}/${outputImageData.width} (* ${outputImageData.height})`);
             for (let yi = 0; yi < outputImageData.height; yi++) {
+                botState.canvasImageData.processingPercentage =
+                    pixelsToProcessCount / (xi * outputImageData.width + yi);
                 const x = xi + placementConfiguration.xOffset;
                 const y = yi + placementConfiguration.yOffset;
                 const chunkCell = pixelToChunk({ x, y }, canvasData.size);

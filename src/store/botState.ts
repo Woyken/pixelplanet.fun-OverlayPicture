@@ -14,6 +14,7 @@ export class PixelToPlace {
 export class BotCanvasImageData {
     @observable isBotWorkingInProgress = false;
     @observable isProcessing: boolean;
+    @observable processingPercentage = 0;
     @observable processedPixelsTodo: IObservableArray<PixelToPlace> = observable([]);
 
     constructor(isProcessing: boolean) {
