@@ -7,6 +7,16 @@ import { pixelToChunk, chunkToIndex, pixelInChunkOffset, Cell } from '../chunkHe
 import { chunkStore } from '../store/chunkStore';
 import colorConverter from '../colorConverter';
 
+async function waitFor(ms: number): Promise<void> {
+    if (ms < 0) return;
+
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, ms);
+    });
+}
+
 export async function botUpdateFeatureEnabled(isEnabled: boolean): Promise<void> {
     if (!isEnabled) {
         botState.canvasImageData.processedPixelsTodo.replace([]);
@@ -45,8 +55,13 @@ export async function botStartProcessingImage(): Promise<void> {
         for (let xi = 0; xi < outputImageData.width; xi++) {
             logger.log(`Processing... ${xi}/${outputImageData.width} (* ${outputImageData.height})`);
             for (let yi = 0; yi < outputImageData.height; yi++) {
-                botState.canvasImageData.processingPercentage =
-                    pixelsToProcessCount / (xi * outputImageData.width + yi);
+                const currentPixelCounter = xi * outputImageData.height + yi;
+                if (currentPixelCounter % 100 === 0) {
+                    // Update progress only once in a while.
+                    botState.canvasImageData.processingPercentage = (currentPixelCounter / pixelsToProcessCount) * 100;
+                    // Make this process not blocking
+                    await waitFor(1);
+                }
                 const x = xi + placementConfiguration.xOffset;
                 const y = yi + placementConfiguration.yOffset;
                 const chunkCell = pixelToChunk({ x, y }, canvasData.size);
@@ -153,16 +168,6 @@ export async function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: n
     } finally {
         botState.pixelBeingPlaced = false;
     }
-}
-
-async function waitFor(ms: number): Promise<void> {
-    if (ms < 0) return;
-
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve();
-        }, ms);
-    });
 }
 
 async function botStartWorkAsync(): Promise<void> {

@@ -98,6 +98,11 @@ class BotModal extends React.Component<OwnProps, OwnState> {
                                     height={botState.config.imageHeight}
                                     width={botState.config.imageWidth}
                                 /> */}
+                                {botState.canvasImageData.isProcessing ? (
+                                    <div>{`Processing image/loading map... ${botState.canvasImageData.processingPercentage.toFixed(
+                                        2,
+                                    )}%`}</div>
+                                ) : null}
                             </div>
                         ) : (
                             <TextField
