@@ -53,7 +53,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                         <TextField
                             label="Url"
                             type="string"
-                            value={overlayStore.overlayImage.inputImage.url}
+                            value={overlayStore.overlayImage.inputImage.url ?? ''}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
                                 updateInputImage(e.target.value);
                             }}

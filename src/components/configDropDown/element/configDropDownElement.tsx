@@ -1,11 +1,9 @@
 import React from 'react';
 import './configDropDownElement.scss';
-import autoBind from 'react-autobind';
 import { SavedConfiguration } from '../../../store/overlayStore';
 
 interface OwnProps {
     config: SavedConfiguration;
-    onClickCallback: (config: SavedConfiguration) => void;
     onDeleteCallback: (config: SavedConfiguration) => void;
 }
 
@@ -14,26 +12,22 @@ type Props = OwnProps;
 class ConfigDropDownElement extends React.Component<Props, {}> {
     constructor(props: Props) {
         super(props);
-
-        autoBind(this);
     }
 
     render(): React.ReactNode {
         return (
-            <div className="PictureOverlay_ConfigDropDownElement" onClick={this.onWholeElementClicked}>
-                <img className="PictureOverlay_ConfigDropDownElImg" src={this.props.config.imageUrl} />
+            <div className="PictureOverlay_ConfigDropDownElement">
+                <div className="PictureOverlay_ConfigDropDownElImg">
+                    <img className="PictureOverlay_ConfigDropDownElImgImg" src={this.props.config.imageUrl} />
+                </div>
                 <a className="PictureOverlay_ConfigDropDownElText">{this.props.config.imageUrl}</a>
                 <img
                     className="PictureOverlay_ConfigDropDownElDelete"
                     src="https://fonts.gstatic.com/s/i/materialicons/delete_forever/v1/24px.svg"
-                    onClick={this.onDeleteElementClicked}
+                    onClick={this.onDeleteElementClicked.bind(this)}
                 />
             </div>
         );
-    }
-
-    onWholeElementClicked(): void {
-        this.props.onClickCallback(this.props.config);
     }
 
     onDeleteElementClicked(event: React.MouseEvent<HTMLImageElement, MouseEvent>): void {

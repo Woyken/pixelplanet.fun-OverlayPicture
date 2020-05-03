@@ -1,18 +1,24 @@
 .PictureOverlay_ConfigDropDownElement {
+    height: 2em;
+    max-width: 24em;
     color: black;
     text-decoration: none;
     display: block;
 }
 
-.PictureOverlay_ConfigDropDownElement:hover {
-    background-color: #ddd;
-}
-
 .PictureOverlay_ConfigDropDownElImg {
+    display: inline-block;
+    height: 100%;
     width: 15%;
 }
 
+.PictureOverlay_ConfigDropDownElImgImg {
+    max-height: 100%;
+    max-width: 100%;
+}
+
 .PictureOverlay_ConfigDropDownElText {
+    height: 100%;
     width: 60%;
     white-space: nowrap;
     overflow: hidden;
@@ -21,6 +27,7 @@
 }
 
 .PictureOverlay_ConfigDropDownElDelete {
+    height: 100%;
     width: 12%;
     position: absolute;
     right: 0;

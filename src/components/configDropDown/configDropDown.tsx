@@ -1,13 +1,13 @@
 import React from 'react';
-import ConfigDropDownContent from './content/configDropDownContent';
-import autoBind from 'react-autobind';
 import { observer } from 'mobx-react';
 import { overlayStore, SavedConfiguration } from '../../store/overlayStore';
 import { saveCurrentConfiguration, applySavedConfiguration, removeSavedConfiguration } from '../../actions/guiActions';
+import { Select, InputLabel, MenuItem, FormControl, Tooltip } from '@material-ui/core';
+import ConfigDropDownElement from './element/configDropDownElement';
+import logger from '../../handlers/logger';
+import './configDropDown.scss';
 
-interface OwnState {
-    isActive: boolean;
-}
+interface OwnState {}
 
 interface OwnProps {}
 
@@ -18,31 +18,50 @@ class ConfigDropDown extends React.Component<OwnProps, OwnState> {
         this.state = {
             isActive: false,
         };
-
-        autoBind(this);
     }
 
     render(): React.ReactNode {
         // tslint:disable-next-line:typedef
-        const { isActive } = this.state;
         return (
             <div>
-                <img
-                    src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg"
-                    onClick={this.onSaveActiveConfiguration}
-                />
-                <img
-                    src="https://fonts.gstatic.com/s/i/materialicons/folder_open/v1/24px.svg"
-                    onClick={(): void => this.toggle()}
-                />
-                <ConfigDropDownContent
-                    onApplyConfig={this.onApplyConfig}
-                    onRemoveConfig={this.onRemoveConfig}
-                    configs={overlayStore.savedConfigs}
-                    isActive={isActive}
-                />
+                <FormControl>
+                    <InputLabel id="saved-config-dropdown-label">Load saved config</InputLabel>
+                    <Select
+                        className="PictureOverlay_ConfigDropDownSelector"
+                        labelId="saved-config-dropdown-label"
+                        value=""
+                        onChange={(value): void => {
+                            if (typeof value.target.value === 'string') this.onLoadConfigByUrl(value.target.value);
+                        }}
+                    >
+                        {overlayStore.savedConfigs.map((config) => (
+                            <MenuItem key={config.imageUrl} value={config.imageUrl}>
+                                <ConfigDropDownElement
+                                    config={config}
+                                    key={config.imageUrl}
+                                    onDeleteCallback={this.onRemoveConfig.bind(this)}
+                                />
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                {overlayStore.overlayImage.inputImage.url ? (
+                    <Tooltip title={'Save current config'}>
+                        <img
+                            className="PictureOverlay_ConfigDropDownSaveIcon"
+                            src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg"
+                            onClick={this.onSaveActiveConfiguration.bind(this)}
+                        />
+                    </Tooltip>
+                ) : null}
             </div>
         );
+    }
+
+    onLoadConfigByUrl(url: string): void {
+        const config = overlayStore.savedConfigs.find((c) => c.imageUrl === url);
+        if (config) this.onApplyConfig(config);
+        else logger.logError('Tried to load config from url, but not found in saved');
     }
 
     onSaveActiveConfiguration(): void {
@@ -50,24 +69,11 @@ class ConfigDropDown extends React.Component<OwnProps, OwnState> {
     }
 
     onApplyConfig(config: SavedConfiguration): void {
-        this.toggle(false);
-
         applySavedConfiguration(config);
     }
 
     onRemoveConfig(config: SavedConfiguration): void {
         removeSavedConfiguration(config.imageUrl);
-    }
-
-    toggle(enabled?: boolean): void {
-        this.setState(
-            (prevState): OwnState => {
-                return {
-                    ...prevState,
-                    isActive: enabled !== undefined ? enabled : !prevState.isActive,
-                };
-            },
-        );
     }
 }
 

@@ -96,6 +96,7 @@ export async function startProcessingImage(): Promise<void> {
         logger.logError(`Something went wrong while parsing picture: ${err}`);
         // Likely to happen when fetching image
         updateOutputImage(undefined);
+        updateImageModifiersInternal(false);
     } finally {
         updateOutputImageStatus(false);
     }
