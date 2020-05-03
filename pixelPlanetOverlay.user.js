@@ -1,6 +1,6 @@
 
 // Sources can be found at https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.0.18
+// @version      1.0.19
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // This script is supposed to be loaded by https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js module.
