@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v1.4.2
+      
+    - run: npm install
+    - run: npm run build
+      
+    - name: GitHub Pages action
+      uses: peaceiris/actions-gh-pages@v3.5.10
+      with:
+        publish_dir: dist
