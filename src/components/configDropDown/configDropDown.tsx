@@ -1,5 +1,5 @@
 import React from 'react';
-import ConfigDropDownContent from './Content/configDropDownContent';
+import ConfigDropDownContent from './content/configDropDownContent';
 import autoBind from 'react-autobind';
 import { observer } from 'mobx-react';
 import { overlayStore, SavedConfiguration } from '../../store/overlayStore';
