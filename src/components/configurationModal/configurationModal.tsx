@@ -70,6 +70,8 @@ class ConfigurationModal extends React.Component<OwnProps, OwnState> {
                         {overlayStore.isRestickingNeeded ? (
                             <Tooltip title="Whoops. Something went wrong with offset/scale calculations... To fix the overlay image offset click this.">
                                 <Button
+                                    variant="contained"
+                                    color="primary"
                                     onClick={(): void => {
                                         overlayStore.isRestickingNeeded = false;
                                         urlHelper.stickToGrid();
