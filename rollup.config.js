@@ -7,6 +7,7 @@ import commonjs from 'rollup-plugin-commonjs';
 import external from 'rollup-plugin-peer-deps-external';
 import resolve from 'rollup-plugin-node-resolve';
 import replace from 'rollup-plugin-replace';
+import html from '@open-wc/rollup-plugin-html';
 
 import pkg from './package.json';
 
@@ -33,7 +34,7 @@ export function getNamedExports(moduleIds) {
     return result;
 }
 
-const banner = `
+const loaderModuleBanner = `
 // ==UserScript==
 // @name         ${pkg.displayName}
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
@@ -42,18 +43,20 @@ const banner = `
 // @author       ${pkg.author}
 // @include      https://pixelplanet.fun/*
 // @grant        none
-// @downloadURL  https://github.com/Woyken/pixelplanet.fun-OverlayPicture/raw/gh-pages/rollup.react.user.js
+// @downloadURL  https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js
 // ==/UserScript==
 `;
 
-export default {
-    input: 'src/index.tsx',
-    output: {
-        file: 'dist/rollup.react.user.js',
-        format: 'iife',
-        banner: banner,
-    },
-    plugins: [
+const moduleBanner = `
+// Sources can be found at https://github.com/Woyken/pixelplanet.fun-OverlayPicture
+// @version      ${pkg.version}
+// @description  ${pkg.description}
+// @author       ${pkg.author}
+// This script is supposed to be loaded by https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js module.
+`;
+
+function rollupPlugins(banner) {
+    return [
         postcss({
             preprocessor: (content, id) =>
                 new Promise((resolve, reject) => {
@@ -82,5 +85,41 @@ export default {
                 preamble: banner,
             },
         }),
-    ],
-};
+    ];
+}
+
+export default [
+    {
+        input: 'src/userscript-loader-module/index.ts',
+        output: { dir: 'dist' },
+        plugins: [
+            typescript(),
+            html({
+                inputPath: 'src/userscript-loader-module/index.html',
+                inject: false,
+            }),
+        ],
+    },
+    {
+        input: 'src/index.tsx',
+        output: {
+            file: 'dist/pixelPlanetOverlay.user.js',
+            // Self executing function, since this is userscript, not a module.
+            format: 'iife',
+            // Add banner so it works with userscript engines
+            banner: moduleBanner,
+        },
+        plugins: rollupPlugins(moduleBanner),
+    },
+    {
+        input: 'src/userscript-loader-module/pixelPlanetOverlay-loader.ts',
+        output: {
+            file: 'dist/pixelPlanetOverlay-loader.user.js',
+            // Self executing function, since this is userscript, not a module.
+            format: 'iife',
+            // Add banner so it works with userscript engines
+            banner: loaderModuleBanner,
+        },
+        plugins: rollupPlugins(loaderModuleBanner),
+    },
+];

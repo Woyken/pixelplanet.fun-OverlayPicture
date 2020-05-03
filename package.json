@@ -8,7 +8,7 @@
         "build": "rollup -c",
         "build:run": "npm run build & npm run open",
         "build:watch": "rollup -c --watch",
-        "open": "open-cli file://%cd%\\dist\\rollup.react.user.js -- firefox",
+        "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay-loader.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
         "postinstall": "rimraf .\\node_modules\\@types\\node"
@@ -23,6 +23,7 @@
     "author": "Woyken",
     "license": "ISC",
     "devDependencies": {
+        "@open-wc/rollup-plugin-html": "^1.0.2",
         "@types/react": "^16.9.34",
         "@types/react-dom": "^16.9.7",
         "autoprefixer": "^9.7.6",
