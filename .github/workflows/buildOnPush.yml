@@ -1,4 +1,4 @@
-name: CI
+name: On push build and push to gh-pages
 
 on:
   push:
@@ -19,4 +19,5 @@ jobs:
     - name: GitHub Pages action
       uses: peaceiris/actions-gh-pages@v3.5.10
       with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: dist
