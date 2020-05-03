@@ -8,4 +8,6 @@
     background-color: rgba(255, 255, 255, 0.93);
     padding: 5px;
     font-size: 0.9em;
+    overflow-y: auto;
+    max-height: calc(100vh - 1.5em);
 }
