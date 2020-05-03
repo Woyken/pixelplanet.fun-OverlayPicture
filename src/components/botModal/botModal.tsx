@@ -17,6 +17,7 @@ import {
 
 interface OwnState {
     isModalMinimized: boolean;
+    currentTimeout: number;
 }
 
 interface OwnProps {}
@@ -29,9 +30,19 @@ class BotModal extends React.Component<OwnProps, OwnState> {
         super(props);
         this.state = {
             isModalMinimized: false,
+            currentTimeout: 0,
         };
 
         autoBind(this);
+    }
+
+    componentDidMount(): void {
+        this.intervalHandle = setInterval(() => {
+            const currentTimeout = Math.max(botState.pixelPlaceTimeEmpty - new Date().getTime(), 0);
+            if (this.state.currentTimeout > 0 || currentTimeout > 0) {
+                this.setState({ currentTimeout: botState.pixelPlaceTimeEmpty - new Date().getTime() });
+            }
+        }, 400);
     }
 
     componentWillUnmount(): void {
@@ -103,6 +114,8 @@ class BotModal extends React.Component<OwnProps, OwnState> {
                                         2,
                                     )}%`}</div>
                                 ) : null}
+                                <p>Timeout: {(this.state.currentTimeout / 1000).toFixed(2)}</p>
+                                <p>Pixels left to place: {botState.canvasImageData.processedPixelsTodo.length}</p>
                             </div>
                         ) : (
                             <TextField
