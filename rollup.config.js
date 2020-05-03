@@ -42,7 +42,7 @@ const banner = `
 // @author       ${pkg.author}
 // @include      https://pixelplanet.fun/*
 // @grant        none
-// @downloadURL  https://gist.github.com/Woyken/034fd82d71a9deb506283f55fb473a07/raw/pixelplanet-PictureOverlay.user.js
+// @downloadURL  https://github.com/Woyken/pixelplanet.fun-OverlayPicture/raw/gh-pages/rollup.react.user.js
 // ==/UserScript==
 `;
 
