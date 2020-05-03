@@ -21,7 +21,11 @@ class ColorConverter {
         return resultColor;
     }
 
-    public getActualColorFromPalette(gamePalette: [number, number, number][], color: number): [number, number, number] {
+    public getActualColorFromPalette(
+        gamePalette: [number, number, number][],
+        color: number,
+    ): [number, number, number] | null {
+        if (!gamePalette[color]) return null;
         return [gamePalette[color][0], gamePalette[color][1], gamePalette[color][2]];
     }
 
@@ -29,6 +33,7 @@ class ColorConverter {
         if (c1 === c2) {
             return true;
         }
+        if (!gamePalette[c1] || !gamePalette[c2]) return c1 === c2;
 
         let areEqual = true;
         areEqual = areEqual && gamePalette[c1][0] === gamePalette[c2][0];

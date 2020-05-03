@@ -24,9 +24,9 @@ export const CanvasImagePreview: React.FunctionComponent<CanvasImagePreviewProps
         for (let y = 0; y < props.height; y++) {
             for (let x = 0; x < props.width; x++) {
                 const colorIndex = props.botImage[props.width * y + x];
-                let rgb: [number, number, number];
+                let rgb: [number, number, number] | null = null;
                 if (colorIndex !== 255) rgb = colorConverter.getActualColorFromPalette(props.colorPalette, colorIndex);
-                else rgb = [0, 0, 0];
+                if (!rgb) rgb = [0, 0, 0];
 
                 const idx = (props.width * y + x) << 2;
                 imgData.data[idx + 0] = rgb[0];
