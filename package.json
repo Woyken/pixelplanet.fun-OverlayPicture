@@ -10,7 +10,7 @@
         "open": "open-cli file://%cd%\\dist\\rollup.react.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
-        "postinstall": "rd /s /q .\\node_modules\\@types\\node"
+        "postinstall": "rimraf .\\node_modules\\@types\\node"
     },
     "keywords": [
         "pixelplanet.fun",
@@ -25,6 +25,7 @@
         "@types/react": "^16.9.34",
         "@types/react-dom": "^16.9.7",
         "autoprefixer": "^9.7.6",
+        "rimraf": "^3.0.2",
         "rollup": "^2.7.3",
         "rollup-plugin-commonjs": "^10.1.0",
         "rollup-plugin-node-resolve": "^5.2.0",
