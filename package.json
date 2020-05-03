@@ -5,10 +5,10 @@
     "description": "Add your picture as overlay to pixelplanet.fun",
     "main": "./dist/index.js",
     "scripts": {
-        "build": "rollup -c",
-        "build:run": "npm run build & npm run open",
+        "build:prod": "rollup -c --environment PRODUCTION",
+        "build": "rollup -c & npm run open",
         "build:watch": "rollup -c --watch",
-        "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay-loader.user.js -- firefox",
+        "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
         "postinstall": "rimraf .\\node_modules\\@types\\node"

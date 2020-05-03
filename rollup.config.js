@@ -55,6 +55,8 @@ const moduleBanner = `
 // This script is supposed to be loaded by https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js module.
 `;
 
+const { PRODUCTION } = process.env;
+
 function rollupPlugins(banner) {
     return [
         postcss({
@@ -70,7 +72,7 @@ function rollupPlugins(banner) {
         }),
         replace({
             // Need to replace this, since 'process' is undefined when running as userscript.
-            'process.env.NODE_ENV': JSON.stringify('production'),
+            'process.env.NODE_ENV': JSON.stringify(PRODUCTION ? 'production' : 'development'),
         }),
         external(),
         resolve({ preferBuiltins: false }),
@@ -107,9 +109,9 @@ export default [
             // Self executing function, since this is userscript, not a module.
             format: 'iife',
             // Add banner so it works with userscript engines
-            banner: moduleBanner,
+            banner: PRODUCTION ? moduleBanner : loaderModuleBanner,
         },
-        plugins: rollupPlugins(moduleBanner),
+        plugins: rollupPlugins(PRODUCTION ? moduleBanner : loaderModuleBanner),
     },
     {
         input: 'src/userscript-loader-module/pixelPlanetOverlay-loader.ts',
