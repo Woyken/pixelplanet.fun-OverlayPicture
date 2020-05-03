@@ -53,7 +53,7 @@ export async function botStartProcessingImage(): Promise<void> {
         const pixelsToProcessCount = outputImageData.width * outputImageData.height;
         // TODO if we want to have some sort of pattern for placing, this is the place for it.
         for (let xi = 0; xi < outputImageData.width; xi++) {
-            logger.log(`Processing... ${xi}/${outputImageData.width} (* ${outputImageData.height})`);
+            logger.log(`Processing... ${xi}(${outputImageData.height})/${outputImageData.width}`);
             for (let yi = 0; yi < outputImageData.height; yi++) {
                 const currentPixelCounter = xi * outputImageData.height + yi;
                 if (currentPixelCounter % 100 === 0) {
