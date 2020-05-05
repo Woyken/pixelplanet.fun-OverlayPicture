@@ -37,7 +37,7 @@ class BotModal extends React.Component<OwnProps, OwnState> {
     }
 
     componentDidMount(): void {
-        this.intervalHandle = setInterval(() => {
+        this.intervalHandle = window.setInterval(() => {
             const currentTimeout = Math.max(botState.pixelPlaceTimeEmpty - new Date().getTime(), 0);
             if (this.state.currentTimeout > 0 || currentTimeout > 0) {
                 this.setState({ currentTimeout: currentTimeout });
