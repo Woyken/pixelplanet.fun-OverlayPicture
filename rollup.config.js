@@ -66,7 +66,7 @@ function rollupPlugins(banner) {
                     resolve({ code: result.css.toString() });
                 }),
             plugins: [autoprefixer],
-            sourceMap: false,
+            sourceMap: true,
             extract: false,
             extensions: ['.scss', '.css'],
         }),
@@ -80,12 +80,14 @@ function rollupPlugins(banner) {
         commonjs({
             include: ['node_modules/**'],
             namedExports: getNamedExports(['react', 'react-dom', 'react-is', 'pako', 'prop-types', 'utf8']),
+            sourceMap: true,
         }),
         terser({
             output: {
                 comments: false,
                 preamble: banner,
             },
+            sourcemap: true,
         }),
     ];
 }
@@ -93,7 +95,7 @@ function rollupPlugins(banner) {
 export default [
     {
         input: 'src/userscript-loader-module/index.ts',
-        output: { dir: 'dist' },
+        output: { dir: 'dist', sourcemap: PRODUCTION ? null : 'inline' },
         plugins: [
             typescript(),
             html({
@@ -110,6 +112,7 @@ export default [
             format: 'iife',
             // Add banner so it works with userscript engines
             banner: PRODUCTION ? moduleBanner : loaderModuleBanner,
+            sourcemap: PRODUCTION ? null : 'inline',
         },
         plugins: rollupPlugins(PRODUCTION ? moduleBanner : loaderModuleBanner),
     },
@@ -121,6 +124,7 @@ export default [
             format: 'iife',
             // Add banner so it works with userscript engines
             banner: loaderModuleBanner,
+            sourcemap: PRODUCTION ? null : 'inline',
         },
         plugins: rollupPlugins(loaderModuleBanner),
     },
