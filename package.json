@@ -53,6 +53,7 @@
         "keycode": "^2.2.0",
         "mobx": "^5.15.4",
         "mobx-react": "^6.2.2",
+        "mobx-react-lite": "^2.0.6",
         "node-eval": "^2.0.0",
         "open-cli": "^6.0.1",
         "prettier": "^2.0.5",

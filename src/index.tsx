@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './components/app/app';
 import { initStore } from './store';
+import 'mobx-react-lite/batchingForReactDom';
 
 function init(): void {
     const rootNode = document.createElement('div');
