@@ -1,4 +1,4 @@
-import { ChunkCell, chunkToIndex, Cell, pixelInChunkOffset, pixelToChunk } from '../chunkHelper';
+import { ChunkCell, chunkToIndex, Cell, pixelInChunkOffset, pixelToChunk, TILE_SIZE } from '../chunkHelper';
 import { UserDataResponse } from './pixelPlanetResponseTypes';
 import colorConverter from '../colorConverter';
 import { gameStore, CanvasMetadata } from '../store/gameStore';
@@ -12,6 +12,10 @@ export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<Ar
     const response = await fetch(url);
     if (response.ok) {
         const arrayBuffer = await response.arrayBuffer();
+        if (arrayBuffer.byteLength === 0) {
+            // If chunk is untouched, returned array will be empty. Treat it as ocean (color 0)
+            return new ArrayBuffer(TILE_SIZE * TILE_SIZE);
+        }
         return arrayBuffer;
     } else {
         const error = new Error('Could not retrieve chunk data.');
