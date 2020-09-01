@@ -43,6 +43,8 @@ class BotModal extends React.Component<OwnProps, OwnState> {
                 this.setState({ currentTimeout: currentTimeout });
             }
         }, 400);
+        // Let's experiment. Turning the bot for all...
+        botUpdateFeatureEnabled(true);
     }
 
     componentWillUnmount(): void {

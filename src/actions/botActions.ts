@@ -2,10 +2,11 @@ import { botState, PixelToPlace } from '../store/botState';
 import { overlayStore } from '../store/overlayStore';
 import logger from '../handlers/logger';
 import { gameStore } from '../store/gameStore';
-import { updateMetadata, loadChunkData, fetchPlacePixel, updatePixel } from './pixelData';
+import { updateMetadata, loadChunkData } from './pixelData';
 import { pixelToChunk, chunkToIndex, pixelInChunkOffset, Cell } from '../chunkHelper';
 import { chunkStore } from '../store/chunkStore';
 import colorConverter from '../colorConverter';
+import webSocketHandler from '../handlers/websocket/websocketHandler';
 
 async function waitFor(ms: number): Promise<void> {
     if (ms < 0) return;
@@ -115,59 +116,35 @@ export async function botStartProcessingImage(): Promise<void> {
 
 export async function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: number): Promise<void> {
     botState.pixelBeingPlaced = true;
-    try {
+
+    if (gameStore.gameState.activeCanvasId === undefined) {
+        await updateMetadata();
         if (gameStore.gameState.activeCanvasId === undefined) {
-            await updateMetadata();
-            if (gameStore.gameState.activeCanvasId === undefined) {
-                logger.logError('active canvas id is not set!');
-                return;
-            }
-        }
-
-        const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
-        if (!canvasData) {
-            logger.logError('Could not find canvas data!');
+            logger.logError('active canvas id is not set!');
             return;
         }
-
-        const chunkCell = pixelToChunk({ x: pixel.x, y: pixel.y }, canvasData.size);
-        const chunkIndex = chunkToIndex(chunkCell);
-        const pixelInChunk = pixelInChunkOffset({ x: pixel.x, y: pixel.y }, canvasData.size);
-        const loadedChunk = chunkStore.getChunk(chunkIndex);
-        if (loadedChunk) {
-            // Only if chunk is loaded we will check if color is the same.
-            if (loadedChunk.data[pixelInChunk] === colorIndex) {
-                // already the same, don't need to do anything.
-                return;
-            }
-        }
-
-        const response = await fetchPlacePixel({
-            x: pixel.x,
-            y: pixel.y,
-            token: null,
-            cn: canvasId.toString(),
-            clr: colorIndex,
-        });
-
-        if (!response) {
-            // That's a problem. Probably need to show re-captcha.
-            alert('Captcha?');
-            // TODO. For now just disable bot.
-            botState.config.isEnabled = false;
-            return;
-        }
-
-        // Wait till 0 to place next pixel to be safe.
-        // since this is not shown anywhere, just replace it...
-        botState.pixelPlaceTimeEmpty = new Date().getTime() + response.waitSeconds * 1000;
-
-        if (response.success) {
-            updatePixel(pixel, colorIndex);
-        }
-    } finally {
-        botState.pixelBeingPlaced = false;
     }
+
+    const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+    if (!canvasData) {
+        logger.logError('Could not find canvas data!');
+        return;
+    }
+
+    const chunkCell = pixelToChunk({ x: pixel.x, y: pixel.y }, canvasData.size);
+    const chunkIndex = chunkToIndex(chunkCell);
+    const pixelInChunk = pixelInChunkOffset({ x: pixel.x, y: pixel.y }, canvasData.size);
+    const loadedChunk = chunkStore.getChunk(chunkIndex);
+    if (loadedChunk) {
+        // Only if chunk is loaded we will check if color is the same.
+        if (loadedChunk.data[pixelInChunk] === colorIndex) {
+            // already the same, don't need to do anything.
+            return;
+        }
+    }
+
+    // Request to place a pixel. Response is handled on callback from websockets
+    webSocketHandler.requestPlacePixel(chunkCell, pixelInChunk, colorIndex);
 }
 
 async function botStartWorkAsync(): Promise<void> {
@@ -203,8 +180,10 @@ async function botStartWorkAsync(): Promise<void> {
 
             const timeUntilEmpty = botState.pixelPlaceTimeEmpty - new Date().getTime();
             const pixelPlacingTimeout = Math.max(canvasData.timeoutOnEmpty, canvasData.timeoutOnReplace);
+            const waitForMs = timeUntilEmpty - pixelPlacingTimeout * Math.random();
+            logger.log(`Waiting for timeout: ${waitForMs}`);
             // Wait until there's only few seconds left in timeout
-            await waitFor(timeUntilEmpty - pixelPlacingTimeout * Math.random());
+            await waitFor(waitForMs);
 
             if (botState.config.isWatching && botState.canvasImageData.processedPixelsTodo.length <= 0) {
                 logger.log(`Waiting for few seconds between checks.`);
@@ -222,7 +201,13 @@ async function botStartWorkAsync(): Promise<void> {
                 // keep on placing pixels while timeout is reached.
                 const pixelTodo = botState.canvasImageData.processedPixelsTodo[0];
                 logger.log(`about to place ${JSON.stringify(pixelTodo)}`);
+                // Place pixel response is pushed via websockets.
                 await botPlacePixel(gameStore.gameState.activeCanvasId, pixelTodo.pos, pixelTodo.colorIndex);
+                logger.log('Pixel place requested, waiting for a bit');
+                // Ideally we should only act after PixelResponse was received from websockets.
+                // For now hacking this up. Wait for 500ms and then continue, will slow down the bot a bit, but who cares anyway
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                logger.log('Removing pixel from todo list');
                 botState.canvasImageData.processedPixelsTodo.remove(pixelTodo);
             }
         }
