@@ -5,9 +5,11 @@ import registerChunks from './packets/registerChunks';
 import registerChunk from './packets/registerChunk';
 import changedMe from './packets/changedMe';
 import registerCanvas from './packets/registerCanvas';
+import pixelReturn from './packets/pixelReturn';
 
 class WebSocketHandler {
     public onPixelUpdate?: (chunk: ChunkCell, pixelOffsetInChunk: number, colorIndex: number) => void;
+    public onPixelReturn?: (retCode: number, wait: number, coolDownSeconds: number) => void;
 
     public onRequestReloadMetadata?: () => void;
 
@@ -71,6 +73,11 @@ class WebSocketHandler {
         }
     }
 
+    public requestPlacePixel(chunk: ChunkCell, offset: number, color: number): void {
+        const buffer = pixelUpdate.dehydrate(chunk.chunkX, chunk.chunkY, offset, color);
+        this.webSocket?.send(buffer);
+    }
+
     private onOpen(): void {
         this.isConnected = true;
         if (this.retryTimerId) {
@@ -126,6 +133,11 @@ class WebSocketHandler {
             case pixelUpdate.OP_CODE: {
                 const result = pixelUpdate.hydrate(data);
                 this.onPixelUpdate?.(result.chunk, result.offset, result.colorIndex);
+                break;
+            }
+            case pixelReturn.OP_CODE: {
+                const result = pixelReturn.hydrate(data);
+                this.onPixelReturn?.(result.retCode, result.wait, result.coolDownSeconds);
                 break;
             }
             case changedMe.OP_CODE: {

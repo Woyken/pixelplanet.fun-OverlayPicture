@@ -24,4 +24,18 @@ export default {
             colorIndex,
         };
     },
+
+    dehydrate(i: number, j: number, offset: number, color: number): ArrayBuffer {
+        const buffer = new ArrayBuffer(1 + 1 + 1 + 1 + 2 + 1);
+        const view = new DataView(buffer);
+        view.setUint8(0, OP_CODE);
+
+        view.setUint8(1, i);
+        view.setUint8(2, j);
+        view.setUint8(3, offset >>> 16);
+        view.setUint16(4, offset & 0x00ffff);
+        view.setUint8(6, color);
+
+        return buffer;
+    },
 };
