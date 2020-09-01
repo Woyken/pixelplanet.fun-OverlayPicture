@@ -68,23 +68,6 @@ export interface PixelPlaceParams {
     token: string | null;
 }
 
-export async function fetchPlacePixel(params: PixelPlaceParams): Promise<PixelPlaceResponse | undefined> {
-    const url = '/api/pixel';
-    const response = await fetch(url, {
-        credentials: 'omit',
-        body: JSON.stringify(params),
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        method: 'POST',
-    });
-    if (response.ok) {
-        const pixelPlacedResponse = (await response.json()) as PixelPlaceResponse;
-        return pixelPlacedResponse;
-    }
-    return;
-}
-
 export async function loadChunkData(canvasId: number, chunk: ChunkCell): Promise<void> {
     if (canvasId !== gameStore.gameState.activeCanvasId) {
         logger.logWarn('trying to load chunk from different canvas');
