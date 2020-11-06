@@ -5,6 +5,7 @@ class Viewport {
 
     public onMouseMove: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
     public onMouseUp: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
+    public onMouseDown: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
     public onWheel: ((e: WheelEvent, canvas: HTMLCanvasElement) => void) | undefined;
 
     public constructor() {
@@ -73,12 +74,14 @@ class Viewport {
 
     private initHooks(): void {
         this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook, { passive: true });
+        this.currentActiveViewport?.addEventListener('mousedown', this.onMouseDownHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook, { passive: true });
         this.currentActiveViewport?.addEventListener('wheel', this.onWheelHook, { passive: true });
     }
 
     private removeHooks(): void {
         this.currentActiveViewport?.removeEventListener('mousemove', this.onMouseMoveHook);
+        this.currentActiveViewport?.removeEventListener('mousedown', this.onMouseDownHook);
         this.currentActiveViewport?.removeEventListener('mouseup', this.onMouseUpHook);
         this.currentActiveViewport?.removeEventListener('wheel', this.onWheelHook);
     }
@@ -88,6 +91,13 @@ class Viewport {
             return;
         }
         this.onMouseMove?.(e, this.currentActiveViewport);
+    };
+
+    private onMouseDownHook = (e: MouseEvent): void => {
+        if (!this.currentActiveViewport) {
+            return;
+        }
+        this.onMouseDown?.(e, this.currentActiveViewport);
     };
 
     private onMouseUpHook = (e: MouseEvent): void => {
