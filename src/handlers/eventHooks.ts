@@ -188,6 +188,10 @@ export function initWindowEventHooks(): void {
     });
 
     let isMoving = false;
+    // TODO proper solution for this.
+    // For now saving drag state just as variable...
+    let startDragClientX = 0;
+    let startDragClientY = 0;
     viewport.onMouseMove = (e, c): void => {
         // isMouseMovingSlow = Math.abs(lastMousePosX - e.clientX) < 2 && Math.abs(lastMousePosY - e.clientY) < 2;
         //logger.logError(`${lastMousePosX - e.clientX} ${lastMousePosY - e.clientY}`);
@@ -212,18 +216,33 @@ export function initWindowEventHooks(): void {
             overlayStore.isFollowMouseActive = false;
         }
 
+        const deltaX = e.clientX - startDragClientX;
+        const deltaY = e.clientY - startDragClientY;
+
+        moveView(-deltaX, -deltaY);
+
+        const x = gameStore.gameState.centerX;
+        const y = gameStore.gameState.centerY;
+
         if (!isMoving) {
             return;
         }
         isMoving = false;
-        const x = (window as any).lastPosX || urlHelper.xCoord;
-        const y = (window as any).lastPosY || urlHelper.yCoord;
+        // Previously used hooks on window 'lastPosX/Y' are gone now...
+        // const x = (window as any).lastPosX || urlHelper.xCoord;
+        // const y = (window as any).lastPosY || urlHelper.yCoord;
+
         // if no picture provided, set coordinates to center of the screen
         if (!overlayStore.overlayImage.inputImage.url && !overlayStore.overlayImage.inputImage.file) {
             updateImagePlacementConfiguration(undefined, Math.round(x), Math.round(y));
         } else {
         }
         updateGameStateFAF(undefined, x, y, undefined, isMoving);
+    };
+
+    viewport.onMouseDown = (e, c): void => {
+        startDragClientX = e.clientX;
+        startDragClientY = e.clientY;
     };
 
     let timeoutAfterScroll = -1;
