@@ -187,7 +187,6 @@ export function initWindowEventHooks(): void {
         initGameStateFromUrl();
     });
 
-    let isMoving = false;
     // TODO proper solution for this.
     // For now saving drag state just as variable...
     let startDragClientX = 0;
@@ -203,14 +202,15 @@ export function initWindowEventHooks(): void {
         if (c.style.cursor !== 'move') {
             return;
         }
-        isMoving = true;
-        updateGameStateFAF(urlHelper.canvasStr, undefined, undefined, undefined, isMoving);
+        updateGameStateFAF(urlHelper.canvasStr);
     };
 
-    // TODO this can be replaced with getter/setter on window.lastPosX
-    // This would be nicer solution, rather than depending on mouse drag detection.
-
     viewport.onMouseUp = (e, c): void => {
+        if (e.button !== 0) {
+            // Don't care about other buttons
+            return;
+        }
+
         // On click turn off following cursor
         if (overlayStore.isFollowMouseActive) {
             overlayStore.isFollowMouseActive = false;
@@ -224,25 +224,23 @@ export function initWindowEventHooks(): void {
         const x = gameStore.gameState.centerX;
         const y = gameStore.gameState.centerY;
 
-        if (!isMoving) {
-            return;
-        }
-        isMoving = false;
-        // Previously used hooks on window 'lastPosX/Y' are gone now...
-        // const x = (window as any).lastPosX || urlHelper.xCoord;
-        // const y = (window as any).lastPosY || urlHelper.yCoord;
+        updateGameStateFAF(undefined, x, y, undefined, false);
 
         // if no picture provided, set coordinates to center of the screen
         if (!overlayStore.overlayImage.inputImage.url && !overlayStore.overlayImage.inputImage.file) {
             updateImagePlacementConfiguration(undefined, Math.round(x), Math.round(y));
-        } else {
         }
-        updateGameStateFAF(undefined, x, y, undefined, isMoving);
     };
 
     viewport.onMouseDown = (e, c): void => {
+        if (e.button !== 0) {
+            // Don't care about other buttons
+            return;
+        }
+
         startDragClientX = e.clientX;
         startDragClientY = e.clientY;
+        updateGameStateFAF(urlHelper.canvasStr, undefined, undefined, undefined, true);
     };
 
     let timeoutAfterScroll = -1;
