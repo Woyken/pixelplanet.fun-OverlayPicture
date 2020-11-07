@@ -83,6 +83,12 @@ export async function loadChunkData(canvasId: number, chunk: ChunkCell): Promise
     }
 }
 
+/**
+ * Input world coordinates
+ * @param x world x
+ * @param y world y
+ * @returns color in the selected image at that location
+ */
 function getPixelFromOutput(x: number, y: number): number | undefined {
     const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
     if (!outputImageData) return;
