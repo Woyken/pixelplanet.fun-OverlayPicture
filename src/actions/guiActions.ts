@@ -222,6 +222,7 @@ export function loadSavedConfigurations(): void {
                     c.modifiers.modificationsAvailable,
                     c.modifiers.shouldConvertColors,
                     c.modifiers.imageBrightness,
+                    overlayStore.modifications.autoSelectColor,
                 ),
                 new PlacementConfiguration(
                     c.placementConfiguration.xOffset,
@@ -266,6 +267,7 @@ export async function saveCurrentConfiguration(): Promise<void> {
             overlayStore.modifications.modificationsAvailable,
             overlayStore.modifications.shouldConvertColors,
             overlayStore.modifications.imageBrightness,
+            overlayStore.modifications.autoSelectColor,
         ),
         new PlacementConfiguration(
             overlayStore.placementConfiguration.xOffset,
