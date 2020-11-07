@@ -7,6 +7,7 @@ import { updatePixel, updateMetadata } from '../actions/pixelData';
 import { botState } from './botState';
 import logger from '../handlers/logger';
 import webSocketInterceptor from '../handlers/websocket/websecketInterceptor';
+import fetchInterceptor from '../gameInjection/fetchInterceptor';
 
 export function initWebSocketHooks(): void {
     chunkStore.loadedChunks.observe((changes) => {
@@ -104,4 +105,5 @@ export function initWebSocketHooks(): void {
 
     // Make sure interceptor is initialized
     webSocketInterceptor;
+    fetchInterceptor;
 }
