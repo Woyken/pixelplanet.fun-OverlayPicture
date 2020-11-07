@@ -1,5 +1,5 @@
 import { Configuration, configurationMethods } from './configuration';
-import { SavedConfiguration } from './store/overlayStore';
+import { ImageModifiers, overlayStore, SavedConfiguration } from './store/overlayStore';
 
 class ConfigurationStore {
     private readonly storageItemName: string = 'OverlaySavedConfigs';
@@ -28,11 +28,12 @@ class ConfigurationStore {
         return oldConfigs.map((c) => {
             const n: SavedConfiguration = {
                 imageUrl: c.imgUrl,
-                modifiers: {
-                    shouldConvertColors: c.convertColors,
-                    modificationsAvailable: false,
-                    imageBrightness: c.brighten,
-                },
+                modifiers: new ImageModifiers(
+                    c.convertColors,
+                    false,
+                    c.brighten,
+                    overlayStore.modifications.autoSelectColor,
+                ),
                 placementConfiguration: {
                     transparency: c.transparency,
                     xOffset: c.xOffset,
