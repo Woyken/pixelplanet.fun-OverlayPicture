@@ -2,6 +2,9 @@ import { ChunkCell } from '../../../chunkHelper';
 
 type PixelUpdatePacket = {
     chunk: ChunkCell;
+    /**
+     * Pixel offset inside chunk
+     */
     offset: number;
     colorIndex: number;
 };

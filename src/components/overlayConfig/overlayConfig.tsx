@@ -160,6 +160,22 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                         labelPlacement="end"
                     />
                     <br />
+                    <Tooltip title="Experimental! Will try to only place colors matching the image regardless of which color is selected in game">
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    color="primary"
+                                    checked={overlayStore.modifications.autoSelectColor}
+                                    onChange={(e): void => {
+                                        overlayStore.modifications.updateAutoSelectColorState(e.target.checked);
+                                    }}
+                                />
+                            }
+                            label="Auto color*"
+                            labelPlacement="end"
+                        />
+                    </Tooltip>
+                    <br />
                     <div style={{ display: overlayStore.modifications.shouldConvertColors ? '' : 'none' }}>
                         <Typography id="brightness-slider" gutterBottom>
                             Image brightness

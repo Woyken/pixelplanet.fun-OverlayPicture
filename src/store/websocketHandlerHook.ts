@@ -6,6 +6,7 @@ import { observe } from 'mobx';
 import { updatePixel, updateMetadata } from '../actions/pixelData';
 import { botState } from './botState';
 import logger from '../handlers/logger';
+import webSocketInterceptor from '../handlers/websocket/websecketInterceptor';
 
 export function initWebSocketHooks(): void {
     chunkStore.loadedChunks.observe((changes) => {
@@ -100,4 +101,7 @@ export function initWebSocketHooks(): void {
     };
 
     webSocketHandler.connect();
+
+    // Make sure interceptor is initialized
+    webSocketInterceptor;
 }

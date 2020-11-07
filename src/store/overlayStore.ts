@@ -1,4 +1,4 @@
-import { observable, IObservableArray } from 'mobx';
+import { observable, IObservableArray, action } from 'mobx';
 
 export class ImageModifiers {
     /**
@@ -6,12 +6,24 @@ export class ImageModifiers {
      */
     @observable modificationsAvailable: boolean;
     @observable shouldConvertColors: boolean;
+    @observable autoSelectColor: boolean;
     @observable imageBrightness: number;
 
-    constructor(modificationsAvailable: boolean, shouldConvertColors: boolean, imageBrightness: number) {
+    constructor(
+        modificationsAvailable: boolean,
+        shouldConvertColors: boolean,
+        imageBrightness: number,
+        autoSelectColor: boolean,
+    ) {
         this.modificationsAvailable = modificationsAvailable;
         this.imageBrightness = imageBrightness;
         this.shouldConvertColors = shouldConvertColors;
+        this.autoSelectColor = autoSelectColor;
+    }
+
+    @action
+    updateAutoSelectColorState(autoSelectColor: boolean): void {
+        this.autoSelectColor = autoSelectColor;
     }
 }
 
@@ -92,6 +104,6 @@ export const overlayStore = new OverlayStore(
     true,
     new OverlayImage(new OverlayImageInput(), new OverlayImageOutput(false)),
     new PlacementConfiguration(0, 0, 80),
-    new ImageModifiers(false, false, 0),
+    new ImageModifiers(false, false, 0, false),
     false,
 );
