@@ -22,14 +22,12 @@ export class GameState {
     @observable hoverPixel: Cell = { x: 0, y: 0 };
     @observable centerX: number;
     @observable centerY: number;
-    @observable isMouseDragging: boolean;
     @observable activeCanvasStringId?: string;
     @observable activeCanvasId?: number;
 
-    constructor(centerX: number, centerY: number, isMouseDragging: boolean) {
+    constructor(centerX: number, centerY: number) {
         this.centerX = centerX;
         this.centerY = centerY;
-        this.isMouseDragging = isMouseDragging;
     }
 }
 
@@ -108,4 +106,4 @@ export class GameStore {
     }
 }
 
-export const gameStore = new GameStore(new GameState(0, 0, false), new UserData());
+export const gameStore = new GameStore(new GameState(0, 0), new UserData());

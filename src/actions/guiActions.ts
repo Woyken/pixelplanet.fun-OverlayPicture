@@ -174,12 +174,10 @@ export async function updateGameState(
     centerX?: number,
     centerY?: number,
     zoomLevel?: number,
-    isMouseDragging?: boolean,
 ): Promise<void> {
     if (canvasStringId !== undefined) gameStore.gameState.activeCanvasStringId = canvasStringId;
     if (centerX !== undefined) gameStore.gameState.centerX = centerX;
     if (centerY !== undefined) gameStore.gameState.centerY = centerY;
-    if (isMouseDragging !== undefined) gameStore.gameState.isMouseDragging = isMouseDragging;
 
     if (canvasStringId !== undefined) await setActiveCanvasByStringId(canvasStringId);
 }
@@ -189,9 +187,8 @@ export function updateGameStateFAF(
     centerX?: number,
     centerY?: number,
     zoomLevel?: number,
-    isMouseDragging?: boolean,
 ): void {
-    updateGameState(canvasStringId, centerX, centerY, zoomLevel, isMouseDragging).catch((e) => {
+    updateGameState(canvasStringId, centerX, centerY, zoomLevel).catch((e) => {
         logger.logWarn(`Game state update failed. ${e}`);
     });
 }

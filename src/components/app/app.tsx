@@ -7,7 +7,7 @@ import { loadSavedConfigurations, updateGameStateFAF } from '../../actions/guiAc
 import BotModal from '../botModal/botModal';
 import { observer } from 'mobx-react';
 import { overlayStore } from '../../store/overlayStore';
-import { initWindowEventHooks } from '../../handlers/eventHooks';
+import { initWindowEventHooks } from '../../handlers/gameEventHooks';
 import { updateMetadata } from '../../actions/pixelData';
 import logger from '../../handlers/logger';
 

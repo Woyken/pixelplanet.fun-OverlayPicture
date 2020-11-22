@@ -83,7 +83,6 @@ export class OverlayStore {
     @observable modifications: ImageModifiers;
     @observable isFollowMouseActive = false;
     @observable isBotModalVisible: boolean;
-    @observable isRestickingNeeded = false;
 
     constructor(
         overlayEnabled: boolean,

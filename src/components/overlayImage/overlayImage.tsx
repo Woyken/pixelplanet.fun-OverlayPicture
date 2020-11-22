@@ -82,11 +82,7 @@ class OverlayImage extends React.Component<Props, OwnState> {
         const opacity = overlayStore.placementConfiguration.transparency / 100;
 
         return (
-            <div
-                style={{
-                    display: gameStore.gameState.isMouseDragging ? 'none' : '',
-                }}
-            >
+            <div>
                 {overlayStore.overlayImage.outputImage.outputImageData ? (
                     <canvas
                         ref={this.imageCanvasRef}
