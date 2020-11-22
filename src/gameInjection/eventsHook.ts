@@ -1,4 +1,6 @@
 import { updateGameStateFAF, updateImagePlacementConfiguration } from '../actions/guiActions';
+import { selectColor } from '../actions/uiActions';
+import colorConverter from '../colorConverter';
 import { gameStore } from '../store/gameStore';
 import { overlayStore } from '../store/overlayStore';
 import viewport from './viewport';
@@ -54,6 +56,58 @@ class GameEventsHook {
                 overlayStore.isFollowMouseActive = false;
             }
         };
+
+        viewport.onMouseDown = (e, c): void => {
+            if (e.button !== 0) {
+                // Don't care about other buttons
+                return;
+            }
+
+            if (!overlayStore.modifications.autoSelectColor) {
+                return;
+            }
+
+            const o = this.getColorFromOutputImage();
+            if (o) selectColor(o[0], o[1], o[2]);
+        };
+    }
+
+    getColorFromOutputImage(): [number, number, number] | undefined {
+        if (gameStore.gameState.activeCanvasId === undefined) {
+            return;
+        }
+
+        const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
+        if (!outputImageData) {
+            return;
+        }
+
+        const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+
+        const worldPixel = gameStore.gameState.hoverPixel;
+
+        const xi = worldPixel.x - overlayStore.placementConfiguration.xOffset;
+        const yi = worldPixel.y - overlayStore.placementConfiguration.yOffset;
+
+        // Get outputImage values...
+        const idx = (outputImageData.width * yi + xi) << 2;
+        const r = outputImageData.data[idx + 0];
+        const g = outputImageData.data[idx + 1];
+        const b = outputImageData.data[idx + 2];
+        const a = outputImageData.data[idx + 3];
+
+        const colorIndexImage = colorConverter.convertActualColorFromPalette(
+            canvasData.colors,
+            canvasData.colorsReservedCount,
+            r,
+            g,
+            b,
+        );
+
+        const closestColor = colorConverter.getActualColorFromPalette(canvasData.colors, colorIndexImage);
+        if (closestColor) return closestColor;
+
+        return [r, g, b];
     }
 }
 
