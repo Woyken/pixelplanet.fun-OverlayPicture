@@ -1,9 +1,16 @@
 import { updateGameStateFAF, updateImagePlacementConfiguration } from '../actions/guiActions';
 import { selectColor } from '../actions/uiActions';
+import { TILE_SIZE } from '../chunkHelper';
 import colorConverter from '../colorConverter';
 import { gameStore } from '../store/gameStore';
 import { overlayStore } from '../store/overlayStore';
 import viewport from './viewport';
+
+const MAX_SCALE = 40;
+
+function clamp(n: number, min: number, max: number): number {
+    return Math.max(min, Math.min(n, max));
+}
 
 class GameEventsHook {
     constructor() {
@@ -25,17 +32,22 @@ class GameEventsHook {
         });
         window.pixelPlanetEvents.addListener(
             'setscale',
-            (scale: number, [zoomPointX, zoomPointY]: [number, number]) => {
+            (unclampedScale: number, [zoomPointX, zoomPointY]: [number, number]) => {
+                const canvas = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId || 0];
+                let minScale = 0.1;
+                if (canvas) minScale = TILE_SIZE / canvas.size;
+
+                const newZoomScale = clamp(unclampedScale, minScale, MAX_SCALE);
                 let centerX = gameStore.gameState.centerX;
                 let centerY = gameStore.gameState.centerY;
                 const previousViewScale = gameStore.gameState.viewScale;
-                const newViewScale = scale > 0.85 && scale < 1.2 ? 1.0 : scale;
+                const newViewScale = newZoomScale > 0.85 && newZoomScale < 1.2 ? 1.0 : newZoomScale;
 
                 const scaleDiff = previousViewScale / newViewScale;
                 centerX = zoomPointX + (centerX - zoomPointX) * scaleDiff;
                 centerY = zoomPointY + (centerY - zoomPointY) * scaleDiff;
 
-                gameStore.gameState.scale = scale;
+                gameStore.gameState.scale = newZoomScale;
                 gameStore.gameState.viewScale = newViewScale;
                 gameStore.gameState.centerX = centerX;
                 gameStore.gameState.centerY = centerY;
