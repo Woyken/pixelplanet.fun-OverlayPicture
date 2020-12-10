@@ -1,9 +1,12 @@
 import { updateGameStateFAF, updateImagePlacementConfiguration } from '../actions/guiActions';
 import { selectColor } from '../actions/uiActions';
-import { TILE_SIZE } from '../chunkHelper';
+import { chunkToIndex, TILE_SIZE } from '../chunkHelper';
 import colorConverter from '../colorConverter';
+import logger from '../handlers/logger';
+import { chunkStore, LoadedChunkData } from '../store/chunkStore';
 import { gameStore } from '../store/gameStore';
 import { overlayStore } from '../store/overlayStore';
+import { ChunkRGB } from './pixelplanetDeclarations';
 import viewport from './viewport';
 
 const MAX_SCALE = 40;
@@ -53,8 +56,31 @@ class GameEventsHook {
                 gameStore.gameState.centerY = centerY;
             },
         );
-        window.pixelPlanetEvents.addListener('receivechunk', (chunk: any) => {
-            // TODO
+        window.pixelPlanetEvents.addListener('receivechunk', (chunk: ChunkRGB) => {
+            logger.log(
+                `pixelPlanetEvents - received chunk data, chunk{${chunk.cell[0]},${chunk.cell[1]},${chunk.cell[2]}}`,
+            );
+            if (!chunk.ready) return;
+            // Ignore the "big" chunks, when zooming out
+            if (!chunk.isBasechunk) return;
+            const ctx = chunk.image.getContext('2d');
+            if (!ctx) return;
+            const imageData = ctx.getImageData(0, 0, chunk.image.width, chunk.image.height);
+            const chunkData = new Array<number>(chunk.cell[1] * chunk.cell[2]);
+            for (let y = 0; y < imageData.height; y++) {
+                for (let x = 0; x < imageData.width; x++) {
+                    const idx = (imageData.width * y + x) << 2;
+                    const r = imageData.data[idx + 0];
+                    const g = imageData.data[idx + 1];
+                    const b = imageData.data[idx + 2];
+                    let colorIndex = chunk.palette.getIndexOfColor(r, g, b);
+                    if (colorIndex === null || colorIndex < 0) colorIndex = 0; // For now default to 0
+                    chunkData[idx] = colorIndex;
+                }
+            }
+            chunkStore.replaceChunk(
+                new LoadedChunkData(chunkToIndex({ chunkX: chunk.cell[1], chunkY: chunk.cell[2] }), chunkData),
+            );
         });
 
         viewport.onMouseUp = (e, c): void => {

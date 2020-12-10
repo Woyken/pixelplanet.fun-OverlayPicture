@@ -19,6 +19,13 @@ export class ChunkStore {
     }
 
     @action
+    replaceChunk(data: LoadedChunkData): void {
+        const found = this.loadedChunks.find((v) => v.chunkIdx === data.chunkIdx);
+        if (!found) this.addChunk(data);
+        found?.data.replace(data.data);
+    }
+
+    @action
     getChunk(chunkIdx: number): LoadedChunkData | undefined {
         return this.loadedChunks.find((v) => v.chunkIdx === chunkIdx);
     }
