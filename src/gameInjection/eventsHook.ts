@@ -33,9 +33,8 @@ class GameEventsHook {
             if (gameStore.gameState.hoverPixel.x !== x || gameStore.gameState.hoverPixel.y !== y)
                 gameStore.gameState.hoverPixel = { x, y };
         });
-        window.pixelPlanetEvents.addListener(
-            'setscale',
-            (unclampedScale: number, [zoomPointX, zoomPointY]: [number, number]) => {
+        window.pixelPlanetEvents.addListener('setscale', (unclampedScale: number, zoomPoint?: [number, number]) => {
+            const [zoomPointX, zoomPointY] = zoomPoint ?? [gameStore.gameState.centerX, gameStore.gameState.centerY];
                 const canvas = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId || 0];
                 let minScale = 0.1;
                 if (canvas) minScale = TILE_SIZE / canvas.size;
