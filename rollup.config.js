@@ -56,9 +56,9 @@ const moduleBanner = `
 // This script is supposed to be loaded by https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js module.
 `;
 
-const { PRODUCTION } = process.env;
+const { PRODUCTION, VERIFY_BUILD } = process.env;
 
-function rollupPlugins(banner) {
+function rollupPluginsBase(isWorkerBuild) {
     return [
         postcss({
             preprocessor: (content, id) =>
@@ -71,17 +71,24 @@ function rollupPlugins(banner) {
             extract: false,
             extensions: ['.scss', '.css'],
         }),
-        replace({
-            // Need to replace this, since 'process' is undefined when running as userscript.
-            'process.env.NODE_ENV': JSON.stringify(PRODUCTION ? 'production' : 'development'),
-        }),
         external(),
         resolve({ preferBuiltins: false }),
-        typescript(),
+        isWorkerBuild ? typescript({ tsconfig: './src/workers/tsconfig.json' }) : typescript(),
         commonjs({
             include: ['node_modules/**'],
             namedExports: getNamedExports(['react', 'react-dom', 'react-is', 'pako', 'prop-types', 'utf8']),
             sourceMap: true,
+        }),
+        webWorkerLoader(),
+    ];
+}
+
+function rollupPlugins(banner) {
+    return [
+        ...rollupPluginsBase(false),
+        replace({
+            // Need to replace this, since 'process' is undefined when running as userscript.
+            'process.env.NODE_ENV': JSON.stringify(PRODUCTION ? 'production' : 'development'),
         }),
         terser({
             output: {
@@ -90,11 +97,10 @@ function rollupPlugins(banner) {
             },
             sourcemap: true,
         }),
-        webWorkerLoader(),
     ];
 }
 
-export default [
+const regularBuild = [
     {
         input: 'src/userscript-loader-module/index.ts',
         output: { dir: 'dist', sourcemap: PRODUCTION ? null : 'inline' },
@@ -131,3 +137,24 @@ export default [
         plugins: rollupPlugins(loaderModuleBanner),
     },
 ];
+
+const verificationBuild = [
+    {
+        input: 'src/workers/testWorker.ts',
+        output: {
+            file: 'dist/workerBuild.js',
+        },
+        plugins: [...rollupPluginsBase(true)],
+    },
+    {
+        input: 'src/index.tsx',
+        output: {
+            file: 'dist/pixelPlanetOverlay.user.js',
+            // Self executing function, since this is userscript, not a module.
+            format: 'iife',
+        },
+        plugins: [...rollupPluginsBase(false)],
+    },
+];
+
+export default VERIFY_BUILD ? verificationBuild : regularBuild;
