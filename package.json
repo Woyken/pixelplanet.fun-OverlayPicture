@@ -8,6 +8,7 @@
         "build:prod": "rollup -c --environment PRODUCTION",
         "build": "rollup -c & npm run open",
         "build:watch": "rollup -c --watch",
+        "build:verify": "rollup -c --environment VERIFY_BUILD",
         "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
