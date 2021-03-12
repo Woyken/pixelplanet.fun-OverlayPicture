@@ -8,6 +8,7 @@ import external from 'rollup-plugin-peer-deps-external';
 import resolve from 'rollup-plugin-node-resolve';
 import replace from 'rollup-plugin-replace';
 import html from '@open-wc/rollup-plugin-html';
+import webWorkerLoader from 'rollup-plugin-web-worker-loader';
 
 import pkg from './package.json';
 
@@ -89,6 +90,7 @@ function rollupPlugins(banner) {
             },
             sourcemap: true,
         }),
+        webWorkerLoader(),
     ];
 }
 

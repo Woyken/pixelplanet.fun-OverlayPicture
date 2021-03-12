@@ -36,6 +36,7 @@
         "rollup-plugin-scss": "^2.4.0",
         "rollup-plugin-terser": "^5.3.0",
         "rollup-plugin-typescript2": "^0.27.0",
+        "rollup-plugin-web-worker-loader": "^1.6.1",
         "ts-loader": "^7.0.1",
         "tslint-config-airbnb": "^5.11.2",
         "typescript": "^3.8.3"
@@ -45,6 +46,7 @@
         "@material-ui/icons": "^4.9.1",
         "@typescript-eslint/eslint-plugin": "^2.30.0",
         "@typescript-eslint/parser": "^2.30.0",
+        "comlink": "^4.3.0",
         "eslint": "^6.8.0",
         "eslint-config-prettier": "^6.11.0",
         "eslint-plugin-prettier": "^3.1.3",
