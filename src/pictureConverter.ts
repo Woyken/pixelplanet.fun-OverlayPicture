@@ -17,12 +17,12 @@ class PictureConverter {
         colorPalette: [number, number, number][],
         reservedColorOffset: number,
         pngBuffer: ArrayBuffer,
-        contextForBufferCreation: CanvasRenderingContext2D,
         convertColors: boolean,
         brightenBy: number,
     ): Promise<ImageData> {
         const decodedPng = decode(pngBuffer);
-        const imageData = contextForBufferCreation.createImageData(decodedPng.width, decodedPng.height);
+        // new OffscreenCanvas()
+        const imageData = new ImageData(decodedPng.width, decodedPng.height);
 
         if (decodedPng.palette) {
             logger.log('detected pallette png.');

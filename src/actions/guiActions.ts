@@ -59,9 +59,6 @@ export async function startProcessingImage(): Promise<void> {
             throw new Error('Something unexpected happened');
         }
 
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d')!;
-
         logger.log(`Starting picture conversion ${buffer.byteLength}`);
         let currentCanvasMetadata: CanvasMetadata | undefined;
         for (let i = 0; i < gameStore.canvasesMetadata.length; i++) {
@@ -86,7 +83,6 @@ export async function startProcessingImage(): Promise<void> {
             currentCanvasMetadata.colors,
             currentCanvasMetadata.colorsReservedCount,
             buffer,
-            ctx,
             overlayStore.modifications.shouldConvertColors,
             overlayStore.modifications.imageBrightness,
         );
