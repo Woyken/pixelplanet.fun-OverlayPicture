@@ -12,6 +12,8 @@ enum LogLevel {
 
 class Logger {
     public isLogLevelEnabled(level: LogLevel): boolean {
+        if (typeof window === 'undefined') return true;
+
         if (typeof window.logLevel === 'number') {
             return window.logLevel >= level;
         }

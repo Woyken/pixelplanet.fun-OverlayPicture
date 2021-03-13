@@ -1,4 +1,4 @@
-import { pictureConverter } from '../pictureConverter';
+import pictureConverter from '../pictureConversionApi';
 import logger from '../handlers/logger';
 import { configurationStore } from '../configurationStore';
 import { updateMetadata } from './pixelData';
@@ -80,11 +80,11 @@ export async function startProcessingImage(): Promise<void> {
             }
         }
         const result = await pictureConverter.convertPictureFromUrl(
-            currentCanvasMetadata.colors,
-            currentCanvasMetadata.colorsReservedCount,
+            JSON.parse(JSON.stringify(currentCanvasMetadata.colors)),
+            JSON.parse(JSON.stringify(currentCanvasMetadata.colorsReservedCount)),
             buffer,
-            overlayStore.modifications.shouldConvertColors,
-            overlayStore.modifications.imageBrightness,
+            JSON.parse(JSON.stringify(overlayStore.modifications.shouldConvertColors)),
+            JSON.parse(JSON.stringify(overlayStore.modifications.imageBrightness)),
         );
         logger.log(`updating output image ${result.data.length}`);
         updateOutputImage(result);

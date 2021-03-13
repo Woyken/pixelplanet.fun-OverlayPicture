@@ -142,7 +142,7 @@ const regularBuild = [
 
 const verificationBuild = [
     {
-        input: 'src/workers/testWorker.ts',
+        input: 'src/workers/pictureConverterWorker.ts',
         output: {
             file: 'dist/workerBuild.js',
         },

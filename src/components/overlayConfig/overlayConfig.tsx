@@ -181,6 +181,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                             Image brightness
                         </Typography>
                         <Slider
+                            disabled={overlayStore.overlayImage.outputImage.isProcessing}
                             defaultValue={15}
                             getAriaValueText={(v): string => {
                                 return v.toString(10);
@@ -192,7 +193,7 @@ class OverlayConfig extends React.Component<Props, OwnState> {
                             max={20}
                             value={overlayStore.modifications.imageBrightness}
                             onChange={(e, value): void => {
-                                if (typeof value !== 'number') {
+                                if (typeof value !== 'number' || overlayStore.overlayImage.outputImage.isProcessing) {
                                     return;
                                 }
                                 updateImageModifiers(undefined, undefined, value);

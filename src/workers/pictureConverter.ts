@@ -1,8 +1,8 @@
-import colorConverter from './colorConverter';
+import colorConverter from '../colorConverter';
 import { decode } from 'fast-png';
-import logger from './handlers/logger';
+import logger from '../handlers/logger';
 
-class PictureConverter {
+export class PictureConverter {
     public async isImageValidCors(url: string): Promise<boolean> {
         try {
             const response = await fetch(url);
