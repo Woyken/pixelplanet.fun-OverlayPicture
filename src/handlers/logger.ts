@@ -4,6 +4,9 @@ declare global {
     }
 }
 
+const window: Window | undefined =
+    typeof (globalThis as any).window !== 'undefined' ? (globalThis as any).window : undefined;
+
 enum LogLevel {
     error,
     warn,
