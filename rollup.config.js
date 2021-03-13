@@ -90,13 +90,15 @@ function rollupPlugins(banner) {
             // Need to replace this, since 'process' is undefined when running as userscript.
             'process.env.NODE_ENV': JSON.stringify(PRODUCTION ? 'production' : 'development'),
         }),
-        terser({
-            output: {
-                comments: false,
-                preamble: banner,
-            },
-            sourcemap: true,
-        }),
+        PRODUCTION
+            ? terser({
+                  output: {
+                      comments: false,
+                      preamble: banner,
+                  },
+                  sourcemap: true,
+              })
+            : null,
     ];
 }
 
