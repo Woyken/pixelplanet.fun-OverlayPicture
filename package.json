@@ -1,7 +1,7 @@
 {
     "name": "pixelplanet.fun-picture-overlay",
     "displayName": "pixelplanet.fun picture overlay",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "description": "Add your picture as overlay to pixelplanet.fun",
     "main": "./dist/index.js",
     "scripts": {
