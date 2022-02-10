@@ -18,10 +18,12 @@ function clamp(n: number, min: number, max: number): number {
 class GameEventsHook {
     constructor() {
         window.pixelPlanetEvents.addListener('selectcanvas', (canvasId: number) => {
+            logger.log(`pixelPlanetEvents - selectcanvas: ${canvasId}`);
             const canvasMetadata = gameStore.canvasesMetadata.find((c) => c.id == canvasId);
             if (canvasMetadata != null) updateGameStateFAF(canvasMetadata.stringId);
         });
         window.pixelPlanetEvents.addListener('setviewcoordinates', ([x, y]: [number, number]) => {
+            logger.log(`pixelPlanetEvents - setviewcoordinates: ${x}, ${y}`);
             gameStore.gameState.centerX = x;
             gameStore.gameState.centerY = y;
 
@@ -30,10 +32,16 @@ class GameEventsHook {
             }
         });
         window.pixelPlanetEvents.addListener('sethover', ([x, y]: [number, number]) => {
+            logger.log(`pixelPlanetEvents - received sethover: ${x}, ${y}`);
             if (gameStore.gameState.hoverPixel.x !== x || gameStore.gameState.hoverPixel.y !== y)
                 gameStore.gameState.hoverPixel = { x, y };
         });
         window.pixelPlanetEvents.addListener('setscale', (unclampedScale: number, zoomPoint?: [number, number]) => {
+            logger.log(
+                `pixelPlanetEvents - received setscale event: ${unclampedScale}, zoomPoint: ${JSON.stringify(
+                    zoomPoint,
+                )}`,
+            );
             const [zoomPointX, zoomPointY] = zoomPoint ?? [gameStore.gameState.centerX, gameStore.gameState.centerY];
             const canvas = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
             let minScale = 0.1;
