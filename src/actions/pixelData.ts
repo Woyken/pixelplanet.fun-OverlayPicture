@@ -93,7 +93,7 @@ function getPixelFromOutput(x: number, y: number): number | undefined {
     const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
     if (!outputImageData) return;
     if (gameStore.gameState.activeCanvasId == undefined) return;
-    const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+    const canvasData = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
     if (!canvasData) {
         logger.logError('canvasData is null');
         return;
@@ -144,8 +144,10 @@ export function updatePixel(pixel: Cell, colorIndex: number): void {
         return;
     }
     logger.log(`Pixel update ${JSON.stringify(pixel)} ${colorIndex}`);
-    const index = pixelInChunkOffset(pixel, gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId].size);
-    const chunk = pixelToChunk(pixel, gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId].size);
+    const activeCanvas = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
+    if (!activeCanvas) throw new Error("Can't find active canvas");
+    const index = pixelInChunkOffset(pixel, activeCanvas.size);
+    const chunk = pixelToChunk(pixel, activeCanvas.size);
 
     const chunkData = chunkStore.getChunk(chunkToIndex(chunk))?.data;
     if (!chunkData) {

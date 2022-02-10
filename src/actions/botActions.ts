@@ -44,7 +44,7 @@ export async function botStartProcessingImage(): Promise<void> {
                 return;
             }
         }
-        const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+        const canvasData = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
         if (!canvasData) {
             logger.logError('canvasData is null');
             return;
@@ -125,7 +125,7 @@ export async function botPlacePixel(canvasId: number, pixel: Cell, colorIndex: n
         }
     }
 
-    const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+    const canvasData = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
     if (!canvasData) {
         logger.logError('Could not find canvas data!');
         return;
@@ -176,7 +176,8 @@ async function botStartWorkAsync(): Promise<void> {
             if (gameStore.gameState.activeCanvasId === undefined) {
                 return;
             }
-            const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+            const canvasData = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
+            if (!canvasData) throw new Error('Could not find canvas data!');
 
             const timeUntilEmpty = botState.pixelPlaceTimeEmpty - new Date().getTime();
             const pixelPlacingTimeout = Math.max(canvasData.timeoutOnEmpty, canvasData.timeoutOnReplace);

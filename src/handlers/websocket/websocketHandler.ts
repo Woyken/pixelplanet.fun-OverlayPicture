@@ -104,7 +104,7 @@ class WebSocketHandler {
         }
         // Clear all watching chunks. Map has changed...
         this.watchingChunks = [];
-        logger.log('Notify websocket server that we changed canvas');
+        logger.log(`Notify websocket server that we changed canvas from ${this.canvasId ?? 'null'} to ${canvasId}`);
         this.canvasId = canvasId;
         if (this.isConnected) {
             this.webSocket?.send(registerCanvas.dehydrate(this.canvasId));

@@ -152,11 +152,11 @@ export function updateImagePlacementConfiguration(transparency?: number, xOffset
 export async function setActiveCanvasByStringId(canvasStringId: string): Promise<void> {
     if (
         gameStore.gameState.activeCanvasId !== undefined &&
-        gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId]?.stringId === canvasStringId
+        gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId)?.stringId === canvasStringId
     ) {
         return;
     }
-    logger.log('updating active canvas id');
+    logger.log(`updating active canvas string id to ${canvasStringId}`);
     const idx = gameStore.canvasesMetadata.findIndex((v) => v.stringId === canvasStringId);
     if (idx >= 0) {
         await botUpdateEnabled(false);

@@ -80,7 +80,7 @@ export class CanvasMetadata {
         return new CanvasMetadata(
             id,
             metadataResponse.title,
-            metadataResponse.cli,
+            metadataResponse.cli ?? 0,
             metadataResponse.ident,
             metadataResponse.colors,
             metadataResponse.size,

@@ -21,10 +21,9 @@ export function initWebSocketHooks(): void {
         if (gameStore.gameState.activeCanvasId === undefined) {
             return;
         }
-        updatePixel(
-            chunkOffsetToPixel(chunk, pixelOffset, gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId].size),
-            colorIndex,
-        );
+        const canvas = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
+        if (!canvas) return;
+        updatePixel(chunkOffsetToPixel(chunk, pixelOffset, canvas.size), colorIndex);
     };
 
     webSocketHandler.onPixelReturn = (retCode, waitMs, coolDownSeconds): void => {

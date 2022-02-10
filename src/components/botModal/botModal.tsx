@@ -55,7 +55,6 @@ class BotModal extends React.Component<OwnProps, OwnState> {
         if (gameStore.gameState.activeCanvasId === undefined) {
             return null;
         }
-        const canvasMetadata = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
 
         return (
             <div id="PictureOverlay_BotConfigurationModal">

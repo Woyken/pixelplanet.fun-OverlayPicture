@@ -18,8 +18,8 @@ function clamp(n: number, min: number, max: number): number {
 class GameEventsHook {
     constructor() {
         window.pixelPlanetEvents.addListener('selectcanvas', (canvasId: number) => {
-            if (gameStore.canvasesMetadata[canvasId] != null)
-                updateGameStateFAF(gameStore.canvasesMetadata[canvasId].stringId);
+            const canvasMetadata = gameStore.canvasesMetadata.find((c) => c.id === canvasId);
+            if (canvasMetadata != null) updateGameStateFAF(canvasMetadata.stringId);
         });
         window.pixelPlanetEvents.addListener('setviewcoordinates', ([x, y]: [number, number]) => {
             gameStore.gameState.centerX = x;
@@ -35,26 +35,25 @@ class GameEventsHook {
         });
         window.pixelPlanetEvents.addListener('setscale', (unclampedScale: number, zoomPoint?: [number, number]) => {
             const [zoomPointX, zoomPointY] = zoomPoint ?? [gameStore.gameState.centerX, gameStore.gameState.centerY];
-                const canvas = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId || 0];
-                let minScale = 0.1;
-                if (canvas) minScale = TILE_SIZE / canvas.size;
+            const canvas = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
+            let minScale = 0.1;
+            if (canvas) minScale = TILE_SIZE / canvas.size;
 
-                const newZoomScale = clamp(unclampedScale, minScale, MAX_SCALE);
-                let centerX = gameStore.gameState.centerX;
-                let centerY = gameStore.gameState.centerY;
-                const previousViewScale = gameStore.gameState.viewScale;
-                const newViewScale = newZoomScale > 0.85 && newZoomScale < 1.2 ? 1.0 : newZoomScale;
+            const newZoomScale = clamp(unclampedScale, minScale, MAX_SCALE);
+            let centerX = gameStore.gameState.centerX;
+            let centerY = gameStore.gameState.centerY;
+            const previousViewScale = gameStore.gameState.viewScale;
+            const newViewScale = newZoomScale > 0.85 && newZoomScale < 1.2 ? 1.0 : newZoomScale;
 
-                const scaleDiff = previousViewScale / newViewScale;
-                centerX = zoomPointX + (centerX - zoomPointX) * scaleDiff;
-                centerY = zoomPointY + (centerY - zoomPointY) * scaleDiff;
+            const scaleDiff = previousViewScale / newViewScale;
+            centerX = zoomPointX + (centerX - zoomPointX) * scaleDiff;
+            centerY = zoomPointY + (centerY - zoomPointY) * scaleDiff;
 
-                gameStore.gameState.scale = newZoomScale;
-                gameStore.gameState.viewScale = newViewScale;
-                gameStore.gameState.centerX = centerX;
-                gameStore.gameState.centerY = centerY;
-            },
-        );
+            gameStore.gameState.scale = newZoomScale;
+            gameStore.gameState.viewScale = newViewScale;
+            gameStore.gameState.centerX = centerX;
+            gameStore.gameState.centerY = centerY;
+        });
         window.pixelPlanetEvents.addListener('receivechunk', (chunk: ChunkRGB) => {
             logger.log(
                 `pixelPlanetEvents - received chunk data, chunk{${chunk.cell[0]},${chunk.cell[1]},${chunk.cell[2]}}`,
@@ -119,7 +118,8 @@ class GameEventsHook {
             return;
         }
 
-        const canvasData = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+        const canvasData = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
+        if (!canvasData) throw new Error('Canvas data not found');
 
         const worldPixel = gameStore.gameState.hoverPixel;
 

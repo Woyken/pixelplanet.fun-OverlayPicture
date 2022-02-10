@@ -28,7 +28,8 @@ export function initGameStateFromUrl(): void {
         logger.logError('Arrgh not ready yet');
         return;
     }
-    const canvas = gameStore.canvasesMetadata[gameStore.gameState.activeCanvasId];
+    const canvas = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
+    if (canvas) throw new Error('Canvas not found');
     if (gameStore.gameState.activeCanvasId !== undefined) {
         scale = clamp(scale, TILE_SIZE / canvas.size, MAX_SCALE);
     }
