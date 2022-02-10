@@ -29,7 +29,7 @@ export function initGameStateFromUrl(): void {
         return;
     }
     const canvas = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
-    if (canvas) throw new Error('Canvas not found');
+    if (!canvas) throw new Error('Canvas not found');
     if (gameStore.gameState.activeCanvasId !== undefined) {
         scale = clamp(scale, TILE_SIZE / canvas.size, MAX_SCALE);
     }
