@@ -18,7 +18,7 @@ function clamp(n: number, min: number, max: number): number {
 class GameEventsHook {
     constructor() {
         window.pixelPlanetEvents.addListener('selectcanvas', (canvasId: number) => {
-            const canvasMetadata = gameStore.canvasesMetadata.find((c) => c.id === canvasId);
+            const canvasMetadata = gameStore.canvasesMetadata.find((c) => c.id == canvasId);
             if (canvasMetadata != null) updateGameStateFAF(canvasMetadata.stringId);
         });
         window.pixelPlanetEvents.addListener('setviewcoordinates', ([x, y]: [number, number]) => {
