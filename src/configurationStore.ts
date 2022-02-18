@@ -1,5 +1,5 @@
 import { Configuration, configurationMethods } from './configuration';
-import { ImageModifiers, overlayStore, SavedConfiguration } from './store/overlayStore';
+import { ImageModifiers, overlayStore, SavedConfiguration } from './store/slices/overlayStore';
 
 class ConfigurationStore {
     private readonly storageItemName: string = 'OverlaySavedConfigs';

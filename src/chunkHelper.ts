@@ -57,5 +57,6 @@ export function colorRGBToIndex(r: number, g: number, b: number, allColors: [num
 
 export function colorIndexToRGB(x: number, allColors: [number, number, number][]): { r: number; g: number; b: number } {
     const rgb = allColors[x];
+    if (!rgb) throw new Error('Color not found');
     return { r: rgb[0], g: rgb[1], b: rgb[2] };
 }

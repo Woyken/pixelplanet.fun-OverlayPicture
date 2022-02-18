@@ -1,42 +1,139 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
+
+import { startProcessingOutputImage } from '../../actions/imageProcessing';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { gameSlice, selectCanvasUserPalette } from '../../store/slices/gameSlice';
+import { overlaySlice, selectCombinedInputUrl, selectIsOverlayEnabled, selectModifierImageBrightness, selectModifierShouldConvertColors } from '../../store/slices/overlaySlice';
+import { selectPageStateCanvasPalette, selectPageStateCanvasViewCenter, selectPageStateHoverPixel, selectPageStateViewScale, usePageReduxStoreSelector } from '../../utils/getPageReduxStore';
 import ConfigurationModal from '../configurationModal/configurationModal';
-import autoBind from 'react-autobind';
 import OverlayImage from '../overlayImage/overlayImage';
-import urlHelper from '../../urlHelper';
-import { loadSavedConfigurations, updateGameStateFAF } from '../../actions/guiActions';
-import BotModal from '../botModal/botModal';
-import { observer } from 'mobx-react';
-import { overlayStore } from '../../store/overlayStore';
-import { initWindowEventHooks } from '../../handlers/gameEventHooks';
-import { updateMetadata } from '../../actions/pixelData';
-import logger from '../../handlers/logger';
 
-@observer
-class App extends React.Component {
-    constructor(props: {}) {
-        super(props);
+function usePageStoreHoverCoords() {
+    const dispatch = useAppDispatch();
+    const pageHoverCoords = usePageReduxStoreSelector(selectPageStateHoverPixel);
 
-        this.state = {};
-
-        // App was just loaded. Set initial values.
-        updateGameStateFAF(urlHelper.canvasStr, urlHelper.xCoord, urlHelper.yCoord, urlHelper.zoomLevel);
-        loadSavedConfigurations();
-        updateMetadata().catch(() => logger.logWarn(`Failed to fetch initial metadata`));
-
-        initWindowEventHooks();
-
-        autoBind(this);
-    }
-
-    render(): React.ReactNode {
-        return (
-            <div>
-                {overlayStore.overlayEnabled ? <OverlayImage /> : undefined}
-                <ConfigurationModal />
-                {overlayStore.isBotModalVisible ? <BotModal /> : undefined}
-            </div>
-        );
-    }
+    useEffect(() => {
+        if (pageHoverCoords) dispatch(gameSlice.actions.setHoverPixel(pageHoverCoords));
+    }, [dispatch, pageHoverCoords]);
 }
+
+function usePageStoreViewScale() {
+    const dispatch = useAppDispatch();
+    const pageViewScale = usePageReduxStoreSelector(selectPageStateViewScale);
+
+    useEffect(() => {
+        if (pageViewScale) dispatch(gameSlice.actions.setViewScale(pageViewScale));
+    }, [dispatch, pageViewScale]);
+}
+
+function usePageStoreViewCenter() {
+    const dispatch = useAppDispatch();
+    const pageViewCenter = usePageReduxStoreSelector(selectPageStateCanvasViewCenter);
+
+    useEffect(() => {
+        if (pageViewCenter) dispatch(gameSlice.actions.setViewCenter(pageViewCenter));
+    }, [dispatch, pageViewCenter]);
+}
+
+function usePageStoreCanvasPalette() {
+    const dispatch = useAppDispatch();
+    const palette = usePageReduxStoreSelector(selectPageStateCanvasPalette);
+    useEffect(() => {
+        if (palette) dispatch(gameSlice.actions.setPalette(palette));
+    }, [dispatch, palette]);
+}
+
+function useGlobalKeyShortcuts() {
+    const dispatch = useAppDispatch();
+    const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
+    const handleToggleOverlay = useCallback(() => {
+        dispatch(overlaySlice.actions.setOverlayEnabled(!isOverlayEnabled));
+    }, [dispatch, isOverlayEnabled]);
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            const { target } = event;
+            if (!target) {
+                return;
+            }
+
+            const clickedNodeName = (target as HTMLElement).tagName || (target as HTMLElement).nodeName;
+
+            // Ignore if user is typing text.
+            if (clickedNodeName === 'TEXTAREA') {
+                return;
+            }
+            if (clickedNodeName === 'INPUT') {
+                const inputEl = target as HTMLInputElement;
+                if (inputEl.type === 'text') {
+                    return;
+                }
+            }
+
+            switch (event.key) {
+                case 'o': {
+                    event.stopImmediatePropagation();
+                    handleToggleOverlay();
+                    break;
+                }
+                default:
+                    break;
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+}
+
+function useLoadSavedConfigurations() {
+    // TODO: load saved configurations
+}
+
+function useReprocessOutputImage() {
+    const dispatch = useAppDispatch();
+    const url = useAppSelector(selectCombinedInputUrl);
+    const palette = useAppSelector(selectCanvasUserPalette);
+    const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
+    const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
+    useEffect(() => {
+        dispatch(startProcessingOutputImage());
+        // If anything changes, restart processing
+    }, [dispatch, url, palette, modifierShouldConvertColors, modifierImageBrightness]);
+}
+
+function useSubscribeToWindowResize() {
+    const dispatch = useAppDispatch();
+    useEffect(() => {
+        const handleResize = () => dispatch(overlaySlice.actions.setWindowSize({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }));
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [dispatch]);
+}
+
+const ProviderPageStateMapper: React.FC = ({ children }) => {
+    useSubscribeToWindowResize();
+    useReprocessOutputImage();
+    useGlobalKeyShortcuts();
+    useLoadSavedConfigurations();
+    usePageStoreHoverCoords();
+    usePageStoreViewScale();
+    usePageStoreViewCenter();
+    usePageStoreCanvasPalette();
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <>{children}</>;
+};
+
+const App: React.FC = () => {
+    const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
+    return (
+        <div>
+            <ProviderPageStateMapper>
+                {isOverlayEnabled && <OverlayImage />}
+                <ConfigurationModal />
+            </ProviderPageStateMapper>
+        </div>
+    );
+};
 
 export default App;

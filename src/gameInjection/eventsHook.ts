@@ -5,7 +5,7 @@ import colorConverter from '../colorConverter';
 import logger from '../handlers/logger';
 import { chunkStore, LoadedChunkData } from '../store/chunkStore';
 import { gameStore } from '../store/gameStore';
-import { overlayStore } from '../store/overlayStore';
+import { overlayStore } from '../store/slices/overlayStore';
 import { ChunkRGB } from './pixelplanetDeclarations';
 import viewport from './viewport';
 

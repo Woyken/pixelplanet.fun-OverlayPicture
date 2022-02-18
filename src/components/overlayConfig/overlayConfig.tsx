@@ -1,218 +1,189 @@
-import React from 'react';
-import TextField from '@material-ui/core/TextField';
-import Input from '@material-ui/core/Input';
-import { Typography, Slider, FormControlLabel, Checkbox, Button, Tooltip } from '@material-ui/core';
-import WarningIcon from '@material-ui/icons/Warning';
-import autoBind from 'react-autobind';
+import React, { useEffect } from 'react';
+
+import WarningIcon from '@mui/icons-material/Warning';
+import { Button, Checkbox, FormControlLabel, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
+
+import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
+import viewport from '../../gameInjection/viewport';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { selectHoverPixel } from '../../store/slices/gameSlice';
+import {
+    overlaySlice,
+    selectCombinedInputUrl,
+    selectIsModificationsAvailable,
+    selectIsOutputImageProcessing,
+    selectModifierImageBrightness,
+    selectModifierShouldConvertColors,
+    selectPlacementAutoSelectColor,
+    selectPlacementIsFollowMouseActive,
+    selectPlacementTransparency,
+    selectPlacementXOffset,
+    selectPlacementYOffset,
+    selectShouldShowFileInput,
+    selectShouldShowUrlInput,
+} from '../../store/slices/overlaySlice';
 import ShareOverlayModal from '../shareOverlayModal/shareOverlayModal';
-import { observer } from 'mobx-react';
-import { overlayStore } from '../../store/overlayStore';
-import { updateInputImage, updateImagePlacementConfiguration, updateImageModifiers } from '../../actions/guiActions';
-import { gameStore } from '../../store/gameStore';
-import { observe } from 'mobx';
 
-interface OwnState {
-    isShareOverlayOpen: boolean;
-}
+function useFollowMouseConfiguration() {
+    const dispatch = useAppDispatch();
+    const placementIsFollowMouseActive = useAppSelector(selectPlacementIsFollowMouseActive);
+    const hoverPixel = useAppSelector(selectHoverPixel);
 
-interface OwnProps {}
+    useEffect(() => {
+        if (placementIsFollowMouseActive) {
+            dispatch(overlaySlice.actions.setPlacementXOffset(hoverPixel.x));
+            dispatch(overlaySlice.actions.setPlacementYOffset(hoverPixel.y));
+        }
+    }, [dispatch, placementIsFollowMouseActive, hoverPixel]);
 
-interface StateProps {}
-
-interface DispatchProps {}
-
-type Props = StateProps & DispatchProps & OwnProps;
-
-@observer
-class OverlayConfig extends React.Component<Props, OwnState> {
-    constructor(props: Props) {
-        super(props);
-        this.state = {
-            isShareOverlayOpen: false,
+    useEffect(() => {
+        viewport.onMouseUp = (e) => {
+            if (e.button !== 0) return;
+            dispatch(overlaySlice.actions.setPlacementIsFollowMouseActive(false));
         };
-
-        autoBind(this);
-    }
-
-    componentDidMount(): void {
-        observe(gameStore.gameState, 'hoverPixel', (change) => {
-            if (overlayStore.isFollowMouseActive) {
-                updateImagePlacementConfiguration(undefined, change.newValue.x, change.newValue.y);
-            }
-        });
-    }
-
-    render(): React.ReactNode {
-        const showWarningAboutCors =
-            !overlayStore.modifications.modificationsAvailable && !!overlayStore.overlayImage.inputImage.url;
-
-        return (
-            <div>
-                {overlayStore.overlayImage.inputImage.file ? null : (
-                    <div>
-                        <TextField
-                            label="Url"
-                            type="string"
-                            value={overlayStore.overlayImage.inputImage.url ?? ''}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                                updateInputImage(e.target.value);
-                            }}
-                        />
-                        {showWarningAboutCors ? (
-                            <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
-                                <WarningIcon />
-                            </Tooltip>
-                        ) : null}
-                        <br />
-                    </div>
-                )}
-                {overlayStore.overlayImage.inputImage.url ? null : (
-                    <div>
-                        <Input
-                            type="file"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                                const theFile = e.target.files?.[0];
-                                updateInputImage(undefined, theFile);
-                            }}
-                        />
-                        <br />
-                    </div>
-                )}
-                <Button
-                    onClick={(): void => {
-                        updateInputImage('', undefined);
-                    }}
-                >
-                    Clear input
-                </Button>
-                <br />
-                <TextField
-                    label="X"
-                    type="number"
-                    value={overlayStore.placementConfiguration.xOffset}
-                    onInput={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                        const numValue = parseInt(e.target.value, 10);
-                        if (isNaN(numValue)) {
-                            return;
-                        }
-                        updateImagePlacementConfiguration(undefined, numValue);
-                    }}
-                />
-                <TextField
-                    label="Y"
-                    type="number"
-                    value={overlayStore.placementConfiguration.yOffset}
-                    onInput={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                        const numValue = parseInt(e.target.value, 10);
-                        if (isNaN(numValue)) {
-                            return;
-                        }
-                        updateImagePlacementConfiguration(undefined, undefined, numValue);
-                    }}
-                />
-                <br />
-                <Button
-                    onClick={(): void => {
-                        overlayStore.isFollowMouseActive = !overlayStore.isFollowMouseActive;
-                    }}
-                >
-                    Position with mouse
-                </Button>
-                <br />
-                <Typography id="transparency-slider" gutterBottom>
-                    Transparency
-                </Typography>
-                <Slider
-                    defaultValue={70}
-                    getAriaValueText={(v): string => {
-                        return v.toString(10);
-                    }}
-                    aria-labelledby="transparency-slider"
-                    valueLabelDisplay="auto"
-                    step={1}
-                    min={0}
-                    max={100}
-                    value={overlayStore.placementConfiguration.transparency}
-                    onChange={(e, value): void => {
-                        if (typeof value !== 'number') {
-                            return;
-                        }
-                        updateImagePlacementConfiguration(value);
-                    }}
-                />
-                <div
-                    style={{
-                        display: overlayStore.modifications.modificationsAvailable ? '' : 'none',
-                    }}
-                >
-                    <br />
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                color="primary"
-                                checked={overlayStore.modifications.shouldConvertColors}
-                                onChange={(e): void => {
-                                    updateImageModifiers(undefined, e.target.checked);
-                                }}
-                            />
-                        }
-                        label="Convert colors"
-                        labelPlacement="end"
-                    />
-                    <br />
-                    <Tooltip title="Experimental! Will try to only place colors matching the image regardless of which color is selected in game">
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    color="primary"
-                                    checked={overlayStore.modifications.autoSelectColor}
-                                    onChange={(e): void => {
-                                        overlayStore.modifications.updateAutoSelectColorState(e.target.checked);
-                                    }}
-                                />
-                            }
-                            label="Auto color*"
-                            labelPlacement="end"
-                        />
-                    </Tooltip>
-                    <br />
-                    <div style={{ display: overlayStore.modifications.shouldConvertColors ? '' : 'none' }}>
-                        <Typography id="brightness-slider" gutterBottom>
-                            Image brightness
-                        </Typography>
-                        <Slider
-                            disabled={overlayStore.overlayImage.outputImage.isProcessing}
-                            defaultValue={15}
-                            getAriaValueText={(v): string => {
-                                return v.toString(10);
-                            }}
-                            aria-labelledby="brightness-slider"
-                            valueLabelDisplay="auto"
-                            step={1}
-                            min={-20}
-                            max={20}
-                            value={overlayStore.modifications.imageBrightness}
-                            onChange={(e, value): void => {
-                                if (typeof value !== 'number' || overlayStore.overlayImage.outputImage.isProcessing) {
-                                    return;
-                                }
-                                updateImageModifiers(undefined, undefined, value);
-                            }}
-                        />
-                    </div>
-                </div>
-                <br />
-                <Button onClick={(): void => this.setState({ isShareOverlayOpen: !this.state.isShareOverlayOpen })}>
-                    Share overlay
-                </Button>
-                <ShareOverlayModal
-                    overlayStore={overlayStore}
-                    isOpen={this.state.isShareOverlayOpen}
-                    setIsOpen={(isOpen: boolean): void => this.setState({ isShareOverlayOpen: isOpen })}
-                />
-            </div>
-        );
-    }
+        dispatch(overlaySlice.actions.setPlacementIsFollowMouseActive(!placementIsFollowMouseActive));
+    }, [dispatch, placementIsFollowMouseActive]);
 }
+
+const OverlayConfig: React.FC = () => {
+    const [isShareOverlayOpen, setIsShareOverlayOpen] = React.useState(false);
+    useFollowMouseConfiguration();
+    const dispatch = useAppDispatch();
+    const isModificationsAvailable = useAppSelector(selectIsModificationsAvailable);
+    const inputUrl = useAppSelector(selectCombinedInputUrl);
+    const shouldShowFileInput = useAppSelector(selectShouldShowFileInput);
+    const shouldShowUrlInput = useAppSelector(selectShouldShowUrlInput);
+    const placementXOffset = useAppSelector(selectPlacementXOffset);
+    const placementYOffset = useAppSelector(selectPlacementYOffset);
+    const placementTransparency = useAppSelector(selectPlacementTransparency);
+    const placementIsFollowMouseActive = useAppSelector(selectPlacementIsFollowMouseActive);
+    const placementAutoSelectColor = useAppSelector(selectPlacementAutoSelectColor);
+    const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
+    const isOutputImageProcessing = useAppSelector(selectIsOutputImageProcessing);
+    const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
+
+    const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setInputImageAction(e.target.value));
+    };
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile) dispatch(setInputImageAction(selectedFile));
+    };
+    const handleClearInput = () => {
+        dispatch(clearInputImageAction());
+    };
+    const handleXOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const numValue = parseInt(e.target.value, 10);
+        if (Number.isNaN(numValue)) return;
+        dispatch(overlaySlice.actions.setPlacementXOffset(numValue));
+    };
+    const handleYOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const numValue = parseInt(e.target.value, 10);
+        if (Number.isNaN(numValue)) return;
+        dispatch(overlaySlice.actions.setPlacementYOffset(numValue));
+    };
+    const handleTransparencyChange = (e: Event, value: number | number[]) => {
+        if (typeof value !== 'number') {
+            return;
+        }
+        dispatch(overlaySlice.actions.setPlacementTransparency(value));
+    };
+    const handleFollowMouseChange = () => {
+        dispatch(overlaySlice.actions.setPlacementIsFollowMouseActive(!placementIsFollowMouseActive));
+    };
+    const handleShouldConvertColorsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(overlaySlice.actions.setModifierShouldConvertColors(e.target.checked));
+    };
+    const handleAutoSelectColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(overlaySlice.actions.setPlacementAutoSelectColor(e.target.checked));
+    };
+    const handleImageBrightnessChange = (e: Event, value: number | number[]) => {
+        if (typeof value !== 'number' || isOutputImageProcessing) {
+            return;
+        }
+        dispatch(overlaySlice.actions.setModifierImageBrightness(value));
+    };
+    return (
+        <div>
+            {!shouldShowUrlInput ? null : (
+                <div>
+                    <TextField label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} />
+                    {!isModificationsAvailable ? (
+                        <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
+                            <WarningIcon />
+                        </Tooltip>
+                    ) : null}
+                    <br />
+                </div>
+            )}
+            {!shouldShowFileInput ? null : (
+                <div>
+                    <Input type="file" onChange={handleFileInputChange} />
+                    <br />
+                </div>
+            )}
+            <Button onClick={handleClearInput}>Clear input</Button>
+            <br />
+            <TextField label="X" type="number" value={placementXOffset} onInput={handleXOffsetChange} />
+            <TextField label="Y" type="number" value={placementYOffset} onInput={handleYOffsetChange} />
+            <br />
+            <Button variant={placementIsFollowMouseActive ? 'outlined' : undefined} onClick={handleFollowMouseChange}>
+                Position with mouse
+            </Button>
+            <br />
+            <Typography id="transparency-slider" gutterBottom>
+                Transparency
+            </Typography>
+            <Slider
+                defaultValue={70}
+                getAriaValueText={(v): string => {
+                    return v.toString(10);
+                }}
+                aria-labelledby="transparency-slider"
+                valueLabelDisplay="auto"
+                step={1}
+                min={0}
+                max={100}
+                value={placementTransparency}
+                onChange={handleTransparencyChange}
+            />
+            <div
+                style={{
+                    display: isModificationsAvailable ? '' : 'none',
+                }}
+            >
+                <br />
+                <FormControlLabel control={<Checkbox color="primary" checked={modifierShouldConvertColors} onChange={handleShouldConvertColorsChange} />} label="Convert colors" labelPlacement="end" />
+                <br />
+                <Tooltip title="Experimental! Will try to only place colors matching the image regardless of which color is selected in game">
+                    <FormControlLabel control={<Checkbox color="primary" checked={placementAutoSelectColor} onChange={handleAutoSelectColorChange} />} label="Auto color*" labelPlacement="end" />
+                </Tooltip>
+                <br />
+                <div style={{ display: modifierShouldConvertColors ? '' : 'none' }}>
+                    <Typography id="brightness-slider" gutterBottom>
+                        Image brightness
+                    </Typography>
+                    <Slider
+                        disabled={isOutputImageProcessing}
+                        defaultValue={15}
+                        getAriaValueText={(v): string => {
+                            return v.toString(10);
+                        }}
+                        aria-labelledby="brightness-slider"
+                        valueLabelDisplay="auto"
+                        step={1}
+                        min={-20}
+                        max={20}
+                        value={modifierImageBrightness}
+                        onChange={handleImageBrightnessChange}
+                    />
+                </div>
+            </div>
+            <br />
+            <Button onClick={(): void => setIsShareOverlayOpen(!isShareOverlayOpen)}>Share overlay</Button>
+            <ShareOverlayModal isOpen={isShareOverlayOpen} setIsOpen={(isOpen: boolean): void => setIsShareOverlayOpen(isOpen)} />
+        </div>
+    );
+};
 
 export default OverlayConfig;

@@ -1,8 +1,7 @@
-import pictureConverter from '../pictureConversionApi';
+import { pictureConverterApi } from '../pictureConversionApi';
 import logger from '../handlers/logger';
 import { configurationStore } from '../configurationStore';
 import { updateMetadata } from './pixelData';
-import { overlayStore, SavedConfiguration, ImageModifiers, PlacementConfiguration } from '../store/overlayStore';
 import { CanvasMetadata, gameStore } from '../store/gameStore';
 import { botUpdateEnabled } from './botActions';
 
@@ -18,13 +17,8 @@ export function updateOutputImage(data?: ImageData): void {
     overlayStore.overlayImage.outputImage.outputImageData = data;
 }
 
-function updateImageModifiersInternal(
-    modificationsAvailable?: boolean,
-    shouldConvertColors?: boolean,
-    imageBrightness?: number,
-): void {
-    if (modificationsAvailable !== undefined)
-        overlayStore.modifications.modificationsAvailable = modificationsAvailable;
+function updateImageModifiersInternal(modificationsAvailable?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): void {
+    if (modificationsAvailable !== undefined) overlayStore.modifications.modificationsAvailable = modificationsAvailable;
     if (shouldConvertColors !== undefined) overlayStore.modifications.shouldConvertColors = shouldConvertColors;
     if (imageBrightness !== undefined) overlayStore.modifications.imageBrightness = imageBrightness;
 }
@@ -79,12 +73,12 @@ export async function startProcessingImage(): Promise<void> {
                 return;
             }
         }
-        const result = await pictureConverter.convertPictureFromUrl(
+        const result = await pictureConverterApi.convertPictureFromUrl(
             JSON.parse(JSON.stringify(currentCanvasMetadata.colors)),
             JSON.parse(JSON.stringify(currentCanvasMetadata.colorsReservedCount)),
             buffer,
             JSON.parse(JSON.stringify(overlayStore.modifications.shouldConvertColors)),
-            JSON.parse(JSON.stringify(overlayStore.modifications.imageBrightness)),
+            JSON.parse(JSON.stringify(overlayStore.modifications.imageBrightness))
         );
         logger.log(`updating output image ${result.data.length}`);
         updateOutputImage(result);
@@ -98,11 +92,7 @@ export async function startProcessingImage(): Promise<void> {
     }
 }
 
-export async function updateImageModifiers(
-    modificationsAvailable?: boolean,
-    shouldConvertColors?: boolean,
-    imageBrightness?: number,
-): Promise<void> {
+export async function updateImageModifiers(modificationsAvailable?: boolean, shouldConvertColors?: boolean, imageBrightness?: number): Promise<void> {
     logger.log('updated image modifiers');
     updateImageModifiersInternal(modificationsAvailable, shouldConvertColors, imageBrightness);
     await startProcessingImage();
@@ -119,7 +109,7 @@ export async function updateInputImage(url?: string, file?: File): Promise<void>
         return;
     }
     if (url) {
-        if (!(await pictureConverter.isImageValidCors(url))) {
+        if (!(await pictureConverterApi.isImageValidCors(url))) {
             logger.log(`Image url ${url} not valid cors, don't parse`);
             // No point in trying to parse this out.
             // Clear output image
@@ -150,10 +140,7 @@ export function updateImagePlacementConfiguration(transparency?: number, xOffset
 }
 
 export async function setActiveCanvasByStringId(canvasStringId: string): Promise<void> {
-    if (
-        gameStore.gameState.activeCanvasId !== undefined &&
-        gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId)?.stringId === canvasStringId
-    ) {
+    if (gameStore.gameState.activeCanvasId !== undefined && gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId)?.stringId === canvasStringId) {
         return;
     }
     logger.log(`updating active canvas string id to ${canvasStringId}`);
@@ -165,12 +152,7 @@ export async function setActiveCanvasByStringId(canvasStringId: string): Promise
     }
 }
 
-export async function updateGameState(
-    canvasStringId?: string,
-    centerX?: number,
-    centerY?: number,
-    zoomLevel?: number,
-): Promise<void> {
+export async function updateGameState(canvasStringId?: string, centerX?: number, centerY?: number, zoomLevel?: number): Promise<void> {
     if (canvasStringId !== undefined) gameStore.gameState.activeCanvasStringId = canvasStringId;
     if (centerX !== undefined) gameStore.gameState.centerX = centerX;
     if (centerY !== undefined) gameStore.gameState.centerY = centerY;
@@ -178,12 +160,7 @@ export async function updateGameState(
     if (canvasStringId !== undefined) await setActiveCanvasByStringId(canvasStringId);
 }
 
-export function updateGameStateFAF(
-    canvasStringId?: string,
-    centerX?: number,
-    centerY?: number,
-    zoomLevel?: number,
-): void {
+export function updateGameStateFAF(canvasStringId?: string, centerX?: number, centerY?: number, zoomLevel?: number): void {
     updateGameState(canvasStringId, centerX, centerY, zoomLevel).catch((e) => {
         logger.logWarn(`Game state update failed. ${e}`);
     });
@@ -211,18 +188,9 @@ export function loadSavedConfigurations(): void {
         (c) =>
             new SavedConfiguration(
                 c.imageUrl,
-                new ImageModifiers(
-                    c.modifiers.modificationsAvailable,
-                    c.modifiers.shouldConvertColors,
-                    c.modifiers.imageBrightness,
-                    overlayStore.modifications.autoSelectColor,
-                ),
-                new PlacementConfiguration(
-                    c.placementConfiguration.xOffset,
-                    c.placementConfiguration.yOffset,
-                    c.placementConfiguration.transparency,
-                ),
-            ),
+                new ImageModifiers(c.modifiers.modificationsAvailable, c.modifiers.shouldConvertColors, c.modifiers.imageBrightness, overlayStore.modifications.autoSelectColor),
+                new PlacementConfiguration(c.placementConfiguration.xOffset, c.placementConfiguration.yOffset, c.placementConfiguration.transparency)
+            )
     );
     // TODO safer way to do
     overlayStore.savedConfigs.replace(configs);
@@ -260,13 +228,9 @@ export async function saveCurrentConfiguration(): Promise<void> {
             overlayStore.modifications.modificationsAvailable,
             overlayStore.modifications.shouldConvertColors,
             overlayStore.modifications.imageBrightness,
-            overlayStore.modifications.autoSelectColor,
+            overlayStore.modifications.autoSelectColor
         ),
-        new PlacementConfiguration(
-            overlayStore.placementConfiguration.xOffset,
-            overlayStore.placementConfiguration.yOffset,
-            overlayStore.placementConfiguration.transparency,
-        ),
+        new PlacementConfiguration(overlayStore.placementConfiguration.xOffset, overlayStore.placementConfiguration.yOffset, overlayStore.placementConfiguration.transparency)
     );
     overlayStore.savedConfigs.push(savedConfig);
 
@@ -290,17 +254,9 @@ export async function removeSavedConfiguration(imgUrl: string): Promise<void> {
 }
 
 export async function applySavedConfiguration(savedConfig: SavedConfiguration): Promise<void> {
-    updateImageModifiersInternal(
-        savedConfig.modifiers.modificationsAvailable,
-        savedConfig.modifiers.shouldConvertColors,
-        savedConfig.modifiers.imageBrightness,
-    );
+    updateImageModifiersInternal(savedConfig.modifiers.modificationsAvailable, savedConfig.modifiers.shouldConvertColors, savedConfig.modifiers.imageBrightness);
     await updateInputImage(savedConfig.imageUrl);
-    updateImagePlacementConfiguration(
-        savedConfig.placementConfiguration.transparency,
-        savedConfig.placementConfiguration.xOffset,
-        savedConfig.placementConfiguration.yOffset,
-    );
+    updateImagePlacementConfiguration(savedConfig.placementConfiguration.transparency, savedConfig.placementConfiguration.xOffset, savedConfig.placementConfiguration.yOffset);
 }
 
 export function updateBotModalVisible(isVisible: boolean): void {

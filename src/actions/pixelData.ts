@@ -5,7 +5,7 @@ import { gameStore, CanvasMetadata } from '../store/gameStore';
 import logger from '../handlers/logger';
 import { chunkStore, LoadedChunkData } from '../store/chunkStore';
 import { botState, PixelToPlace } from '../store/botState';
-import { overlayStore } from '../store/overlayStore';
+import { overlayStore } from '../store/slices/overlayStore';
 
 export async function fetchChunk(canvasId: number, chunk: ChunkCell): Promise<ArrayBuffer> {
     const url = `/chunks/${canvasId}/${chunk.chunkX}/${chunk.chunkY}.bmp`;
@@ -91,12 +91,12 @@ export async function loadChunkData(canvasId: number, chunk: ChunkCell): Promise
  */
 function getPixelFromOutput(x: number, y: number): number | undefined {
     const outputImageData = overlayStore.overlayImage.outputImage.outputImageData;
-    if (!outputImageData) return;
-    if (gameStore.gameState.activeCanvasId == undefined) return;
+    if (!outputImageData) return undefined;
+    if (gameStore.gameState.activeCanvasId == null) return undefined;
     const canvasData = gameStore.canvasesMetadata.find((c) => c.id === gameStore.gameState.activeCanvasId);
     if (!canvasData) {
         logger.logError('canvasData is null');
-        return;
+        return undefined;
     }
     const xi = x - overlayStore.placementConfiguration.xOffset;
     const yi = y - overlayStore.placementConfiguration.yOffset;
@@ -106,13 +106,7 @@ function getPixelFromOutput(x: number, y: number): number | undefined {
     const b = outputImageData.data[idx + 2];
     const a = outputImageData.data[idx + 3];
 
-    const colorIndexImage = colorConverter.convertActualColorFromPalette(
-        canvasData.colors,
-        canvasData.colorsReservedCount,
-        r,
-        g,
-        b,
-    );
+    const colorIndexImage = colorConverter.convertActualColorFromPalette(canvasData.colors, canvasData.colorsReservedCount, r, g, b);
 
     // If alpha is below 30 ignore it.
     if (a > 30) {

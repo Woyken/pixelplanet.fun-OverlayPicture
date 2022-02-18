@@ -1,10 +1,6 @@
-import { gameStore } from '../store/gameStore';
 import urlHelper from '../urlHelper';
-import { updateOverlayEnabled } from '../actions/guiActions';
 import logger from './logger';
-import { overlayStore } from '../store/overlayStore';
 import { TILE_SIZE, Cell } from '../chunkHelper';
-import { observe } from 'mobx';
 import keycode from 'keycode';
 
 const MAX_SCALE = 40;
@@ -17,7 +13,7 @@ function clamp(n: number, min: number, max: number): number {
  * Call this to initialize game state for mouse wheel tracking.
  * Or when canvas changes...
  */
-export function initGameStateFromUrl(): void {
+function initGameStateFromUrl(): void {
     const urlData = urlHelper.parsedUrlData;
     gameStore.gameState.centerX = urlData.xCoord;
     gameStore.gameState.centerY = urlData.yCoord;
@@ -47,6 +43,8 @@ export function initWindowEventHooks(): void {
         initGameStateFromUrl();
     });
 
+    addEvList(window.addEventListener, )
+
     window.addEventListener('keydown', (event) => {
         const target = event.target;
         if (!target) {
@@ -66,8 +64,7 @@ export function initWindowEventHooks(): void {
             }
         }
 
-        const key = event.keyCode;
-        switch (keycode.names[key]) {
+        switch (event.key) {
             case 'o': {
                 event.stopImmediatePropagation();
                 updateOverlayEnabled(!overlayStore.overlayEnabled);

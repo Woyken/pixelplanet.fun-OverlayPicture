@@ -1,5 +1,5 @@
 import { botState, PixelToPlace } from '../store/botState';
-import { overlayStore } from '../store/overlayStore';
+import { overlayStore } from '../store/slices/overlayStore';
 import logger from '../handlers/logger';
 import { gameStore } from '../store/gameStore';
 import { updateMetadata, loadChunkData } from './pixelData';
@@ -89,13 +89,7 @@ export async function botStartProcessingImage(): Promise<void> {
                 const b = outputImageData.data[idx + 2];
                 const a = outputImageData.data[idx + 3];
 
-                const colorIndexImage = colorConverter.convertActualColorFromPalette(
-                    canvasData.colors,
-                    canvasData.colorsReservedCount,
-                    r,
-                    g,
-                    b,
-                );
+                const colorIndexImage = colorConverter.convertActualColorFromPalette(canvasData.colors, canvasData.colorsReservedCount, r, g, b);
 
                 // If alpha is below 30 ignore it.
                 if (a > 30 && !colorConverter.areColorsEqual(canvasData.colors, colorIndexImage, colorIndexCanvas)) {
@@ -191,10 +185,7 @@ async function botStartWorkAsync(): Promise<void> {
                 await waitFor(2000);
             }
 
-            while (
-                botState.canvasImageData.processedPixelsTodo.length > 0 &&
-                botState.pixelPlaceTimeEmpty - new Date().getTime() < canvasData.maxTimeout - pixelPlacingTimeout
-            ) {
+            while (botState.canvasImageData.processedPixelsTodo.length > 0 && botState.pixelPlaceTimeEmpty - new Date().getTime() < canvasData.maxTimeout - pixelPlacingTimeout) {
                 if (!botState.isFeatureEnabled || !botState.config.isEnabled) {
                     logger.log(`bot worker disabled in the middle of it`);
                     return;

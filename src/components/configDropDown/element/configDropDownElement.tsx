@@ -1,6 +1,6 @@
 import React from 'react';
 import './configDropDownElement.scss';
-import { SavedConfiguration } from '../../../store/overlayStore';
+import { SavedConfiguration } from '../../../store/slices/overlayStore';
 
 interface OwnProps {
     config: SavedConfiguration;
