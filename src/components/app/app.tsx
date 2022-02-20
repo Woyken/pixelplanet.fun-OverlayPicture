@@ -3,8 +3,23 @@ import React, { useCallback, useEffect } from 'react';
 import { startProcessingOutputImage } from '../../actions/imageProcessing';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { gameSlice, selectCanvasUserPalette } from '../../store/slices/gameSlice';
-import { overlaySlice, selectCombinedInputUrl, selectIsOverlayEnabled, selectModifierImageBrightness, selectModifierShouldConvertColors } from '../../store/slices/overlaySlice';
-import { selectPageStateCanvasPalette, selectPageStateCanvasViewCenter, selectPageStateHoverPixel, selectPageStateViewScale, usePageReduxStoreSelector } from '../../utils/getPageReduxStore';
+import {
+    overlaySlice,
+    selectCurrentHoverPixelOnOutputImageColorIndexInPalette,
+    selectInputUrl,
+    selectIsOverlayEnabled,
+    selectModifierImageBrightness,
+    selectModifierShouldConvertColors,
+} from '../../store/slices/overlaySlice';
+import {
+    pageReduxStoreSelectColorAction,
+    selectPageStateCanvasPalette,
+    selectPageStateCanvasViewCenter,
+    selectPageStateHoverPixel,
+    selectPageStateViewScale,
+    usePageReduxStoreDispatch,
+    usePageReduxStoreSelector,
+} from '../../utils/getPageReduxStore';
 import ConfigurationModal from '../configurationModal/configurationModal';
 import OverlayImage from '../overlayImage/overlayImage';
 
@@ -91,7 +106,7 @@ function useLoadSavedConfigurations() {
 
 function useReprocessOutputImage() {
     const dispatch = useAppDispatch();
-    const url = useAppSelector(selectCombinedInputUrl);
+    const url = useAppSelector(selectInputUrl);
     const palette = useAppSelector(selectCanvasUserPalette);
     const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
@@ -111,7 +126,18 @@ function useSubscribeToWindowResize() {
     }, [dispatch]);
 }
 
+function useAutoSelectColor() {
+    const pageDispatch = usePageReduxStoreDispatch();
+    const colorIndex = useAppSelector(selectCurrentHoverPixelOnOutputImageColorIndexInPalette);
+    useEffect(() => {
+        if (!pageDispatch) return;
+        if (colorIndex == null) return;
+        pageDispatch(pageReduxStoreSelectColorAction(colorIndex));
+    }, [pageDispatch, colorIndex]);
+}
+
 const ProviderPageStateMapper: React.FC = ({ children }) => {
+    useAutoSelectColor();
     useSubscribeToWindowResize();
     useReprocessOutputImage();
     useGlobalKeyShortcuts();

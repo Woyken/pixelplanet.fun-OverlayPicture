@@ -1,8 +1,18 @@
 import React from 'react';
-import { Select, InputLabel, MenuItem, FormControl, Tooltip } from '@mui/material';
-import ConfigDropDownElement from './element/configDropDownElement';
-import logger from '../../handlers/logger';
-import './configDropDown.scss';
+
+// import { FormControl, InputLabel, MenuItem, Select, Tooltip } from '@mui/material';
+
+// import logger from '../../handlers/logger';
+
+/*
+.PictureOverlay_ConfigDropDownSelector {
+    min-width: 10em;
+}
+
+.PictureOverlay_ConfigDropDownSaveIcon {
+    vertical-align: bottom;
+}
+*/
 
 const ConfigDropDown: React.FC = () => {
     return <div>TODO</div>;

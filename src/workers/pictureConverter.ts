@@ -1,8 +1,4 @@
 import colorConverter from '../colorConverter';
-import { decode, IndexedColors, PngDataArray } from 'fast-png';
-import logger from '../handlers/logger';
-
-type IndexedColorBitDepth = 1 | 2 | 4 | 8;
 
 export const pictureConverter = {
     async isImageValidCors(url: string): Promise<boolean> {
@@ -16,7 +12,7 @@ export const pictureConverter = {
     },
 
     async applyModificationsToImageData(colorPalette: [number, number, number][], imageData: ImageData, modifierConvertColors: boolean, brightenBy: number) {
-        return new Promise<ImageData>((resolve, reject) => {
+        return new Promise<ImageData>((resolve) => {
             const outImageData = new ImageData(imageData.width, imageData.height);
             outImageData.data.set(imageData.data);
             if (modifierConvertColors) {
@@ -25,20 +21,27 @@ export const pictureConverter = {
                         // eslint-disable-next-line no-bitwise
                         const idx = (outImageData.width * y + x) << 2;
 
-                        const r = Math.min(imageData.data[idx + 0] + brightenBy, 255);
-                        const g = Math.min(imageData.data[idx + 1] + brightenBy, 255);
-                        const b = Math.min(imageData.data[idx + 2] + brightenBy, 255);
+                        const originalR = imageData.data[idx + 0] ?? 0;
+                        const originalG = imageData.data[idx + 1] ?? 0;
+                        const originalB = imageData.data[idx + 2] ?? 0;
+                        const originalA = imageData.data[idx + 3] ?? 0;
+
+                        const r = Math.min(originalR + brightenBy, 255);
+                        const g = Math.min(originalG + brightenBy, 255);
+                        const b = Math.min(originalB + brightenBy, 255);
 
                         const resultArr = colorConverter.getClosestColorFromPalette(colorPalette, 0, r, g, b);
                         if (!resultArr) {
                             // unknown color...
                         } else {
-                            outImageData.data[idx + 0] = resultArr[0];
-                            outImageData.data[idx + 1] = resultArr[1];
-                            outImageData.data[idx + 2] = resultArr[2];
+                            const [convertedR, convertedG, convertedB] = resultArr;
+
+                            outImageData.data[idx + 0] = convertedR;
+                            outImageData.data[idx + 1] = convertedG;
+                            outImageData.data[idx + 2] = convertedB;
                             // Trimming alpha if lower than threshold.
                             // Not sure if I should do this. But here we go. Results will be closer to actual canvas. Without transparency.
-                            outImageData.data[idx + 3] = imageData.data[idx + 3] > 30 ? 255 : 0;
+                            outImageData.data[idx + 3] = originalA > 30 ? 255 : 0;
                         }
                     }
                 }

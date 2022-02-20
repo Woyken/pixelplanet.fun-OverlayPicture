@@ -4,7 +4,7 @@ import { createMakeStyles } from 'tss-react';
 import { Checkbox, FormControlLabel, Tooltip, useTheme } from '@mui/material';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { overlaySlice, selectIsModificationsAvailable, selectIsOverlayEnabled, selectModifierShouldConvertColors } from '../../store/slices/overlaySlice';
+import { overlaySlice, selectIsOverlayEnabled } from '../../store/slices/overlaySlice';
 import ConfigDropDown from '../configDropDown/configDropDown';
 import OverlayConfig from '../overlayConfig/overlayConfig';
 
@@ -21,18 +21,16 @@ const useStyles = makeStyles.makeStyles()({
         padding: '5px',
         fontSize: '0.9em',
         overflowY: 'auto',
+        overflowX: 'hidden',
         maxHeight: 'calc(100vh - 1.5em)',
     },
 });
 
 const ConfigurationModal: React.FC = () => {
     const [isModalMinimized, setIsModalMinimized] = React.useState(false);
-    const [isBotModalVisible, setIsBotModalVisible] = React.useState(false);
     const { classes } = useStyles();
     const dispatch = useAppDispatch();
     const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
-    const isModificationsAvailable = useAppSelector(selectIsModificationsAvailable);
-    const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
     const handleToggleOverlayOnOff = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(overlaySlice.actions.setOverlayEnabled(e.target.checked));
     };
@@ -54,19 +52,6 @@ const ConfigurationModal: React.FC = () => {
                     <div id="PictureOverlay_BaseForExpand">
                         <OverlayConfig />
                     </div>
-
-                    {isModificationsAvailable && modifierShouldConvertColors ? (
-                        <Tooltip title="Open BOT window">
-                            <img
-                                alt=""
-                                style={{ position: 'absolute', right: '0.4em' }}
-                                width="4%"
-                                height="4%"
-                                src="https://fonts.gstatic.com/s/i/materialicons/accessible_forward/v4/24px.svg"
-                                onClick={(): void => setIsBotModalVisible(!isBotModalVisible)}
-                            />
-                        </Tooltip>
-                    ) : null}
 
                     <ConfigDropDown />
                 </div>

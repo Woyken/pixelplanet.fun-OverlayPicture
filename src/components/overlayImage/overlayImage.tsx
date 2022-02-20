@@ -2,7 +2,15 @@ import React, { useEffect, useRef } from 'react';
 
 import { useAppSelector } from '../../store/hooks';
 import { selectGameViewScale } from '../../store/slices/gameSlice';
-import { selectOverlayImageDataOrUrl, selectOverlayOffsetCoordsOnScreen, selectPlacementTransparency } from '../../store/slices/overlaySlice';
+import {
+    selectInputFile,
+    selectInputUrl,
+    selectOverlayOffsetCoordsOnScreen,
+    selectPlacementTransparency,
+    selectRenderImageData,
+    selectShouldShowImageFromData,
+    selectShouldShowImageFromUrl,
+} from '../../store/slices/overlaySlice';
 import { makeStyles } from '../../theme/makeStyles';
 
 /*
@@ -27,8 +35,8 @@ const useStyles = makeStyles()({
     },
 });
 
-const OverlayImageCanvas: React.FC<{ imageData: ImageData }> = (props) => {
-    const { imageData } = props;
+const OverlayImageCanvas: React.FC = () => {
+    const imageData = useAppSelector(selectRenderImageData);
     const { classes } = useStyles();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const { leftOffset, topOffset } = useAppSelector(selectOverlayOffsetCoordsOnScreen);
@@ -36,14 +44,16 @@ const OverlayImageCanvas: React.FC<{ imageData: ImageData }> = (props) => {
     const viewScale = useAppSelector(selectGameViewScale);
 
     useEffect(() => {
+        if (!imageData) return;
         const canvas = canvasRef.current;
-        if (canvas) {
-            canvas.width = imageData.width;
-            canvas.height = imageData.height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) ctx.putImageData(imageData, 0, 0);
-        }
+        if (!canvas) return;
+        canvas.width = imageData.width;
+        canvas.height = imageData.height;
+        const ctx = canvas.getContext('2d');
+        ctx?.putImageData(imageData, 0, 0);
     }, [imageData]);
+
+    if (!imageData) return <div>missing image data</div>;
 
     return (
         <canvas
@@ -59,12 +69,34 @@ const OverlayImageCanvas: React.FC<{ imageData: ImageData }> = (props) => {
     );
 };
 
-const OverlayImageImg: React.FC<{ imageUrl: string }> = (props) => {
-    const { imageUrl } = props;
+const useFileUrlFromFile = () => {
+    const imageFile = useAppSelector(selectInputFile);
+    const [fileUrl, setFileUrl] = React.useState<string>();
+    useEffect(() => {
+        if (!imageFile) return undefined;
+        const newFileUrl = URL.createObjectURL(imageFile);
+        setFileUrl(newFileUrl);
+        return () => {
+            URL.revokeObjectURL(newFileUrl);
+        };
+    }, [imageFile]);
+    return fileUrl;
+};
+
+const useRenderImageUrl = () => {
+    const imageUrl = useAppSelector(selectInputUrl);
+    const fileUrl = useFileUrlFromFile();
+    return fileUrl || imageUrl;
+};
+
+const OverlayImageImg: React.FC = () => {
+    const imageUrl = useRenderImageUrl();
     const { classes } = useStyles();
     const { leftOffset, topOffset } = useAppSelector(selectOverlayOffsetCoordsOnScreen);
     const opacity = useAppSelector(selectPlacementTransparency) / 100;
     const viewScale = useAppSelector(selectGameViewScale);
+
+    if (!imageUrl) return <div>missing image url</div>;
 
     return (
         <img
@@ -82,14 +114,12 @@ const OverlayImageImg: React.FC<{ imageUrl: string }> = (props) => {
 };
 
 const OverlayImage: React.FC = () => {
-    const outputImageDataOrUrl = useAppSelector(selectOverlayImageDataOrUrl);
-    if (!outputImageDataOrUrl) return null;
-    return (
-        <div>
-            {typeof outputImageDataOrUrl !== 'string' && <OverlayImageCanvas imageData={outputImageDataOrUrl} />}
-            {typeof outputImageDataOrUrl === 'string' && <OverlayImageImg imageUrl={outputImageDataOrUrl} />}
-        </div>
-    );
+    const shouldShowImageFromData = useAppSelector(selectShouldShowImageFromData);
+    const shouldShowImageFromUrl = useAppSelector(selectShouldShowImageFromUrl);
+
+    if (shouldShowImageFromData) return <OverlayImageCanvas />;
+    if (shouldShowImageFromUrl) return <OverlayImageImg />;
+    return <div>unknown state...</div>;
 };
 
 export default OverlayImage;

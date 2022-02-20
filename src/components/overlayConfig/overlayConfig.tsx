@@ -5,11 +5,12 @@ import { Button, Checkbox, FormControlLabel, Input, Slider, TextField, Tooltip, 
 
 import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
 import viewport from '../../gameInjection/viewport';
+import { useDebounce } from '../../hooks/debounce';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectHoverPixel } from '../../store/slices/gameSlice';
 import {
     overlaySlice,
-    selectCombinedInputUrl,
+    selectInputUrl,
     selectIsModificationsAvailable,
     selectIsOutputImageProcessing,
     selectModifierImageBrightness,
@@ -41,16 +42,18 @@ function useFollowMouseConfiguration() {
             if (e.button !== 0) return;
             dispatch(overlaySlice.actions.setPlacementIsFollowMouseActive(false));
         };
-        dispatch(overlaySlice.actions.setPlacementIsFollowMouseActive(!placementIsFollowMouseActive));
-    }, [dispatch, placementIsFollowMouseActive]);
+        // dispatch(overlaySlice.actions.togglePlacementFollowMouse());
+    }, [dispatch]);
 }
 
 const OverlayConfig: React.FC = () => {
     const [isShareOverlayOpen, setIsShareOverlayOpen] = React.useState(false);
+    const [inputUrl, setInputUrl] = React.useState('');
+    const inputImageDebouced = useDebounce(inputUrl, 500);
     useFollowMouseConfiguration();
     const dispatch = useAppDispatch();
     const isModificationsAvailable = useAppSelector(selectIsModificationsAvailable);
-    const inputUrl = useAppSelector(selectCombinedInputUrl);
+    const inputUrlState = useAppSelector(selectInputUrl);
     const shouldShowFileInput = useAppSelector(selectShouldShowFileInput);
     const shouldShowUrlInput = useAppSelector(selectShouldShowUrlInput);
     const placementXOffset = useAppSelector(selectPlacementXOffset);
@@ -63,7 +66,7 @@ const OverlayConfig: React.FC = () => {
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
 
     const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch(setInputImageAction(e.target.value));
+        setInputUrl(e.target.value);
     };
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -75,12 +78,12 @@ const OverlayConfig: React.FC = () => {
     const handleXOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const numValue = parseInt(e.target.value, 10);
         if (Number.isNaN(numValue)) return;
-        dispatch(overlaySlice.actions.setPlacementXOffset(numValue));
+        if (numValue !== placementXOffset) dispatch(overlaySlice.actions.setPlacementXOffset(numValue));
     };
     const handleYOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const numValue = parseInt(e.target.value, 10);
         if (Number.isNaN(numValue)) return;
-        dispatch(overlaySlice.actions.setPlacementYOffset(numValue));
+        if (numValue !== placementYOffset) dispatch(overlaySlice.actions.setPlacementYOffset(numValue));
     };
     const handleTransparencyChange = (e: Event, value: number | number[]) => {
         if (typeof value !== 'number') {
@@ -103,6 +106,15 @@ const OverlayConfig: React.FC = () => {
         }
         dispatch(overlaySlice.actions.setModifierImageBrightness(value));
     };
+
+    useEffect(() => {
+        dispatch(setInputImageAction(inputImageDebouced));
+    }, [dispatch, inputImageDebouced]);
+
+    useEffect(() => {
+        setInputUrl(inputUrlState ?? '');
+    }, [inputUrlState]);
+
     return (
         <div>
             {!shouldShowUrlInput ? null : (
@@ -155,7 +167,7 @@ const OverlayConfig: React.FC = () => {
                 <br />
                 <FormControlLabel control={<Checkbox color="primary" checked={modifierShouldConvertColors} onChange={handleShouldConvertColorsChange} />} label="Convert colors" labelPlacement="end" />
                 <br />
-                <Tooltip title="Experimental! Will try to only place colors matching the image regardless of which color is selected in game">
+                <Tooltip title="Will try to only place colors matching the image">
                     <FormControlLabel control={<Checkbox color="primary" checked={placementAutoSelectColor} onChange={handleAutoSelectColorChange} />} label="Auto color*" labelPlacement="end" />
                 </Tooltip>
                 <br />

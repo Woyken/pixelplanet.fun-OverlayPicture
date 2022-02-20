@@ -1,16 +1,56 @@
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import colorConverter from 'colorConverter';
 
-import { clearInputImageAction, outputImageDataMap, readImageDataMap, setInputImageAction, startNewImageReadingProcess, startProcessingOutputImage } from '../../actions/imageProcessing';
+import { clearInputImageAction, clearOutputImageAction, setInputImageAction, startNewImageReadingProcess, startProcessingOutputImage } from '../../actions/imageProcessing';
 import { RootState } from '../store';
 
-import { selectGameViewCenter, selectGameViewScale } from './gameSlice';
+import { selectCanvasPalette, selectCanvasReservedColorCount, selectGameViewCenter, selectGameViewScale, selectHoverPixel } from './gameSlice';
+// image input can be
+// from saved - file id (file id)
+// from url
+// from file (file url available)
+
+// input file states:
+// - loading
+// - loaded
+// - error
+
+// modifier processing states:
+// - processing
+// - done
+// - error
+
+type ImageFileTypeState =
+    | {
+          type: 'file';
+          // file: File;
+          // fileUrl: string;
+      }
+    | {
+          type: 'url';
+          url: string;
+      }
+    | {
+          type: 'fileId';
+          savedImageId: number;
+      };
+
+type ImageFileReadingState = {
+    readingState: 'loading' | 'loaded' | 'error';
+};
 
 interface OverlayImageInputState {
     url?: string;
-    fileUrl?: string;
-    isReadingImage: boolean;
+    file?: File;
+    fileId?: number;
+    loadedImage: {
+        status: 'loading' | 'loaded' | 'error' | 'none';
+        error?: string;
+        imageData?: ImageData;
+    };
 }
 interface OverlayImageOutputState {
+    abortController?: AbortController;
     isProcessing: boolean;
     imageData?: ImageData;
 }
@@ -57,7 +97,7 @@ interface OverlayState {
 const initialState: OverlayState = {
     savedConfigs: [],
     overlayEnabled: true,
-    overlayImage: { inputImage: { isReadingImage: false }, outputImage: { isProcessing: false } },
+    overlayImage: { inputImage: { loadedImage: { status: 'none' } }, outputImage: { isProcessing: false } },
     placementConfiguration: { yOffset: 0, xOffset: 0, transparency: 100, isFollowMouseActive: false, autoSelectColor: false },
     modifications: { imageBrightness: 0, shouldConvertColors: false },
     isBotModalVisible: false,
@@ -76,6 +116,9 @@ export const overlaySlice = createSlice({
         },
         setPlacementTransparency: (state, action: PayloadAction<number>) => {
             state.placementConfiguration.transparency = action.payload;
+        },
+        togglePlacementFollowMouse: (state) => {
+            state.placementConfiguration.isFollowMouseActive = !state.placementConfiguration.isFollowMouseActive;
         },
         setPlacementIsFollowMouseActive: (state, action: PayloadAction<boolean>) => {
             state.placementConfiguration.isFollowMouseActive = action.payload;
@@ -98,62 +141,71 @@ export const overlaySlice = createSlice({
     },
     extraReducers: (builder) => {
         builder.addCase(setInputImageAction.fulfilled, (state, action) => {
-            state.overlayImage.inputImage.fileUrl = action.payload.fileUrl;
+            state.overlayImage.inputImage.fileId = action.payload.fileId;
             state.overlayImage.inputImage.url = action.payload.url;
+            state.overlayImage.inputImage.file = action.payload.file;
         });
-        builder.addCase(startNewImageReadingProcess.pending, (state, action) => {
-            state.overlayImage.inputImage.isReadingImage = true;
+        builder.addCase(startNewImageReadingProcess.pending, (state) => {
+            state.overlayImage.inputImage.loadedImage.status = 'loading';
+            state.overlayImage.inputImage.loadedImage.error = undefined;
         });
         builder.addCase(startNewImageReadingProcess.fulfilled, (state, action) => {
-            state.overlayImage.inputImage.isReadingImage = false;
+            state.overlayImage.inputImage.loadedImage.status = 'loaded';
+            state.overlayImage.inputImage.loadedImage.imageData = action.payload;
         });
         builder.addCase(startNewImageReadingProcess.rejected, (state, action) => {
-            state.overlayImage.inputImage.isReadingImage = false;
+            state.overlayImage.inputImage.loadedImage.status = 'error';
+            state.overlayImage.inputImage.loadedImage.error = action.error.message;
         });
-        builder.addCase(clearInputImageAction.fulfilled, (state, action) => {
-            state.overlayImage.inputImage.fileUrl = undefined;
+        builder.addCase(clearInputImageAction.fulfilled, (state) => {
+            state.overlayImage.inputImage.file = undefined;
             state.overlayImage.inputImage.url = undefined;
+            state.overlayImage.inputImage.fileId = undefined;
+            state.overlayImage.inputImage.loadedImage.status = 'none';
+            state.overlayImage.inputImage.loadedImage.error = undefined;
+            state.overlayImage.inputImage.loadedImage.imageData = undefined;
         });
-        builder.addCase(startProcessingOutputImage.pending, (state, action) => {
+        builder.addCase(startProcessingOutputImage.pending, (state) => {
             state.overlayImage.outputImage.isProcessing = true;
         });
         builder.addCase(startProcessingOutputImage.fulfilled, (state, action) => {
             state.overlayImage.outputImage.isProcessing = false;
-            state.overlayImage.outputImage.imageData = action.payload;
+            state.overlayImage.outputImage.imageData = action.payload.outImageData;
+            state.overlayImage.outputImage.abortController = action.payload.abortController;
+        });
+        builder.addCase(clearOutputImageAction.fulfilled, (state) => {
+            state.overlayImage.outputImage.imageData = undefined;
+            state.overlayImage.outputImage.abortController = undefined;
+            state.overlayImage.outputImage.isProcessing = false;
         });
     },
 });
 
-const selectInputFileUrl = createSelector(
-    (state: RootState) => state.overlay.overlayImage.inputImage.fileUrl,
-    (fileUrl) => fileUrl
-);
-
-const selectInputUrl = createSelector(
+export const selectInputUrl = createSelector(
     (state: RootState) => state.overlay.overlayImage.inputImage.url,
     (url) => url
 );
 
-export const selectCombinedInputUrl = createSelector(selectInputFileUrl, selectInputUrl, (fileUrl, url) => {
-    return fileUrl || url;
-});
-
-export const selectIsModificationsAvailable = createSelector(
-    selectCombinedInputUrl,
-    (state: RootState) => state.overlay.overlayImage.inputImage.isReadingImage,
-    (url, isReadingImage) => {
-        // Workaround to get actual ImageData
-        const imageData = url ? readImageDataMap[url] : undefined;
-        return !!imageData;
-    }
+export const selectInputImageData = createSelector(
+    (state: RootState) => state.overlay.overlayImage.inputImage.loadedImage.imageData,
+    (imageData) => imageData
 );
 
-export const selectShouldShowFileInput = createSelector(selectInputFileUrl, selectInputUrl, (fileUrl, url) => {
-    return (!fileUrl && !url) || !!(fileUrl && !url);
+export const selectIsModificationsAvailable = createSelector(selectInputImageData, (inputImageData) => {
+    return !!inputImageData;
 });
 
-export const selectShouldShowUrlInput = createSelector(selectInputFileUrl, selectInputUrl, (fileUrl, url) => {
-    return (!fileUrl && !url) || !!(!fileUrl && url);
+export const selectInputFile = createSelector(
+    (state: RootState) => state.overlay.overlayImage.inputImage.file,
+    (file) => file
+);
+
+export const selectShouldShowFileInput = createSelector(selectInputFile, selectInputUrl, (file, url) => {
+    return (!file && !url) || !!(file && !url);
+});
+
+export const selectShouldShowUrlInput = createSelector(selectInputFile, selectInputUrl, (file, url) => {
+    return (!file && !url) || !!(!file && url);
 });
 
 export const selectPlacementXOffset = createSelector(
@@ -201,18 +253,36 @@ export const selectIsOutputImageProcessing = createSelector(
     (isProcessing) => isProcessing
 );
 
-export const selectOutputImageData = createSelector(
-    selectCombinedInputUrl,
+const selectOutputImageData = createSelector(
     (state: RootState) => state.overlay.overlayImage.outputImage.isProcessing,
-    (url, isProcessing) => {
-        if (!url) return undefined;
-        const imageData = outputImageDataMap[url];
-        if (!imageData) return undefined;
-        return imageData;
+    (state: RootState) => state.overlay.overlayImage.outputImage.imageData,
+    (state: RootState) => state.overlay.overlayImage.outputImage.abortController,
+    (isProcessing, imageData, abortController) => {
+        if (!isProcessing && imageData) {
+            return imageData;
+        }
+        return undefined;
     }
 );
 
-export const selectOverlayImageDataOrUrl = createSelector(selectCombinedInputUrl, selectOutputImageData, (url, imageData) => {
+export const selectRenderImageData = createSelector(selectOutputImageData, selectInputImageData, (outputImageData, inputImageData) => {
+    return outputImageData || inputImageData;
+});
+
+export const selectShouldShowImageFromData = createSelector(selectRenderImageData, (imageData) => !!imageData);
+
+const selectInputFileId = createSelector(
+    (state: RootState) => state.overlay.overlayImage.inputImage.fileId,
+    (fileId) => fileId
+);
+
+export const selectShouldShowImageFromUrl = createSelector(selectShouldShowImageFromData, selectInputFile, selectInputFileId, selectInputUrl, (shouldShowImageFromData, file, fileId, url) => {
+    if (shouldShowImageFromData) return false;
+    if (file || fileId || url) return true;
+    return false;
+});
+
+export const selectOverlayImageDataOrUrl = createSelector(selectInputUrl, selectOutputImageData, (url, imageData) => {
     return imageData || url;
 });
 
@@ -236,5 +306,32 @@ export const selectOverlayOffsetCoordsOnScreen = createSelector(
         const leftOffset = windowSize.innerWidth / 2 - (gameViewCenter.x - xOffset) * viewScale;
         const topOffset = windowSize.innerHeight / 2 - (gameViewCenter.y - yOffset) * viewScale;
         return { leftOffset, topOffset };
+    }
+);
+
+export const selectCurrentHoverPixelOnOutputImageColorIndexInPalette = createSelector(
+    selectPlacementAutoSelectColor,
+    selectHoverPixel,
+    selectPlacementXOffset,
+    selectPlacementYOffset,
+    selectRenderImageData,
+    selectCanvasPalette,
+    selectCanvasReservedColorCount,
+    (autoSelectColor, hoverPixel, placementXOffset, placementYOffset, renderImageData, palette, reservedColorCount) => {
+        if (!autoSelectColor) return undefined;
+        if (!renderImageData) return undefined;
+        const offsetXInImage = hoverPixel.x - placementXOffset;
+        const offsetYInImage = hoverPixel.y - placementYOffset;
+        if (offsetXInImage < 0 || offsetXInImage >= renderImageData.width || offsetYInImage < 0 || offsetYInImage >= renderImageData.height) return undefined;
+        // eslint-disable-next-line no-bitwise
+        const idx = (renderImageData.width * offsetYInImage + offsetXInImage) << 2;
+        const r = renderImageData.data[idx + 0];
+        const g = renderImageData.data[idx + 1];
+        const b = renderImageData.data[idx + 2];
+        const a = renderImageData.data[idx + 3];
+        if (r == null || g == null || b == null || a == null) return undefined;
+        if (a < 30) return undefined;
+        const colorIndex = colorConverter.convertActualColorFromPalette(palette, reservedColorCount, r, g, b);
+        return colorIndex;
     }
 );

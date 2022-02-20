@@ -68,9 +68,22 @@ export const usePageReduxStoreSelector: TypedUseSelectorHookWithUndefined<PageSt
         });
 
         return () => unsubscribe();
-    }, [store]);
+    }, [store, selector]);
     return selectedResult;
 };
+
+export const usePageReduxStoreDispatch = () => {
+    const store = usePageReduxStore();
+    if (!store) return undefined;
+    return store.dispatch;
+};
+
+export function pageReduxStoreSelectColorAction(colorIndex: number) {
+    return {
+        type: 'SELECT_COLOR',
+        color: colorIndex,
+    };
+}
 
 export function usePageReduxStore() {
     const [pageReduxStore, setPageReduxStore] = useState<Store<PageState, AnyAction>>();

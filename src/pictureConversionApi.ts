@@ -37,7 +37,22 @@ async function loadImageDrawOnCanvasGetData(url: string, abortSignal: AbortSigna
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
-            resolve(ctx.getImageData(0, 0, img.width, img.height));
+
+            try {
+                resolve(ctx.getImageData(0, 0, img.width, img.height));
+            } catch (error) {
+                // If somehow we fail on second try, let's not loop again
+                if (!window.location.protocol.startsWith('http')) reject(error);
+                // security error, cors request failed, let's try fetching the image data
+                fetch(url, { signal: abortSignal })
+                    .then((response) => response.blob())
+                    .then((blob) => new File([blob], 'image.png', { type: 'image/png' }))
+                    .then((file) =>
+                        loadImageDrawOnCanvasGetData(URL.createObjectURL(file), abortSignal) //
+                            .finally(() => URL.revokeObjectURL(url))
+                    )
+                    .then(resolve);
+            }
         };
         abortSignal.onabort = () => {
             reject(new Error('Aborted'));

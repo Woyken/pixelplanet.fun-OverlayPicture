@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 
-import { Button, DialogTitle, Modal, TextField } from '@mui/material';
+import { DialogTitle, Modal, TextField } from '@mui/material';
 
-import { updateImageModifiers, updateImagePlacementConfiguration, updateInputImage } from '../../actions/guiActions';
 import { makeStyles } from '../../theme/makeStyles';
 
 interface Props {
@@ -39,34 +38,35 @@ const useStyles = makeStyles()((theme) => ({
 }));
 
 const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
+    const { isOpen, setIsOpen } = props;
     const { classes } = useStyles();
     // getModalStyle is not a pure function, we roll the style only on the first render
     const [modalStyle] = useState(getModalStyle);
-    const [sharedInput, setSharedInput] = useState<string | undefined>(undefined);
-    // const [parsedShared, setParsedShared] = useState<SharableConfig | null>(null);
+    const [sharedInput] = useState<string>();
+    // const [parsedShared, setParsedShared] = useState<SharableConfig>();
 
     // We don't need anything here if modal is not visible.
-    if (!props.isOpen) return null;
+    if (!isOpen) return null;
     // const shareConf = urlHelper.sharableConfigFromState(props.overlayStore);
 
     const handleClose = (): void => {
-        props.setIsOpen(false);
+        setIsOpen(false);
     };
 
-    // const handleSharedInput = (sharedInput: string): void => {
-    //     try {
-    //         // TODO "safer" parsing.
-    //         const shared = JSON.parse(sharedInput) as SharableConfig;
-    //         if (shared.modifications && shared.overlayImageUrl && shared.placementConfiguration) {
-    //             setParsedShared(shared);
-    //         } else {
-    //             setParsedShared(null);
-    //         }
-    //     } catch {
-    //         setParsedShared(null);
-    //     }
-    //     setSharedInput(sharedInput);
-    // };
+    const handleSharedInput = (): void => {
+        // try {
+        //     // TODO "safer" parsing.
+        //     const shared = JSON.parse(sharedInput) as SharableConfig;
+        //     if (shared.modifications && shared.overlayImageUrl && shared.placementConfiguration) {
+        //         setParsedShared(shared);
+        //     } else {
+        //         setParsedShared(null);
+        //     }
+        // } catch {
+        //     setParsedShared(null);
+        // }
+        // setSharedInput(sharedInput);
+    };
 
     // const applySharedOverlay = (): void => {
     //     if (!parsedShared) return;
@@ -85,15 +85,15 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
 
     return (
         <div>
-            <Modal open={props.isOpen} onClose={handleClose}>
+            <Modal open={isOpen} onClose={handleClose}>
                 <div style={modalStyle} className={classes.paper}>
                     <DialogTitle>Share your overlay</DialogTitle>
                     <TextField
                         label="Shared overlay"
                         type="string"
                         value={sharedInput}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                            // handleSharedInput(e.target.value);
+                        onChange={(): void => {
+                            handleSharedInput();
                         }}
                     />
                     {/* {sharedInput ? (parsedShared ? 'ok' : 'not ok') : null}
