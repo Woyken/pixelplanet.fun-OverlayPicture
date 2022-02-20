@@ -13,17 +13,6 @@ import {
 } from '../../store/slices/overlaySlice';
 import { makeStyles } from '../../theme/makeStyles';
 
-/*
-.PictureOverlay_OverlayImage {
-    position: absolute;
-    left: 0;
-    top: 0;
-    pointer-events: none;
-    transform-origin: top left;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-}
-*/
 const useStyles = makeStyles()({
     overlayImage: {
         position: 'absolute',
