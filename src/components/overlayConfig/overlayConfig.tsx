@@ -164,11 +164,11 @@ const OverlayConfig: React.FC = () => {
                         value={placementTransparency}
                         onChange={handleTransparencyChange}
                     />
+                    <br />
                 </>
             )}
             {isModificationsAvailable && (
                 <>
-                    <br />
                     <FormControlLabel
                         control={<Checkbox color="primary" checked={modifierShouldConvertColors} onChange={handleShouldConvertColorsChange} />}
                         label="Convert colors"
@@ -198,9 +198,9 @@ const OverlayConfig: React.FC = () => {
                             onChange={handleImageBrightnessChange}
                         />
                     </div>
+                    <br />
                 </>
             )}
-            <br />
             <ShareOverlayButton />
         </Box>
     );
