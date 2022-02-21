@@ -11,20 +11,22 @@ import App from './app';
 const AppProvidersWrapper: React.FC = () => {
     const theme = useAppTheme();
     return (
-        <Provider store={store}>
-            <GlobalStyles
-                styles={{
-                    body: {
-                        margin: 0,
-                        padding: 0,
-                    },
-                }}
-            />
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <App />
-            </ThemeProvider>
-        </Provider>
+        <React.StrictMode>
+            <Provider store={store}>
+                <GlobalStyles
+                    styles={{
+                        body: {
+                            margin: 0,
+                            padding: 0,
+                        },
+                    }}
+                />
+                <ThemeProvider theme={theme}>
+                    <CssBaseline />
+                    <App />
+                </ThemeProvider>
+            </Provider>
+        </React.StrictMode>
     );
 };
 
