@@ -112,7 +112,7 @@ function useGlobalKeyShortcuts() {
         window.addEventListener('keydown', handleKeyDown);
 
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [handleToggleOverlay]);
 }
 
 function useLoadSavedConfigurations() {
