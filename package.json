@@ -10,7 +10,7 @@
         "build2": "vite build",
         "build:watch": "cross-env APP_ENV=development vite build --watch",
         "build:verify": "rollup -c --environment VERIFY_BUILD",
-        "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay.user.js -- firefox",
+        "open": "open-cli file://%cd%\\dist\\pixelplanet.fun-picture-overlay.iife.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
         "cleanNodeTypes": "rimraf .\\node_modules\\@types\\node",
