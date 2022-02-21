@@ -5,7 +5,8 @@ import { OverlaySavedConfigurationState, overlaySlice, selectCurrentStateAsConfi
 import { makeStyles } from 'theme/makeStyles';
 import { setViewCoordinates, usePageReduxStoreDispatch } from 'utils/getPageReduxStore';
 
-import { FormControl, InputLabel, MenuItem, Select, Tooltip } from '@mui/material';
+import { Save } from '@mui/icons-material';
+import { FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip } from '@mui/material';
 
 import logger from '../../handlers/logger';
 
@@ -86,7 +87,9 @@ const ConfigDropDown: React.FC = () => {
             </FormControl>
             {inputUrl ? (
                 <Tooltip title="Save current config">
-                    <img className={classes.configDropDownSaveIcon} src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg" onClick={onSaveActiveConfiguration} />
+                    <IconButton onClick={onSaveActiveConfiguration}>
+                        <Save />
+                    </IconButton>
                 </Tooltip>
             ) : null}
         </div>
