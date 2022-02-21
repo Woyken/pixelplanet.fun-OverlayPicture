@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+
 import { gameSlice } from './slices/gameSlice';
 import { overlaySlice } from './slices/overlaySlice';
 
@@ -7,7 +8,7 @@ export const store = configureStore({
         overlay: overlaySlice.reducer,
         game: gameSlice.reducer,
     },
-    devTools: true,
+    devTools: import.meta.env.DEV,
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
