@@ -14,7 +14,7 @@ function init(): void {
         gameCanvas.after(rootNode);
     } else {
         // If for some reason canvas doesn't exist, draw over everything.
-        document.body.append(rootNode);
+        document.body.prepend(rootNode);
     }
 
     // initStore();

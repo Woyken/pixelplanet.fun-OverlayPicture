@@ -24,8 +24,12 @@ function getStoreFromReactInternalEl(el: any) {
 }
 
 function findReactRootContainerEl() {
-    // eslint-disable-next-line no-underscore-dangle
-    return Array.from(document.getElementsByTagName('div')).find((el) => !!(el as any)._reactRootContainer?._internalRoot?.current);
+    return (
+        Array.from(document.getElementsByTagName('div'))
+            .filter((el) => el.id !== 'PictureOverlay_RootNode')
+            // eslint-disable-next-line no-underscore-dangle
+            .find((el) => !!(el as any)._reactRootContainer?._internalRoot?.current)
+    );
 }
 
 function findStoreInRoot(el: HTMLDivElement) {
