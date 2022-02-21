@@ -25,7 +25,7 @@ import {
     selectShouldShowFileInput,
     selectShouldShowUrlInput,
 } from '../../store/slices/overlaySlice';
-import ShareOverlayModal from '../shareOverlayModal/shareOverlayModal';
+import { ShareOverlayButton } from '../shareOverlayModal/shareOverlayButton';
 
 function useFollowMouseConfiguration() {
     const dispatch = useAppDispatch();
@@ -49,7 +49,6 @@ function useFollowMouseConfiguration() {
 }
 
 const OverlayConfig: React.FC = () => {
-    const [isShareOverlayOpen, setIsShareOverlayOpen] = React.useState(false);
     const [inputUrl, setInputUrl] = React.useState('');
     const inputImageDebouced = useDebounce(inputUrl, 500);
     useFollowMouseConfiguration();
@@ -194,13 +193,7 @@ const OverlayConfig: React.FC = () => {
                 </div>
             </div>
             <br />
-            <Tooltip title="Share current overlay or import">
-                <IconButton onClick={(): void => setIsShareOverlayOpen(!isShareOverlayOpen)}>
-                    <ShareIcon />
-                </IconButton>
-            </Tooltip>
-
-            {isShareOverlayOpen && <ShareOverlayModal isOpen={isShareOverlayOpen} setIsOpen={(isOpen: boolean): void => setIsShareOverlayOpen(isOpen)} />}
+            <ShareOverlayButton />
         </Box>
     );
 };
