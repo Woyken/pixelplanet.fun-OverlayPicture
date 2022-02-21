@@ -2,7 +2,8 @@ import { get as getColor, to as toColor } from 'color-string';
 import React from 'react';
 import { createMakeStyles } from 'tss-react';
 
-import { Checkbox, FormControlLabel, Tooltip, useTheme } from '@mui/material';
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { Checkbox, FormControlLabel, IconButton, Tooltip, useTheme } from '@mui/material';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { overlaySlice, selectIsOverlayEnabled } from '../../store/slices/overlaySlice';
@@ -59,11 +60,7 @@ const ConfigurationModal: React.FC = () => {
 
                     <ConfigDropDown />
                 </div>
-                <img
-                    alt=""
-                    src={isModalMinimized ? 'https://fonts.gstatic.com/s/i/materialicons/expand_more/v1/24px.svg' : 'https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg'}
-                    onClick={(): void => setIsModalMinimized(!isModalMinimized)}
-                />
+                <IconButton onClick={(): void => setIsModalMinimized(!isModalMinimized)}>{isModalMinimized ? <ExpandMore /> : <ExpandLess />}</IconButton>
             </div>
         </div>
     );
