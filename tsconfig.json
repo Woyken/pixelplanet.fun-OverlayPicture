@@ -19,7 +19,6 @@
         "noFallthroughCasesInSwitch": true,
         "noImplicitThis": true,
         "resolveJsonModule": true,
-        "isolatedModules": true,
         "noEmit": true,
         "baseUrl": "src",
         "noUncheckedIndexedAccess": true,
