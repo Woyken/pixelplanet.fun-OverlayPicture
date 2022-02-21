@@ -6,7 +6,6 @@ import { Box } from '@mui/material/node_modules/@mui/system';
 
 import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
 import viewport from '../../gameInjection/viewport';
-import { useDebounce } from '../../hooks/debounce';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectHoverPixel } from '../../store/slices/gameSlice';
 import {
@@ -52,12 +51,10 @@ function useFollowMouseConfiguration() {
 }
 
 const OverlayConfig: React.FC = () => {
-    const [inputUrl, setInputUrl] = React.useState('');
-    const inputImageDebouced = useDebounce(inputUrl, 500);
     useFollowMouseConfiguration();
     const dispatch = useAppDispatch();
     const isModificationsAvailable = useAppSelector(selectIsModificationsAvailable);
-    const inputUrlState = useAppSelector(selectInputUrl);
+    const inputUrl = useAppSelector(selectInputUrl);
     const shouldShowFileInput = useAppSelector(selectShouldShowFileInput);
     const shouldShowUrlInput = useAppSelector(selectShouldShowUrlInput);
     const shouldShowPlacementConfiguration = useAppSelector(selectShouldShowPlacementConfiguration);
@@ -110,20 +107,12 @@ const OverlayConfig: React.FC = () => {
         dispatch(overlaySlice.actions.setModifierImageBrightness(value));
     };
 
-    useEffect(() => {
-        dispatch(setInputImageAction(inputImageDebouced));
-    }, [dispatch, inputImageDebouced]);
-
-    useEffect(() => {
-        setInputUrl(inputUrlState ?? '');
-    }, [inputUrlState]);
-
     return (
         <Box component="form">
             {!shouldShowUrlInput ? null : (
                 <div>
                     <OverlayUrlInput />
-                    {!isModificationsAvailable && inputUrlState && inputImageLoadingStatus === 'error' && (
+                    {!isModificationsAvailable && inputUrl && inputImageLoadingStatus === 'error' && (
                         <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
                             <WarningIcon />
                         </Tooltip>
