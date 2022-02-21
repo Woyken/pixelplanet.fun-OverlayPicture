@@ -4,7 +4,7 @@ import { store } from 'store/store';
 import { useAppTheme } from 'theme/makeStyles';
 import { GlobalStyles } from 'tss-react';
 
-import { ThemeProvider } from '@mui/material';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 
 import App from './app';
 
@@ -21,6 +21,7 @@ const AppProvidersWrapper: React.FC = () => {
                 }}
             />
             <ThemeProvider theme={theme}>
+                <CssBaseline />
                 <App />
             </ThemeProvider>
         </Provider>

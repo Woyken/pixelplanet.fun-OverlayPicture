@@ -56,7 +56,7 @@ const lightTheme = createTheme(lightThemeOptions);
 const darkTheme = createTheme(darkThemeOptions);
 
 export const useAppTheme = () => {
-    const isDarkTheme = false; // useMediaQuery('(prefers-color-scheme: dark)');
+    const isDarkTheme = useMediaQuery('(prefers-color-scheme: dark)');
     const theme = isDarkTheme ? darkTheme : lightTheme;
     return theme;
 };
