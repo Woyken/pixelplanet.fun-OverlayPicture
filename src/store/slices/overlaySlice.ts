@@ -204,6 +204,8 @@ export const selectShouldShowUrlInput = createSelector(selectInputFile, selectIn
     return (!file && !url) || !!(!file && url);
 });
 
+export const selectShouldShowPlacementConfiguration = createSelector(selectInputFile, selectInputUrl, (file, url) => file || url);
+
 export const selectPlacementXOffset = createSelector(
     (state: RootState) => state.overlay.placementConfiguration.xOffset,
     (xOffset) => xOffset
@@ -242,6 +244,11 @@ export const selectModifierShouldConvertColors = createSelector(
 export const selectIsOverlayEnabled = createSelector(
     (state: RootState) => state.overlay.overlayEnabled,
     (overlayEnabled) => overlayEnabled
+);
+
+export const selectInputImageLoadingStatus = createSelector(
+    (state: RootState) => state.overlay.overlayImage.inputImage.loadedImage.status,
+    (status) => status
 );
 
 export const selectIsOutputImageProcessing = createSelector(

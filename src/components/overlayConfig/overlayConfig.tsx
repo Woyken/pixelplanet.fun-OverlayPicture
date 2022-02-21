@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 
-import ShareIcon from '@mui/icons-material/Share';
 import WarningIcon from '@mui/icons-material/Warning';
-import { Button, Checkbox, FormControlLabel, IconButton, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
+import { Button, Checkbox, FormControlLabel, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
 import { Box } from '@mui/material/node_modules/@mui/system';
 
 import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
@@ -12,6 +11,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectHoverPixel } from '../../store/slices/gameSlice';
 import {
     overlaySlice,
+    selectInputImageLoadingStatus,
     selectInputUrl,
     selectIsModificationsAvailable,
     selectIsOutputImageProcessing,
@@ -23,9 +23,12 @@ import {
     selectPlacementXOffset,
     selectPlacementYOffset,
     selectShouldShowFileInput,
+    selectShouldShowPlacementConfiguration,
     selectShouldShowUrlInput,
 } from '../../store/slices/overlaySlice';
 import { ShareOverlayButton } from '../shareOverlayModal/shareOverlayButton';
+
+import { OverlayUrlInput } from './overlayUrlInput';
 
 function useFollowMouseConfiguration() {
     const dispatch = useAppDispatch();
@@ -57,6 +60,7 @@ const OverlayConfig: React.FC = () => {
     const inputUrlState = useAppSelector(selectInputUrl);
     const shouldShowFileInput = useAppSelector(selectShouldShowFileInput);
     const shouldShowUrlInput = useAppSelector(selectShouldShowUrlInput);
+    const shouldShowPlacementConfiguration = useAppSelector(selectShouldShowPlacementConfiguration);
     const placementXOffset = useAppSelector(selectPlacementXOffset);
     const placementYOffset = useAppSelector(selectPlacementYOffset);
     const placementTransparency = useAppSelector(selectPlacementTransparency);
@@ -65,10 +69,8 @@ const OverlayConfig: React.FC = () => {
     const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
     const isOutputImageProcessing = useAppSelector(selectIsOutputImageProcessing);
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
+    const inputImageLoadingStatus = useAppSelector(selectInputImageLoadingStatus);
 
-    const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputUrl(e.target.value);
-    };
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (selectedFile) dispatch(setInputImageAction(selectedFile));
@@ -120,12 +122,12 @@ const OverlayConfig: React.FC = () => {
         <Box component="form">
             {!shouldShowUrlInput ? null : (
                 <div>
-                    <TextField label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} />
-                    {!isModificationsAvailable ? (
+                    <OverlayUrlInput />
+                    {!isModificationsAvailable && inputUrlState && inputImageLoadingStatus === 'error' && (
                         <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
                             <WarningIcon />
                         </Tooltip>
-                    ) : null}
+                    )}
                     <br />
                 </div>
             )}
@@ -135,63 +137,69 @@ const OverlayConfig: React.FC = () => {
                     <br />
                 </div>
             )}
-            <Button onClick={handleClearInput}>Clear input</Button>
-            <br />
-            <TextField label="X" type="number" value={placementXOffset} onInput={handleXOffsetChange} />
-            <TextField label="Y" type="number" value={placementYOffset} onInput={handleYOffsetChange} />
-            <br />
-            <Button variant={placementIsFollowMouseActive ? 'outlined' : undefined} onClick={handleFollowMouseChange}>
-                Position with mouse
-            </Button>
-            <br />
-            <Typography id="transparency-slider" gutterBottom>
-                Transparency
-            </Typography>
-            <Slider
-                defaultValue={70}
-                getAriaValueText={(v): string => {
-                    return v.toString(10);
-                }}
-                aria-labelledby="transparency-slider"
-                valueLabelDisplay="auto"
-                step={1}
-                min={0}
-                max={100}
-                value={placementTransparency}
-                onChange={handleTransparencyChange}
-            />
-            <div
-                style={{
-                    display: isModificationsAvailable ? '' : 'none',
-                }}
-            >
-                <br />
-                <FormControlLabel control={<Checkbox color="primary" checked={modifierShouldConvertColors} onChange={handleShouldConvertColorsChange} />} label="Convert colors" labelPlacement="end" />
-                <br />
-                <Tooltip title="Will try to only place colors matching the image">
-                    <FormControlLabel control={<Checkbox color="primary" checked={placementAutoSelectColor} onChange={handleAutoSelectColorChange} />} label="Auto color*" labelPlacement="end" />
-                </Tooltip>
-                <br />
-                <div style={{ display: modifierShouldConvertColors ? '' : 'none' }}>
-                    <Typography id="brightness-slider" gutterBottom>
-                        Image brightness
+            {shouldShowPlacementConfiguration && (
+                <>
+                    <Button onClick={handleClearInput}>Clear input</Button>
+                    <br />
+                    <TextField label="X" type="number" value={placementXOffset} onInput={handleXOffsetChange} />
+                    <TextField label="Y" type="number" value={placementYOffset} onInput={handleYOffsetChange} />
+                    <br />
+                    <Button variant={placementIsFollowMouseActive ? 'outlined' : undefined} onClick={handleFollowMouseChange}>
+                        Position with mouse
+                    </Button>
+                    <br />
+                    <Typography id="transparency-slider" gutterBottom>
+                        Transparency
                     </Typography>
                     <Slider
-                        disabled={isOutputImageProcessing}
-                        defaultValue={15}
+                        defaultValue={70}
                         getAriaValueText={(v): string => {
                             return v.toString(10);
                         }}
-                        aria-labelledby="brightness-slider"
+                        aria-labelledby="transparency-slider"
                         valueLabelDisplay="auto"
                         step={1}
-                        min={-20}
-                        max={20}
-                        value={modifierImageBrightness}
-                        onChange={handleImageBrightnessChange}
+                        min={0}
+                        max={100}
+                        value={placementTransparency}
+                        onChange={handleTransparencyChange}
                     />
-                </div>
-            </div>
+                </>
+            )}
+            {isModificationsAvailable && (
+                <>
+                    <br />
+                    <FormControlLabel
+                        control={<Checkbox color="primary" checked={modifierShouldConvertColors} onChange={handleShouldConvertColorsChange} />}
+                        label="Convert colors"
+                        labelPlacement="end"
+                    />
+                    <br />
+                    <Tooltip title="Will try to only place colors matching the image">
+                        <FormControlLabel control={<Checkbox color="primary" checked={placementAutoSelectColor} onChange={handleAutoSelectColorChange} />} label="Auto color*" labelPlacement="end" />
+                    </Tooltip>
+                    <br />
+                    <div style={{ display: modifierShouldConvertColors ? '' : 'none' }}>
+                        <Typography id="brightness-slider" gutterBottom>
+                            Image brightness
+                        </Typography>
+                        <Slider
+                            disabled={isOutputImageProcessing}
+                            defaultValue={15}
+                            getAriaValueText={(v): string => {
+                                return v.toString(10);
+                            }}
+                            aria-labelledby="brightness-slider"
+                            valueLabelDisplay="auto"
+                            step={1}
+                            min={-20}
+                            max={20}
+                            value={modifierImageBrightness}
+                            onChange={handleImageBrightnessChange}
+                        />
+                    </div>
+                </>
+            )}
             <br />
             <ShareOverlayButton />
         </Box>
