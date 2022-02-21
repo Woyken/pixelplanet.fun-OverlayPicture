@@ -1,3 +1,4 @@
+import { get as getColor, to as toColor } from 'color-string';
 import React from 'react';
 import { createMakeStyles } from 'tss-react';
 
@@ -9,21 +10,24 @@ import ConfigDropDown from '../configDropDown/configDropDown';
 import OverlayConfig from '../overlayConfig/overlayConfig';
 
 const makeStyles = createMakeStyles({ useTheme });
-const useStyles = makeStyles.makeStyles()({
-    modalRoot: {
-        position: 'absolute',
-        right: '0.9em',
-        top: '0.1em',
-        width: '15em',
-        border: '1px solid rgb(0, 0, 0)',
-        color: 'rgb(0, 0, 0)',
-        backgroundColor: 'rgba(255, 255, 255, 0.93)',
-        padding: '5px',
-        fontSize: '0.9em',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        maxHeight: 'calc(100vh - 1.5em)',
-    },
+const useStyles = makeStyles.makeStyles()((theme) => {
+    const backgroundColor = getColor.rgb(theme.palette.background.paper);
+    backgroundColor[3] = 0.9;
+    return {
+        modalRoot: {
+            position: 'absolute',
+            right: '0.9em',
+            top: '0.1em',
+            width: '15em',
+            border: '1px solid rgb(0, 0, 0)',
+            backgroundColor: toColor.rgb(backgroundColor),
+            padding: '5px',
+            fontSize: '0.9em',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            maxHeight: 'calc(100vh - 1.5em)',
+        },
+    };
 });
 
 const ConfigurationModal: React.FC = () => {

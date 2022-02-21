@@ -32,6 +32,7 @@
     "devDependencies": {
         "@babel/core": "^7.17.3",
         "@open-wc/rollup-plugin-html": "^1.2.5",
+        "@types/color-string": "^1.5.2",
         "@types/jest": "^27.4.0",
         "@types/pako": "^1.0.3",
         "@types/react": "^17.0.39",
@@ -72,6 +73,7 @@
         "@mui/material": "^5.4.2",
         "@reduxjs/toolkit": "^1.7.2",
         "@types/offscreencanvas": "^2019.6.4",
+        "color-string": "^1.9.0",
         "comlink": "^4.3.1",
         "fast-png": "^6.1.0",
         "keycode": "^2.2.1",
