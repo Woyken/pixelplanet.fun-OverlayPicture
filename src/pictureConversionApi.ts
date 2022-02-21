@@ -2,7 +2,7 @@ import { wrap } from 'comlink';
 
 import logger from './handlers/logger';
 import { pictureConverter } from './workers/pictureConverter';
-import PictureConverterWorker from './workers/pictureConverterWorker.ts?worker&inline';
+import PictureConverterWorker from './workers/pictureConverterWorker?worker&inline';
 
 const worker = new PictureConverterWorker();
 
