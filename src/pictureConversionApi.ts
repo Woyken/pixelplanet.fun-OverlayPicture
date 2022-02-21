@@ -12,7 +12,7 @@ export async function tryReadingImageData(url: string, abortSignal: AbortSignal)
     try {
         return await loadImageDrawOnCanvasGetData(url, abortSignal);
     } catch (error) {
-        logger.logError(`Error loading image: ${error}`);
+        logger.logError(`Error loading image: url: ${url} ${error}`);
         return undefined;
     }
 }
