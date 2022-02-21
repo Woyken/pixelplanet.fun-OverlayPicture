@@ -3,6 +3,8 @@ import logger from '../handlers/logger';
 class Viewport {
     public currentActiveViewport: HTMLCanvasElement | undefined;
 
+    public onTouchStart: ((event: TouchEvent, canvas: HTMLCanvasElement) => void) | undefined;
+
     public onMouseMove: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
 
     public onMouseUp: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
@@ -72,6 +74,7 @@ class Viewport {
     }
 
     private initHooks(): void {
+        this.currentActiveViewport?.addEventListener('touchstart', this.onTouchStartHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mousedown', this.onMouseDownHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook, { passive: true });
@@ -79,11 +82,17 @@ class Viewport {
     }
 
     private removeHooks(): void {
+        this.currentActiveViewport?.removeEventListener('touchstart', this.onTouchStartHook);
         this.currentActiveViewport?.removeEventListener('mousemove', this.onMouseMoveHook);
         this.currentActiveViewport?.removeEventListener('mousedown', this.onMouseDownHook);
         this.currentActiveViewport?.removeEventListener('mouseup', this.onMouseUpHook);
         this.currentActiveViewport?.removeEventListener('wheel', this.onWheelHook);
     }
+
+    private onTouchStartHook = (e: TouchEvent) => {
+        if (!this.currentActiveViewport) return;
+        this.onTouchStart?.(e, this.currentActiveViewport);
+    };
 
     private onMouseMoveHook = (e: MouseEvent): void => {
         if (!this.currentActiveViewport) {

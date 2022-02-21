@@ -1,8 +1,9 @@
+import viewport from 'gameInjection/viewport';
 import React, { useCallback, useEffect } from 'react';
 
 import { loadSavedConfigurations, startProcessingOutputImage } from '../../actions/imageProcessing';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { gameSlice, selectCanvasUserPalette } from '../../store/slices/gameSlice';
+import { gameSlice, selectCanvasUserPalette, selectGameViewCenter, selectGameViewScale } from '../../store/slices/gameSlice';
 import {
     overlaySlice,
     selectCurrentHoverPixelOnOutputImageColorIndexInPalette,
@@ -10,12 +11,14 @@ import {
     selectIsOverlayEnabled,
     selectModifierImageBrightness,
     selectModifierShouldConvertColors,
+    selectWindowSize,
 } from '../../store/slices/overlaySlice';
 import {
     pageReduxStoreSelectColorAction,
     selectPageStateCanvasPalette,
     selectPageStateCanvasViewCenter,
     selectPageStateHoverPixel,
+    selectPageStateRoundedCanvasViewCenter,
     selectPageStateViewScale,
     usePageReduxStoreDispatch,
     usePageReduxStoreSelector,
@@ -26,9 +29,11 @@ import OverlayImage from '../overlayImage/overlayImage';
 function usePageStoreHoverCoords() {
     const dispatch = useAppDispatch();
     const pageHoverCoords = usePageReduxStoreSelector(selectPageStateHoverPixel);
+    const pageRoundedViewCenter = usePageReduxStoreSelector(selectPageStateRoundedCanvasViewCenter);
 
     useEffect(() => {
         if (pageHoverCoords) dispatch(gameSlice.actions.setHoverPixel(pageHoverCoords));
+        else if (pageRoundedViewCenter) dispatch(gameSlice.actions.setHoverPixel(pageRoundedViewCenter));
     }, [dispatch, pageHoverCoords]);
 }
 
@@ -129,6 +134,29 @@ function useSubscribeToWindowResize() {
     }, [dispatch]);
 }
 
+function useAutoHandleTouchInputsToHoverState() {
+    const dispatch = useAppDispatch();
+    const windowSize = useAppSelector(selectWindowSize);
+    const viewScale = useAppSelector(selectGameViewScale);
+    const viewCenter = useAppSelector(selectGameViewCenter);
+    useEffect(() => {
+        const handleTouchStart = (event: TouchEvent) => {
+            const touches = event.touches[0];
+            if (!touches) return;
+            const { innerHeight, innerWidth } = windowSize;
+
+            const { clientX, clientY } = touches;
+            const x = Math.floor((clientX - innerWidth / 2) / viewScale + viewCenter.x);
+            const y = Math.floor((clientY - innerHeight / 2) / viewScale + viewCenter.y);
+            dispatch(gameSlice.actions.setHoverPixel({ x, y }));
+        };
+        viewport.onTouchStart = handleTouchStart;
+        return () => {
+            viewport.onTouchStart = undefined;
+        };
+    }, [dispatch, windowSize, viewScale, viewCenter]);
+}
+
 function useAutoSelectColor() {
     const pageDispatch = usePageReduxStoreDispatch();
     const colorIndex = useAppSelector(selectCurrentHoverPixelOnOutputImageColorIndexInPalette);
@@ -140,6 +168,7 @@ function useAutoSelectColor() {
 }
 
 const ProviderPageStateMapper: React.FC = ({ children }) => {
+    useAutoHandleTouchInputsToHoverState();
     useAutoSelectColor();
     useSubscribeToWindowResize();
     useReprocessOutputImage();

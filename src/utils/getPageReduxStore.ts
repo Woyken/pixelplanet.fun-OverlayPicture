@@ -126,6 +126,8 @@ export const selectPageStateCanvasViewCenter = createSelector(
     }
 );
 
+export const selectPageStateRoundedCanvasViewCenter = createSelector(selectPageStateCanvasViewCenter, (view) => (view ? { x: Math.round(view.x), y: Math.round(view.y) } : undefined));
+
 export const selectPageStateCanvasPalette = createSelector(
     (state: PageState) => state.canvas.palette.abgr,
     (paletteAbgr) => {
