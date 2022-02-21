@@ -62,7 +62,7 @@ export const startNewImageReadingProcess = createAsyncThunk<ImageData | undefine
     const url = selectInputUrl(getState());
     const file = selectInputFile(getState());
     const abortController = new AbortController();
-    if (url != null) return tryReadingImageData(url, abortController.signal);
+    if (url) return tryReadingImageData(url, abortController.signal);
     if (file != null) {
         const fileUrl = URL.createObjectURL(file);
         // schedule cleanup of the file url
