@@ -69,7 +69,7 @@ const ConfigDropDown: React.FC = () => {
                 <Select
                     className={classes.configDropDownSelector}
                     labelId="saved-config-dropdown-label"
-                    value=""
+                    value={inputUrl ?? ''}
                     onChange={(value): void => {
                         if (typeof value.target.value === 'string') onLoadConfigByUrl(value.target.value);
                     }}
