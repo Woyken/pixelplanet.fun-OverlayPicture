@@ -1,9 +1,9 @@
 import viewport from 'gameInjection/viewport';
 import React, { useCallback, useEffect } from 'react';
 
-import { loadSavedConfigurations, startProcessingOutputImage } from '../../actions/imageProcessing';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { gameSlice, selectCanvasUserPalette, selectGameViewCenter, selectGameViewScale } from '../../store/slices/gameSlice';
+import { loadSavedConfigurations, startProcessingOutputImage } from '../actions/imageProcessing';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { gameSlice, selectCanvasUserPalette, selectGameViewCenter, selectGameViewScale } from '../store/slices/gameSlice';
 import {
     overlaySlice,
     selectCurrentHoverPixelOnOutputImageColorIndexInPalette,
@@ -12,7 +12,7 @@ import {
     selectModifierImageBrightness,
     selectModifierShouldConvertColors,
     selectWindowSize,
-} from '../../store/slices/overlaySlice';
+} from '../store/slices/overlaySlice';
 import {
     pageReduxStoreSelectColorAction,
     selectPageStateCanvasPalette,
@@ -22,9 +22,10 @@ import {
     selectPageStateViewScale,
     usePageReduxStoreDispatch,
     usePageReduxStoreSelector,
-} from '../../utils/getPageReduxStore';
-import ConfigurationModal from '../configurationModal/configurationModal';
-import OverlayImage from '../overlayImage/overlayImage';
+} from '../utils/getPageReduxStore';
+
+import ConfigurationModal from './configurationModal/configurationModal';
+import OverlayImage from './overlayImage/overlayImage';
 
 function usePageStoreHoverCoords() {
     const dispatch = useAppDispatch();
@@ -34,7 +35,7 @@ function usePageStoreHoverCoords() {
     useEffect(() => {
         if (pageHoverCoords) dispatch(gameSlice.actions.setHoverPixel(pageHoverCoords));
         else if (pageRoundedViewCenter) dispatch(gameSlice.actions.setHoverPixel(pageRoundedViewCenter));
-    }, [dispatch, pageHoverCoords]);
+    }, [dispatch, pageHoverCoords, pageRoundedViewCenter]);
 }
 
 function usePageStoreViewScale() {

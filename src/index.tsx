@@ -1,7 +1,8 @@
 // tslint:disable-next-line:import-name
 import React from 'react';
 import ReactDOM from 'react-dom';
-import AppProvidersWrapper from './components/app/appProvidersWrapper';
+
+import AppProvidersWrapper from './components/appProvidersWrapper';
 // import { initStore } from './store';
 
 function init(): void {
