@@ -48,6 +48,9 @@ export const gameSlice = createSlice({
         setPalette: (state, action: PayloadAction<[number, number, number][]>) => {
             state.canvas.palette = action.payload;
         },
+        setReservedColorCount: (state, action: PayloadAction<number>) => {
+            state.canvas.reservedColorCount = action.payload;
+        },
     },
 });
 

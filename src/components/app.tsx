@@ -16,6 +16,7 @@ import {
 import {
     pageReduxStoreSelectColorAction,
     selectPageStateCanvasPalette,
+    selectPageStateCanvasReservedColors,
     selectPageStateCanvasViewCenter,
     selectPageStateHoverPixel,
     selectPageStateRoundedCanvasViewCenter,
@@ -62,6 +63,14 @@ function usePageStoreCanvasPalette() {
     useEffect(() => {
         if (palette) dispatch(gameSlice.actions.setPalette(palette));
     }, [dispatch, palette]);
+}
+
+function usePageStoreCanvasReservedColors() {
+    const dispatch = useAppDispatch();
+    const reservedColors = usePageReduxStoreSelector(selectPageStateCanvasReservedColors);
+    useEffect(() => {
+        if (reservedColors) dispatch(gameSlice.actions.setReservedColorCount(reservedColors ?? 0));
+    }, [dispatch, reservedColors]);
 }
 
 function useGlobalKeyShortcuts() {
@@ -179,6 +188,7 @@ const ProviderPageStateMapper: React.FC = ({ children }) => {
     usePageStoreViewScale();
     usePageStoreViewCenter();
     usePageStoreCanvasPalette();
+    usePageStoreCanvasReservedColors();
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <>{children}</>;
 };

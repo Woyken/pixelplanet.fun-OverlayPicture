@@ -147,6 +147,11 @@ export const selectPageStateCanvasPalette = createSelector(
     }
 );
 
+export const selectPageStateCanvasReservedColors = createSelector(
+    (state: PageState) => state.canvas.clrIgnore,
+    (reservedColors) => reservedColors
+);
+
 export interface PageState {
     audio: Audio;
     canvas: Canvas;
