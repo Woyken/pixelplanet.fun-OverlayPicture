@@ -18,6 +18,9 @@ const useStyles = makeStyles()({
     configDropDownSaveIcon: {
         'vertical-align': 'bottom',
     },
+    dropDownWrapper: {
+        display: 'flex',
+    },
 });
 
 export const usePageReduxStoreSetViewCoordsAction = () => {
@@ -63,7 +66,7 @@ const ConfigDropDown: React.FC = () => {
     };
 
     return (
-        <div>
+        <div className={classes.dropDownWrapper}>
             <FormControl>
                 <InputLabel id="saved-config-dropdown-label">Load saved config</InputLabel>
                 <Select
