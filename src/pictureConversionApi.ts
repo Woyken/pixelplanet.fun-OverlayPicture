@@ -1,8 +1,8 @@
 import { wrap } from 'comlink';
-import PictureConverterWorker from 'web-worker:./workers/pictureConverterWorker.ts';
 
 import logger from './handlers/logger';
 import { pictureConverter } from './workers/pictureConverter';
+import PictureConverterWorker from './workers/pictureConverterWorker.ts?worker&inline';
 
 const worker = new PictureConverterWorker();
 

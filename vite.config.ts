@@ -2,7 +2,6 @@
 import { resolve } from 'path';
 
 import { visualizer } from 'rollup-plugin-visualizer';
-import webWorkerLoader from 'rollup-plugin-web-worker-loader';
 import { UserConfig } from 'vite';
 import banner from 'vite-plugin-banner';
 import Checker from 'vite-plugin-checker';
@@ -69,7 +68,7 @@ const config: () => UserConfig = () => ({
             output: {
                 extend: true,
             },
-            plugins: [webWorkerLoader(), isDev ? visualizer({ filename: 'moduleVisualizerOutput.html' }) : undefined],
+            plugins: [isDev ? visualizer({ filename: 'moduleVisualizerOutput.html' }) : undefined],
         },
     },
     resolve: {
