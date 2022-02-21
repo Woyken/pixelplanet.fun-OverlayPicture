@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 
-import { startProcessingOutputImage } from '../../actions/imageProcessing';
+import { loadSavedConfigurations, startProcessingOutputImage } from '../../actions/imageProcessing';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { gameSlice, selectCanvasUserPalette } from '../../store/slices/gameSlice';
 import {
@@ -101,7 +101,10 @@ function useGlobalKeyShortcuts() {
 }
 
 function useLoadSavedConfigurations() {
-    // TODO: load saved configurations
+    const dispatch = useAppDispatch();
+    useEffect(() => {
+        dispatch(loadSavedConfigurations());
+    }, [dispatch]);
 }
 
 function useReprocessOutputImage() {

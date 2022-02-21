@@ -85,6 +85,13 @@ export function pageReduxStoreSelectColorAction(colorIndex: number) {
     };
 }
 
+export function setViewCoordinates(view: [number, number]) {
+    return {
+        type: 'SET_VIEW_COORDINATES',
+        view,
+    };
+}
+
 export function usePageReduxStore() {
     const [pageReduxStore, setPageReduxStore] = useState<Store<PageState, AnyAction>>();
     useEffect(() => {

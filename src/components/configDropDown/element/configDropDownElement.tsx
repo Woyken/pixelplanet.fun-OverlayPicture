@@ -1,4 +1,5 @@
 import React from 'react';
+import { OverlaySavedConfigurationState } from 'store/slices/overlaySlice';
 import { makeStyles } from 'theme/makeStyles';
 
 import { DeleteForever } from '@mui/icons-material';
@@ -37,13 +38,9 @@ const useStyles = makeStyles()({
     },
 });
 
-interface SavedConfiguration {
-    imageUrl: string;
-}
-
 interface IProps {
-    config: SavedConfiguration;
-    onDeleteCallback: (config: SavedConfiguration) => void;
+    config: OverlaySavedConfigurationState;
+    onDeleteCallback: (config: OverlaySavedConfigurationState) => void;
 }
 
 export const ConfigDropDownElement: React.FC<IProps> = (props) => {

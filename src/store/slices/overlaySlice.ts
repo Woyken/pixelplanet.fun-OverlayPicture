@@ -1,43 +1,19 @@
-import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import colorConverter from 'colorConverter';
 
-import { clearInputImageAction, clearOutputImageAction, setInputImageAction, startNewImageReadingProcess, startProcessingOutputImage } from '../../actions/imageProcessing';
+import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+import {
+    clearInputImageAction,
+    clearOutputImageAction,
+    loadSavedConfigurations,
+    saveConfiguration,
+    setInputImageAction,
+    startNewImageReadingProcess,
+    startProcessingOutputImage,
+} from '../../actions/imageProcessing';
 import { RootState } from '../store';
 
 import { selectCanvasPalette, selectCanvasReservedColorCount, selectGameViewCenter, selectGameViewScale, selectHoverPixel } from './gameSlice';
-// image input can be
-// from saved - file id (file id)
-// from url
-// from file (file url available)
-
-// input file states:
-// - loading
-// - loaded
-// - error
-
-// modifier processing states:
-// - processing
-// - done
-// - error
-
-type ImageFileTypeState =
-    | {
-          type: 'file';
-          // file: File;
-          // fileUrl: string;
-      }
-    | {
-          type: 'url';
-          url: string;
-      }
-    | {
-          type: 'fileId';
-          savedImageId: number;
-      };
-
-type ImageFileReadingState = {
-    readingState: 'loading' | 'loaded' | 'error';
-};
 
 interface OverlayImageInputState {
     url?: string;
@@ -73,10 +49,10 @@ interface ImageModifiersState {
     imageBrightness: number;
 }
 
-interface OverlaySavedConfigurationState {
+export interface OverlaySavedConfigurationState {
     imageUrl: string;
-    modifiers: ImageModifiersState;
-    placementConfiguration: PlacementConfigurationState;
+    modifiers: { shouldConvertColors: boolean; autoSelectColor: boolean; imageBrightness: number };
+    placementConfiguration: { xOffset: number; yOffset: number; transparency: number };
 }
 
 interface BrowserWindowState {
@@ -138,6 +114,13 @@ export const overlaySlice = createSlice({
         setWindowSize: (state, action: PayloadAction<{ innerWidth: number; innerHeight: number }>) => {
             state.browserWindow = action.payload;
         },
+        removeSavedConfig: (state, action: PayloadAction<string>) => {
+            const savedConfigurations = state.savedConfigs;
+            const existingConfiguration = savedConfigurations.find((c) => c.imageUrl === action.payload);
+            if (existingConfiguration) {
+                savedConfigurations.splice(savedConfigurations.indexOf(existingConfiguration), 1);
+            }
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(setInputImageAction.fulfilled, (state, action) => {
@@ -177,6 +160,19 @@ export const overlaySlice = createSlice({
             state.overlayImage.outputImage.imageData = undefined;
             state.overlayImage.outputImage.abortController = undefined;
             state.overlayImage.outputImage.isProcessing = false;
+        });
+        builder.addCase(loadSavedConfigurations.fulfilled, (state, action) => {
+            state.savedConfigs = action.payload;
+        });
+        builder.addCase(saveConfiguration.fulfilled, (state, action) => {
+            const savedConfigurations = state.savedConfigs;
+            const existingConfiguration = savedConfigurations.find((c) => c.imageUrl === action.payload.imageUrl);
+            if (existingConfiguration != null) {
+                existingConfiguration.modifiers = action.payload.modifiers;
+                existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
+            } else {
+                savedConfigurations.push(action.payload);
+            }
         });
     },
 });
@@ -333,5 +329,36 @@ export const selectCurrentHoverPixelOnOutputImageColorIndexInPalette = createSel
         if (a < 30) return undefined;
         const colorIndex = colorConverter.convertActualColorFromPalette(palette, reservedColorCount, r, g, b);
         return colorIndex;
+    }
+);
+
+export const selectSavedConfigurations = createSelector(
+    (state: RootState) => state.overlay.savedConfigs,
+    (savedConfigurations) => savedConfigurations
+);
+
+export const selectCurrentStateAsConfiguration = createSelector(
+    selectInputUrl,
+    selectPlacementXOffset,
+    selectPlacementYOffset,
+    selectPlacementTransparency,
+    selectPlacementAutoSelectColor,
+    selectModifierImageBrightness,
+    selectModifierShouldConvertColors,
+    (inputUrl, xOffset, yOffset, transparency, autoSelectColor, imageBrightness, shouldConvertColors): OverlaySavedConfigurationState | undefined => {
+        if (!inputUrl) return undefined;
+        return {
+            imageUrl: inputUrl,
+            modifiers: {
+                autoSelectColor,
+                imageBrightness,
+                shouldConvertColors,
+            },
+            placementConfiguration: {
+                xOffset,
+                yOffset,
+                transparency,
+            },
+        };
     }
 );
