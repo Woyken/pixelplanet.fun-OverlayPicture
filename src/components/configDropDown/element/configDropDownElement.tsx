@@ -11,7 +11,7 @@ const useStyles = makeStyles()({
         'max-width': '24em',
         color: 'black',
         'text-decoration': 'none',
-        display: 'block',
+        display: 'flex',
     },
     configDropDownElImg: {
         display: 'inline-block',
