@@ -6,7 +6,9 @@
     "main": "./dist/index.js",
     "scripts": {
         "buildloader:prod": "cross-env APP_MODULE=loader vite build",
-        "build:prod": "vite build",
+        "buildhtml:prod": "cross-env APP_MODULE=html vite build",
+        "buildscript:prod": "cross-env APP_MODULE=script vite build",
+        "build:prod": "cross-env APP_DONT_CLEAN=true npm run buildloader:prod && cross-env APP_DONT_CLEAN=true npm run buildhtml:prod && cross-env APP_DONT_CLEAN=true npm run buildscript:prod",
         "build": "vite build & npm run open",
         "buildloader": "cross-env APP_MODULE=loader vite build",
         "build:watch": "cross-env APP_ENV=development vite build --watch",

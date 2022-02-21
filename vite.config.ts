@@ -42,7 +42,9 @@ const moduleBanner = `
 function pathResolve(dir: string) {
     return resolve(__dirname, '.', dir);
 }
+const doNotClean = !!process.env.APP_DONT_CLEAN;
 const isLoaderBuild = process.env.APP_MODULE === 'loader';
+const isGhPagesHtmlBuild = process.env.APP_MODULE === 'html';
 const mode = process.env.APP_ENV;
 const isDev = mode === 'development';
 
@@ -50,8 +52,10 @@ const isDev = mode === 'development';
 const config: () => UserConfig = () => ({
     mode,
     build: {
-        emptyOutDir: false,
-        lib: isLoaderBuild
+        emptyOutDir: !doNotClean,
+        lib: isGhPagesHtmlBuild
+            ? undefined
+            : isLoaderBuild
             ? {
                   fileName: () => 'pixelPlanetOverlay-loader.user.js',
                   entry: 'src/userscript-loader-module/pixelPlanetOverlay-loader.ts',
