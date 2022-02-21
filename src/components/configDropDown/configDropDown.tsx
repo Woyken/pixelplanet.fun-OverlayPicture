@@ -20,7 +20,7 @@ const useStyles = makeStyles()({
     },
 });
 
-const usePageReduxStoreSetViewCoordsAction = () => {
+export const usePageReduxStoreSetViewCoordsAction = () => {
     const dispatch = usePageReduxStoreDispatch();
 
     return (x: number, y: number) => {

@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 
+import ShareIcon from '@mui/icons-material/Share';
 import WarningIcon from '@mui/icons-material/Warning';
-import { Button, Checkbox, FormControlLabel, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
+import { Button, Checkbox, FormControlLabel, IconButton, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
+import { Box } from '@mui/material/node_modules/@mui/system';
 
 import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
 import viewport from '../../gameInjection/viewport';
@@ -116,7 +118,7 @@ const OverlayConfig: React.FC = () => {
     }, [inputUrlState]);
 
     return (
-        <div>
+        <Box component="form">
             {!shouldShowUrlInput ? null : (
                 <div>
                     <TextField label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} />
@@ -192,9 +194,14 @@ const OverlayConfig: React.FC = () => {
                 </div>
             </div>
             <br />
-            <Button onClick={(): void => setIsShareOverlayOpen(!isShareOverlayOpen)}>Share overlay</Button>
-            <ShareOverlayModal isOpen={isShareOverlayOpen} setIsOpen={(isOpen: boolean): void => setIsShareOverlayOpen(isOpen)} />
-        </div>
+            <Tooltip title="Share current overlay or import">
+                <IconButton onClick={(): void => setIsShareOverlayOpen(!isShareOverlayOpen)}>
+                    <ShareIcon />
+                </IconButton>
+            </Tooltip>
+
+            {isShareOverlayOpen && <ShareOverlayModal isOpen={isShareOverlayOpen} setIsOpen={(isOpen: boolean): void => setIsShareOverlayOpen(isOpen)} />}
+        </Box>
     );
 };
 
