@@ -1,5 +1,7 @@
+import { setInputImageAction } from 'actions/imageProcessing';
 import { get as getColor, to as toColor } from 'color-string';
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { createMakeStyles } from 'tss-react';
 
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
@@ -36,11 +38,21 @@ const ConfigurationModal: React.FC = () => {
     const { classes } = useStyles();
     const dispatch = useAppDispatch();
     const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
+    const onDrop = useCallback(
+        (acceptedFiles: File[]) => {
+            const file = acceptedFiles[0];
+            if (file) dispatch(setInputImageAction(file));
+        },
+        [dispatch]
+    );
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: 'image/*', noClick: true });
+
     const handleToggleOverlayOnOff = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(overlaySlice.actions.setOverlayEnabled(e.target.checked));
     };
     return (
-        <div className={classes.modalRoot}>
+        <div {...getRootProps()} className={classes.modalRoot} style={{ border: isDragActive ? '3px dashed red' : undefined }}>
+            <input {...getInputProps()} hidden />
             <Tooltip title="Toggle on/off Overlay. Shortcut: O">
                 <FormControlLabel control={<Checkbox color="primary" checked={isOverlayEnabled} onChange={handleToggleOverlayOnOff} />} label="Image Overlay" labelPlacement="end" />
             </Tooltip>
@@ -54,7 +66,7 @@ const ConfigurationModal: React.FC = () => {
                         display: isModalMinimized ? 'none' : '',
                     }}
                 >
-                    <div id="PictureOverlay_BaseForExpand">
+                    <div>
                         <OverlayConfig />
                     </div>
 
