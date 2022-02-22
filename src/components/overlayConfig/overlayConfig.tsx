@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
+import { makeStyles } from 'theme/makeStyles';
 
 import WarningIcon from '@mui/icons-material/Warning';
-import { Button, Checkbox, FormControlLabel, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
+import { Button, Checkbox, FormControlLabel, IconButton, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
 import { Box } from '@mui/material/node_modules/@mui/system';
 
 import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
@@ -29,6 +30,17 @@ import { ShareOverlayButton } from '../shareOverlayModal/shareOverlayButton';
 
 import { OverlayUrlInput } from './overlayUrlInput';
 
+const useStyles = makeStyles()({
+    inputWithMargin: {
+        '& .MuiOutlinedInput-root': {
+            margin: '0.4em',
+        },
+    },
+    invisibleFileInput: {
+        display: 'none',
+    },
+});
+
 function useFollowMouseConfiguration() {
     const dispatch = useAppDispatch();
     const placementIsFollowMouseActive = useAppSelector(selectPlacementIsFollowMouseActive);
@@ -52,6 +64,7 @@ function useFollowMouseConfiguration() {
 
 const OverlayConfig: React.FC = () => {
     useFollowMouseConfiguration();
+    const { classes } = useStyles();
     const dispatch = useAppDispatch();
     const isModificationsAvailable = useAppSelector(selectIsModificationsAvailable);
     const inputUrl = useAppSelector(selectInputUrl);
@@ -129,10 +142,8 @@ const OverlayConfig: React.FC = () => {
             {shouldShowPlacementConfiguration && (
                 <>
                     <Button onClick={handleClearInput}>Clear input</Button>
-                    <br />
-                    <TextField label="X" type="number" value={placementXOffset} onInput={handleXOffsetChange} />
-                    <TextField label="Y" type="number" value={placementYOffset} onInput={handleYOffsetChange} />
-                    <br />
+                    <TextField className={classes.inputWithMargin} label="X" type="number" value={placementXOffset} onInput={handleXOffsetChange} />
+                    <TextField className={classes.inputWithMargin} label="Y" type="number" value={placementYOffset} onInput={handleYOffsetChange} />
                     <Button variant={placementIsFollowMouseActive ? 'outlined' : undefined} onClick={handleFollowMouseChange}>
                         Position with mouse
                     </Button>

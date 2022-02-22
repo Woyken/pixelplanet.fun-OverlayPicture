@@ -15,6 +15,7 @@ import { ConfigDropDownElement } from './element/configDropDownElement';
 const useStyles = makeStyles()({
     configDropDownSelector: {
         'min-width': '10em',
+        margin: '0.4em',
     },
     configDropDownSaveIcon: {
         'vertical-align': 'bottom',
