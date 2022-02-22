@@ -25,9 +25,10 @@ export const OverlayUrlInput: React.FC = () => {
     const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputUrl(e.target.value);
     };
-
+    const isFirstRun = useRef(true);
     useEffect(() => {
-        dispatch(setInputImageAction(inputImageDebouced));
+        if (!isFirstRun.current) dispatch(setInputImageAction(inputImageDebouced));
+        isFirstRun.current = false;
     }, [dispatch, inputImageDebouced]);
 
     useEffect(() => {
