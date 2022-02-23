@@ -1,0 +1,7 @@
+{
+    "window.title": "${dirty}${activeEditorShort}${separator}🎨PixelPlanet-Overlay🎨",
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "files.exclude": {
+        "**/node_modules/": true
+    }
+}

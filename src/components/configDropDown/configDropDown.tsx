@@ -1,80 +1,100 @@
+import { saveConfiguration, setInputImageAction } from 'actions/imageProcessing';
 import React from 'react';
-import { observer } from 'mobx-react';
-import { overlayStore, SavedConfiguration } from '../../store/overlayStore';
-import { saveCurrentConfiguration, applySavedConfiguration, removeSavedConfiguration } from '../../actions/guiActions';
-import { Select, InputLabel, MenuItem, FormControl, Tooltip } from '@material-ui/core';
-import ConfigDropDownElement from './element/configDropDownElement';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { OverlaySavedConfigurationState, overlaySlice, selectCurrentStateAsConfiguration, selectInputUrl, selectSavedConfigurations } from 'store/slices/overlaySlice';
+import { makeStyles } from 'theme/makeStyles';
+import { setViewCoordinates, usePageReduxStoreDispatch } from 'utils/getPageReduxStore';
+
+import { Save } from '@mui/icons-material';
+import { FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip } from '@mui/material';
+
 import logger from '../../handlers/logger';
-import './configDropDown.scss';
 
-interface OwnState {}
+import { ConfigDropDownElement } from './element/configDropDownElement';
 
-interface OwnProps {}
+const useStyles = makeStyles()({
+    configDropDownSelector: {
+        'min-width': '10em',
+        margin: '0.4em',
+    },
+    configDropDownSaveIcon: {
+        'vertical-align': 'bottom',
+    },
+    dropDownWrapper: {
+        display: 'flex',
+    },
+});
 
-@observer
-class ConfigDropDown extends React.Component<OwnProps, OwnState> {
-    constructor(props: OwnProps) {
-        super(props);
-        this.state = {
-            isActive: false,
-        };
-    }
+export const usePageReduxStoreSetViewCoordsAction = () => {
+    const dispatch = usePageReduxStoreDispatch();
 
-    render(): React.ReactNode {
-        // tslint:disable-next-line:typedef
-        return (
-            <div>
-                <FormControl>
-                    <InputLabel id="saved-config-dropdown-label">Load saved config</InputLabel>
-                    <Select
-                        className="PictureOverlay_ConfigDropDownSelector"
-                        labelId="saved-config-dropdown-label"
-                        value=""
-                        onChange={(value): void => {
-                            if (typeof value.target.value === 'string') this.onLoadConfigByUrl(value.target.value);
-                        }}
-                    >
-                        {overlayStore.savedConfigs.map((config) => (
-                            <MenuItem key={config.imageUrl} value={config.imageUrl}>
-                                <ConfigDropDownElement
-                                    config={config}
-                                    key={config.imageUrl}
-                                    onDeleteCallback={this.onRemoveConfig.bind(this)}
-                                />
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-                {overlayStore.overlayImage.inputImage.url ? (
-                    <Tooltip title={'Save current config'}>
-                        <img
-                            className="PictureOverlay_ConfigDropDownSaveIcon"
-                            src="https://fonts.gstatic.com/s/i/materialicons/save/v1/24px.svg"
-                            onClick={this.onSaveActiveConfiguration.bind(this)}
-                        />
-                    </Tooltip>
-                ) : null}
-            </div>
-        );
-    }
+    return (x: number, y: number) => {
+        if (dispatch) dispatch(setViewCoordinates([x, y]));
+    };
+};
 
-    onLoadConfigByUrl(url: string): void {
-        const config = overlayStore.savedConfigs.find((c) => c.imageUrl === url);
-        if (config) this.onApplyConfig(config);
+const ConfigDropDown: React.FC = () => {
+    const { classes } = useStyles();
+    const dispatch = useAppDispatch();
+    const savedConfigurations = useAppSelector(selectSavedConfigurations);
+    const inputUrl = useAppSelector(selectInputUrl);
+    const currentStateAsConfiguration = useAppSelector(selectCurrentStateAsConfiguration);
+
+    const setViewCoords = usePageReduxStoreSetViewCoordsAction();
+
+    const onApplyConfig = (config: OverlaySavedConfigurationState) => {
+        dispatch(setInputImageAction(config.imageUrl));
+        dispatch(overlaySlice.actions.setModifierImageBrightness(config.modifiers.imageBrightness));
+        dispatch(overlaySlice.actions.setModifierShouldConvertColors(config.modifiers.shouldConvertColors));
+        dispatch(overlaySlice.actions.setPlacementAutoSelectColor(config.modifiers.autoSelectColor));
+        dispatch(overlaySlice.actions.setPlacementXOffset(config.placementConfiguration.xOffset));
+        dispatch(overlaySlice.actions.setPlacementYOffset(config.placementConfiguration.yOffset));
+        dispatch(overlaySlice.actions.setPlacementTransparency(config.placementConfiguration.transparency));
+        setViewCoords(config.placementConfiguration.xOffset, config.placementConfiguration.yOffset);
+    };
+
+    const onLoadConfigByUrl = (url: string) => {
+        const config = savedConfigurations.find((c) => c.imageUrl === url);
+        if (config) onApplyConfig(config);
         else logger.logError('Tried to load config from url, but not found in saved');
-    }
+    };
 
-    onSaveActiveConfiguration(): void {
-        saveCurrentConfiguration();
-    }
+    const onSaveActiveConfiguration = () => {
+        if (currentStateAsConfiguration) dispatch(saveConfiguration(currentStateAsConfiguration));
+    };
 
-    onApplyConfig(config: SavedConfiguration): void {
-        applySavedConfiguration(config);
-    }
+    const onRemoveConfig = (config: OverlaySavedConfigurationState) => {
+        dispatch(overlaySlice.actions.removeSavedConfig(config.imageUrl));
+    };
 
-    onRemoveConfig(config: SavedConfiguration): void {
-        removeSavedConfiguration(config.imageUrl);
-    }
-}
+    return (
+        <div className={classes.dropDownWrapper}>
+            <FormControl>
+                <InputLabel id="saved-config-dropdown-label">Load saved config</InputLabel>
+                <Select
+                    className={classes.configDropDownSelector}
+                    labelId="saved-config-dropdown-label"
+                    value={inputUrl ?? ''}
+                    onChange={(value): void => {
+                        if (typeof value.target.value === 'string') onLoadConfigByUrl(value.target.value);
+                    }}
+                >
+                    {savedConfigurations.map((config) => (
+                        <MenuItem key={config.imageUrl} value={config.imageUrl}>
+                            <ConfigDropDownElement config={config} key={config.imageUrl} onDeleteCallback={onRemoveConfig} />
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            {inputUrl ? (
+                <Tooltip title="Save current config">
+                    <IconButton onClick={onSaveActiveConfiguration}>
+                        <Save />
+                    </IconButton>
+                </Tooltip>
+            ) : null}
+        </div>
+    );
+};
 
 export default ConfigDropDown;

@@ -1,9 +1,3 @@
 {
-    "recommendations": [
-        "streetsidesoftware.code-spell-checker",
-        "dbaeumer.vscode-eslint",
-        "cschleiden.vscode-github-actions",
-        "davidanson.vscode-markdownlint",
-        "esbenp.prettier-vscode"
-    ]
+    "recommendations": ["streetsidesoftware.code-spell-checker", "dbaeumer.vscode-eslint", "cschleiden.vscode-github-actions", "davidanson.vscode-markdownlint", "esbenp.prettier-vscode"]
 }

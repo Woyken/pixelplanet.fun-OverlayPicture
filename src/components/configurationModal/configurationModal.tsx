@@ -1,90 +1,81 @@
-import React from 'react';
-import './configurationModal.scss';
-import OverlayConfig from '../overlayConfig/overlayConfig';
+import { setInputImageAction } from 'actions/imageProcessing';
+import { get as getColor, to as toColor } from 'color-string';
+import React, { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { createMakeStyles } from 'tss-react';
+
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { Checkbox, FormControlLabel, IconButton, Tooltip, useTheme } from '@mui/material';
+
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { overlaySlice, selectIsOverlayEnabled } from '../../store/slices/overlaySlice';
 import ConfigDropDown from '../configDropDown/configDropDown';
-import { Checkbox, FormControlLabel, Tooltip, Button } from '@material-ui/core';
-import { updateOverlayEnabled, updateBotModalVisible } from '../../actions/guiActions';
-import { overlayStore } from '../../store/overlayStore';
-import { observer } from 'mobx-react';
-import urlHelper from '../../urlHelper';
+import OverlayConfig from '../overlayConfig/overlayConfig';
 
-interface OwnState {
-    isModalMinimized: boolean;
-}
+const makeStyles = createMakeStyles({ useTheme });
+const useStyles = makeStyles.makeStyles()((theme) => {
+    const backgroundColor = getColor.rgb(theme.palette.background.paper);
+    backgroundColor[3] = 0.9;
+    return {
+        modalRoot: {
+            position: 'absolute',
+            right: '0.9em',
+            top: '0.1em',
+            width: '15em',
+            border: '1px solid rgb(0, 0, 0)',
+            backgroundColor: toColor.rgb(backgroundColor),
+            padding: '5px',
+            fontSize: '0.9em',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            maxHeight: 'calc(100vh - 1.5em)',
+        },
+    };
+});
 
-interface OwnProps {}
+const ConfigurationModal: React.FC = () => {
+    const [isModalMinimized, setIsModalMinimized] = React.useState(false);
+    const { classes } = useStyles();
+    const dispatch = useAppDispatch();
+    const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
+    const onDrop = useCallback(
+        (acceptedFiles: File[]) => {
+            const file = acceptedFiles[0];
+            if (file) dispatch(setInputImageAction(file));
+        },
+        [dispatch]
+    );
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: 'image/*', noClick: true });
 
-@observer
-class ConfigurationModal extends React.Component<OwnProps, OwnState> {
-    constructor(props: OwnProps) {
-        super(props);
-        this.state = {
-            isModalMinimized: false,
-        };
-    }
-
-    render(): React.ReactNode {
-        return (
-            <div id="PictureOverlay_ConfigurationModalRoot">
-                <Tooltip title="Toggle on/off Overlay. Shortcut: O">
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                color="primary"
-                                checked={overlayStore.overlayEnabled}
-                                onChange={(e): void => updateOverlayEnabled(e.target.checked)}
-                            />
-                        }
-                        label="Image Overlay"
-                        labelPlacement="end"
-                    />
-                </Tooltip>
+    const handleToggleOverlayOnOff = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(overlaySlice.actions.setOverlayEnabled(e.target.checked));
+    };
+    return (
+        <div {...getRootProps()} className={classes.modalRoot} style={{ border: isDragActive ? '3px dashed red' : undefined }}>
+            <input {...getInputProps()} hidden />
+            <Tooltip title="Toggle on/off Overlay. Shortcut: O">
+                <FormControlLabel control={<Checkbox color="primary" checked={isOverlayEnabled} onChange={handleToggleOverlayOnOff} />} label="Image Overlay" labelPlacement="end" />
+            </Tooltip>
+            <div
+                style={{
+                    display: isOverlayEnabled ? '' : 'none',
+                }}
+            >
                 <div
                     style={{
-                        display: overlayStore.overlayEnabled ? '' : 'none',
+                        display: isModalMinimized ? 'none' : '',
                     }}
                 >
-                    <div
-                        style={{
-                            display: this.state.isModalMinimized ? 'none' : '',
-                        }}
-                    >
-                        <div id="PictureOverlay_BaseForExpand">
-                            <OverlayConfig />
-                        </div>
-
-                        {overlayStore.modifications.modificationsAvailable &&
-                        overlayStore.modifications.shouldConvertColors ? (
-                            <Tooltip title="Open BOT window">
-                                <img
-                                    style={{ position: 'absolute', right: '0.4em' }}
-                                    width="4%"
-                                    height="4%"
-                                    src="https://fonts.gstatic.com/s/i/materialicons/accessible_forward/v4/24px.svg"
-                                    onClick={(): void => updateBotModalVisible(!overlayStore.isBotModalVisible)}
-                                />
-                            </Tooltip>
-                        ) : null}
-
-                        <ConfigDropDown />
+                    <div>
+                        <OverlayConfig />
                     </div>
-                    <img
-                        src={
-                            this.state.isModalMinimized
-                                ? 'https://fonts.gstatic.com/s/i/materialicons/expand_more/v1/24px.svg'
-                                : 'https://fonts.gstatic.com/s/i/materialicons/expand_less/v1/24px.svg'
-                        }
-                        onClick={(): void =>
-                            this.setState({
-                                ...this.state,
-                                isModalMinimized: !this.state.isModalMinimized,
-                            })
-                        }
-                    />
+
+                    <ConfigDropDown />
                 </div>
+                <IconButton onClick={(): void => setIsModalMinimized(!isModalMinimized)}>{isModalMinimized ? <ExpandMore /> : <ExpandLess />}</IconButton>
             </div>
-        );
-    }
-}
+        </div>
+    );
+};
 
 export default ConfigurationModal;

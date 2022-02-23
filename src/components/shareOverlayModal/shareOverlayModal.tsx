@@ -1,22 +1,17 @@
-import React, { useState } from 'react';
-import { Modal, DialogTitle, createStyles, makeStyles, Theme, TextField, Button } from '@material-ui/core';
-import urlHelper, { SharableConfig } from '../../urlHelper';
-import { observer, inject } from 'mobx-react';
-import { OverlayStore } from '../../store/overlayStore';
-import { updateInputImage, updateImagePlacementConfiguration, updateImageModifiers } from '../../actions/guiActions';
+import { setInputImageAction } from 'actions/imageProcessing';
+import { usePageReduxStoreSetViewCoordsAction } from 'components/configDropDown/configDropDown';
+import React, { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { OverlaySavedConfigurationState, overlaySlice, selectCurrentStateAsConfiguration } from 'store/slices/overlaySlice';
 
-interface StateProps {
-    overlayStore: OverlayStore;
-}
+import { Button, DialogTitle, Modal, TextField } from '@mui/material';
 
-interface OwnProps {
+import { makeStyles } from '../../theme/makeStyles';
+
+interface Props {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
 }
-
-interface DispatchProps {}
-
-type Props = StateProps & DispatchProps & OwnProps;
 
 interface ModalStyle {
     top: string;
@@ -35,91 +30,85 @@ function getModalStyle(): ModalStyle {
     };
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        paper: {
-            position: 'absolute',
-            width: 400,
-            backgroundColor: theme.palette.background.paper,
-            border: '2px solid #000',
-            boxShadow: theme.shadows[5],
-            padding: theme.spacing(2, 4, 3),
-        },
-    }),
-);
+const useStyles = makeStyles()((theme) => ({
+    paper: {
+        position: 'absolute',
+        width: 400,
+        backgroundColor: theme.palette.background.paper,
+        border: '2px solid #000',
+        boxShadow: theme.shadows[5],
+        padding: theme.spacing(2, 4, 3),
+    },
+}));
 
 const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
-    const classes = useStyles();
+    const { isOpen, setIsOpen } = props;
+    const { classes } = useStyles();
     // getModalStyle is not a pure function, we roll the style only on the first render
     const [modalStyle] = useState(getModalStyle);
-    const [sharedInput, setSharedInput] = useState<string | undefined>(undefined);
-    const [parsedShared, setParsedShared] = useState<SharableConfig | null>(null);
+    const [sharedInput, setSharedInput] = useState<string>();
+    const [sharedInputParsed, setSharedInputParsed] = useState<OverlaySavedConfigurationState>();
+    const dispatch = useAppDispatch();
+    const currentConfiguration = useAppSelector(selectCurrentStateAsConfiguration);
+    const setViewCoords = usePageReduxStoreSetViewCoordsAction();
+
+    useEffect(() => {
+        try {
+            if (sharedInput) setSharedInputParsed(JSON.parse(sharedInput));
+            else setSharedInputParsed(undefined);
+        } catch (error) {
+            setSharedInputParsed(undefined);
+        }
+    }, [sharedInput]);
 
     // We don't need anything here if modal is not visible.
-    if (!props.isOpen) return null;
-    const shareConf = urlHelper.sharableConfigFromState(props.overlayStore);
+    if (!isOpen) return null;
 
     const handleClose = (): void => {
-        props.setIsOpen(false);
+        setIsOpen(false);
     };
 
-    const handleSharedInput = (sharedInput: string): void => {
-        try {
-            // TODO "safer" parsing.
-            const shared = JSON.parse(sharedInput) as SharableConfig;
-            if (shared.modifications && shared.overlayImageUrl && shared.placementConfiguration) {
-                setParsedShared(shared);
-            } else {
-                setParsedShared(null);
-            }
-        } catch {
-            setParsedShared(null);
-        }
-        setSharedInput(sharedInput);
-    };
-
-    const applySharedOverlay = (): void => {
-        if (!parsedShared) return;
-
-        updateInputImage(parsedShared.overlayImageUrl);
-        updateImageModifiers(
-            parsedShared.modifications.modificationsAvailable,
-            parsedShared.modifications.shouldConvertColors,
-            parsedShared.modifications.imageBrightness,
-        );
-        updateImagePlacementConfiguration(
-            parsedShared.placementConfiguration.transparency,
-            parsedShared.placementConfiguration.xOffset,
-            parsedShared.placementConfiguration.yOffset,
-        );
+    const onApplyConfig = (config: OverlaySavedConfigurationState) => {
+        dispatch(setInputImageAction(config.imageUrl));
+        dispatch(overlaySlice.actions.setModifierImageBrightness(config.modifiers.imageBrightness));
+        dispatch(overlaySlice.actions.setModifierShouldConvertColors(config.modifiers.shouldConvertColors));
+        dispatch(overlaySlice.actions.setPlacementAutoSelectColor(config.modifiers.autoSelectColor));
+        dispatch(overlaySlice.actions.setPlacementXOffset(config.placementConfiguration.xOffset));
+        dispatch(overlaySlice.actions.setPlacementYOffset(config.placementConfiguration.yOffset));
+        dispatch(overlaySlice.actions.setPlacementTransparency(config.placementConfiguration.transparency));
+        setViewCoords(config.placementConfiguration.xOffset, config.placementConfiguration.yOffset);
         handleClose();
-        // Recenter on canvas in image.
-        urlHelper.stickToGrid(parsedShared.placementConfiguration.xOffset, parsedShared.placementConfiguration.yOffset);
     };
 
-    const onShareConfig = (): void => {
-        handleSharedInput(JSON.stringify(shareConf));
+    const fillFromOverlay = (): void => {
+        const fillStr = JSON.stringify(currentConfiguration);
+        setSharedInput(fillStr);
+        navigator.clipboard.writeText(fillStr);
+    };
+
+    const handleApplyConfig = () => {
+        if (sharedInputParsed) onApplyConfig(sharedInputParsed);
     };
 
     return (
         <div>
-            <Modal open={props.isOpen} onClose={handleClose}>
+            <Modal open={isOpen} onClose={handleClose}>
                 <div style={modalStyle} className={classes.paper}>
                     <DialogTitle>Share your overlay</DialogTitle>
                     <TextField
                         label="Shared overlay"
                         type="string"
                         value={sharedInput}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                            handleSharedInput(e.target.value);
+                        onChange={(e) => {
+                            setSharedInput(e.target.value);
                         }}
                     />
-                    {sharedInput ? (parsedShared ? 'ok' : 'not ok') : null}
-                    <Button onClick={applySharedOverlay} disabled={parsedShared === null}>
+                    {sharedInput ? (sharedInputParsed ? 'ok' : 'not ok') : null}
+                    <Button onClick={handleApplyConfig} disabled={sharedInputParsed == null}>
                         Apply
                     </Button>
                     <br />
-                    <Button onClick={onShareConfig} disabled={shareConf === null}>
+                    <Button onClick={fillFromOverlay} disabled={currentConfiguration == null}>
                         Fill from active overlay
                     </Button>
                 </div>
@@ -128,4 +117,4 @@ const ShareOverlayModal: React.FunctionComponent<Props> = (props: Props) => {
     );
 };
 
-export default observer(ShareOverlayModal);
+export default ShareOverlayModal;

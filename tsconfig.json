@@ -1,17 +1,29 @@
 {
     "compilerOptions": {
+        "types": ["vite/client"],
         "strict": true,
         "outDir": "./dist/",
         "noImplicitAny": true,
         "module": "ESNext",
-        "lib": ["es6", "dom"],
-        "target": "es5",
+        "lib": ["es2018", "dom"],
+        "target": "es2018",
         "jsx": "react",
         "moduleResolution": "node",
         "allowSyntheticDefaultImports": true,
         "rootDir": "./src",
         "experimentalDecorators": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "allowJs": false,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitThis": true,
+        "resolveJsonModule": true,
+        "noEmit": true,
+        "baseUrl": "src",
+        "noUncheckedIndexedAccess": true
     },
+    "include": ["src"],
     "exclude": ["node_modules", "dist"]
 }

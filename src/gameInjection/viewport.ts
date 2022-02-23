@@ -3,23 +3,24 @@ import logger from '../handlers/logger';
 class Viewport {
     public currentActiveViewport: HTMLCanvasElement | undefined;
 
+    public onTouchStart: ((event: TouchEvent, canvas: HTMLCanvasElement) => void) | undefined;
+
     public onMouseMove: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
+
     public onMouseUp: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
+
     public onMouseDown: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
+
     public onWheel: ((e: WheelEvent, canvas: HTMLCanvasElement) => void) | undefined;
 
     public constructor() {
         logger.log('Trying to find viewport...');
         // Initial find of the viewport
         const canvases = document.getElementsByTagName('canvas');
-        for (let i = 0; i < canvases.length; i++) {
-            const canvas = canvases[i];
-            if (!this.isViewportElement(canvas)) continue;
-
-            if (canvas !== this.currentActiveViewport) {
-                logger.log('Viewport found.');
-                this.resetViewport(canvas);
-            }
+        const viewport = Array.from(canvases).find((c) => Viewport.isViewportElement(c) && this.currentActiveViewport !== c);
+        if (viewport) {
+            logger.log('Viewport found.');
+            this.resetViewport(viewport);
         }
 
         if (!this.currentActiveViewport) {
@@ -52,7 +53,7 @@ class Viewport {
                     return;
                 }
                 const canvasNode = node as HTMLCanvasElement;
-                if (this.isViewportElement(canvasNode)) {
+                if (Viewport.isViewportElement(canvasNode)) {
                     logger.log('Active viewport was added');
                     this.resetViewport(canvasNode);
                 }
@@ -60,9 +61,9 @@ class Viewport {
         });
     };
 
-    private isViewportElement(element: HTMLElement): boolean {
+    private static isViewportElement(element: HTMLElement): boolean {
         if (element.tagName.toUpperCase() !== 'CANVAS') return false;
-        if (element.className.includes('PictureOverlay')) return false;
+        if (!element.className.includes('viewport')) return false;
         return true;
     }
 
@@ -73,6 +74,7 @@ class Viewport {
     }
 
     private initHooks(): void {
+        this.currentActiveViewport?.addEventListener('touchstart', this.onTouchStartHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mousedown', this.onMouseDownHook, { passive: true });
         this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook, { passive: true });
@@ -80,11 +82,17 @@ class Viewport {
     }
 
     private removeHooks(): void {
+        this.currentActiveViewport?.removeEventListener('touchstart', this.onTouchStartHook);
         this.currentActiveViewport?.removeEventListener('mousemove', this.onMouseMoveHook);
         this.currentActiveViewport?.removeEventListener('mousedown', this.onMouseDownHook);
         this.currentActiveViewport?.removeEventListener('mouseup', this.onMouseUpHook);
         this.currentActiveViewport?.removeEventListener('wheel', this.onWheelHook);
     }
+
+    private onTouchStartHook = (e: TouchEvent) => {
+        if (!this.currentActiveViewport) return;
+        this.onTouchStart?.(e, this.currentActiveViewport);
+    };
 
     private onMouseMoveHook = (e: MouseEvent): void => {
         if (!this.currentActiveViewport) {
