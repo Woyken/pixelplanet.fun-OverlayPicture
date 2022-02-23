@@ -1,3 +1,4 @@
 {
-    "window.title": "${dirty}${activeEditorShort}${separator}🎨PixelPlanet-Overlay🎨"
+    "window.title": "${dirty}${activeEditorShort}${separator}🎨PixelPlanet-Overlay🎨",
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }
