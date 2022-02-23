@@ -116,7 +116,7 @@ const OverlayConfig: React.FC = () => {
 
     return (
         <Box component="form">
-            <InputImageModal isOpen={isInputImageModalOpen} onClose={() => setIsInputImageModalOpen(!isInputImageModalOpen)} />
+            <InputImageModal isOpen={isInputImageModalOpen} onClose={() => setIsInputImageModalOpen(false)} />
             {selectedFileName && (
                 <div style={{ display: 'flex' }}>
                     <Typography className={classes.fileNameWithoutExtension} variant="h6">

@@ -1,10 +1,11 @@
 import { setInputImageAction } from 'actions/imageProcessing';
+import { useClipboardPasteFile } from 'hooks/clipboardPasteFile';
 import React, { useCallback } from 'react';
 import Dropzone from 'react-dropzone';
 import { useDispatch } from 'react-redux';
 import { makeStyles, useAppTheme } from 'theme/makeStyles';
 
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 
 import { OverlayUrlInput } from './overlayConfig/overlayUrlInput';
 
@@ -23,6 +24,7 @@ const useStyles = makeStyles()((theme) => ({
         textAlign: 'center',
         width: '200px',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -36,22 +38,30 @@ export const InputImageModal: React.FC<IProps> = (props) => {
     const { classes } = useStyles();
     const dispatch = useDispatch();
     const theme = useAppTheme();
-
+    const onReceiveFile = useCallback(
+        (file: File) => {
+            dispatch(setInputImageAction(file));
+            onClose();
+        },
+        [dispatch, onClose]
+    );
+    useClipboardPasteFile(onReceiveFile, 'image.*');
     const onDrop = useCallback(
         (acceptedFiles: File[]) => {
             const file = acceptedFiles[0];
-            if (file) dispatch(setInputImageAction(file));
+            if (file) onReceiveFile(file);
         },
-        [dispatch]
+        [onReceiveFile]
     );
-
-    // const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: 'image/*' });
 
     return (
         <Dialog open={isOpen} onClose={onClose}>
             <DialogTitle>Select overlay image</DialogTitle>
             <DialogContent>
                 <OverlayUrlInput />
+                <Typography sx={{ margin: '1em 0em 1em 0' }} variant="body1">
+                    CTRL + V to paste image from clipboard
+                </Typography>
                 <Dropzone onDrop={onDrop} accept="image/*">
                     {({ getRootProps, getInputProps, isDragActive, isDragAccept }) => (
                         <div {...getRootProps({ className: classes.dropzoneEl })} style={{ borderColor: isDragAccept ? theme.palette.success.main : undefined }}>
