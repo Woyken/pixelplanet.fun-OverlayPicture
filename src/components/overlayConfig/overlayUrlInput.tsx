@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectInputUrl } from 'store/slices/overlaySlice';
 import { makeStyles } from 'theme/makeStyles';
-
+import { useIsFocused } from 'hooks/isFocused';
 import { TextField } from '@mui/material';
 
 const useStyles = makeStyles()({
@@ -20,6 +20,7 @@ const useStyles = makeStyles()({
 });
 
 export const OverlayUrlInput: React.FC = () => {
+    const { isFocused, elementProps } = useIsFocused();
     const [inputUrl, setInputUrl] = React.useState('');
     const { classes } = useStyles();
     const inputImageDebouced = useDebounce(inputUrl, 500);
@@ -31,9 +32,10 @@ export const OverlayUrlInput: React.FC = () => {
     };
     const isFirstRun = useRef(true);
     useEffect(() => {
+        if (!isFocused) return;
         if (!isFirstRun.current) dispatch(setInputImageAction(inputImageDebouced));
         isFirstRun.current = false;
-    }, [dispatch, inputImageDebouced]);
+    }, [dispatch, inputImageDebouced, isFocused]);
 
     useEffect(() => {
         setInputUrl(inputUrlState ?? '');
@@ -41,7 +43,7 @@ export const OverlayUrlInput: React.FC = () => {
 
     return (
         <div className={classes.inputWrapper}>
-            <TextField className={classes.inputWithMargin} label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} helperText="Http url to an image" />
+            <TextField {...elementProps} className={classes.inputWithMargin} label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} helperText="Http url to an image" />
         </div>
     );
 };
