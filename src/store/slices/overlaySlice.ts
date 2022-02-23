@@ -196,12 +196,16 @@ export const selectInputFile = createSelector(
     (file) => file
 );
 
-export const selectShouldShowFileInput = createSelector(selectInputFile, selectInputUrl, (file, url) => {
-    return (!file && !url) || !!(file && !url);
-});
-
-export const selectShouldShowUrlInput = createSelector(selectInputFile, selectInputUrl, (file, url) => {
-    return (!file && !url) || !!(!file && url);
+export const selectFileName = createSelector(selectInputFile, selectInputUrl, (file, url) => {
+    const fileName = file?.name ?? url?.split('/').pop();
+    if (fileName) {
+        return {
+            fileName,
+            fileExtension: fileName.split('.').pop(),
+            fileNameWithoutExtension: fileName.split('.').slice(0, -1).join('.'),
+        };
+    }
+    return undefined;
 });
 
 export const selectShouldShowPlacementConfiguration = createSelector(selectInputFile, selectInputUrl, (file, url) => file || url);

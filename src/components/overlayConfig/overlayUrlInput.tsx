@@ -1,6 +1,6 @@
 import { setInputImageAction } from 'actions/imageProcessing';
 import { useDebounce } from 'hooks/debounce';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectInputUrl } from 'store/slices/overlaySlice';
 import { makeStyles } from 'theme/makeStyles';
@@ -9,9 +9,13 @@ import { TextField } from '@mui/material';
 
 const useStyles = makeStyles()({
     inputWithMargin: {
-        '& .MuiOutlinedInput-root': {
-            margin: '0.4em',
-        },
+        margin: '0.4em',
+    },
+    invisibleFileInput: {
+        display: 'none',
+    },
+    inputWrapper: {
+        display: 'flex',
     },
 });
 
@@ -35,5 +39,9 @@ export const OverlayUrlInput: React.FC = () => {
         setInputUrl(inputUrlState ?? '');
     }, [inputUrlState]);
 
-    return <TextField className={classes.inputWithMargin} label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} />;
+    return (
+        <div className={classes.inputWrapper}>
+            <TextField className={classes.inputWithMargin} label="Url" type="string" value={inputUrl ?? ''} onChange={handleUrlInputChange} helperText="Http url to an image" />
+        </div>
+    );
 };

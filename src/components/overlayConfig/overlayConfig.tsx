@@ -1,16 +1,17 @@
 import React, { useEffect } from 'react';
 import { makeStyles } from 'theme/makeStyles';
 
+import { AttachFile } from '@mui/icons-material';
 import WarningIcon from '@mui/icons-material/Warning';
-import { Button, Checkbox, FormControlLabel, IconButton, Input, Slider, TextField, Tooltip, Typography } from '@mui/material';
-import { Box } from '@mui/material/node_modules/@mui/system';
+import { Box, Button, Checkbox, FormControlLabel, IconButton, Slider, TextField, Tooltip, Typography } from '@mui/material';
 
-import { clearInputImageAction, setInputImageAction } from '../../actions/imageProcessing';
+import { clearInputImageAction } from '../../actions/imageProcessing';
 import viewport from '../../gameInjection/viewport';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectHoverPixel } from '../../store/slices/gameSlice';
 import {
     overlaySlice,
+    selectFileName,
     selectInputImageLoadingStatus,
     selectInputUrl,
     selectIsModificationsAvailable,
@@ -22,22 +23,19 @@ import {
     selectPlacementTransparency,
     selectPlacementXOffset,
     selectPlacementYOffset,
-    selectShouldShowFileInput,
     selectShouldShowPlacementConfiguration,
-    selectShouldShowUrlInput,
 } from '../../store/slices/overlaySlice';
+import { InputImageModal } from '../inputImageModal';
 import { ShareOverlayButton } from '../shareOverlayModal/shareOverlayButton';
-
-import { OverlayUrlInput } from './overlayUrlInput';
 
 const useStyles = makeStyles()({
     inputWithMargin: {
-        '& .MuiOutlinedInput-root': {
-            margin: '0.4em',
-        },
+        margin: '0.4em',
     },
-    invisibleFileInput: {
-        display: 'none',
+    fileNameWithoutExtension: {
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+        overflow: 'hidden',
     },
 });
 
@@ -64,12 +62,12 @@ function useFollowMouseConfiguration() {
 
 const OverlayConfig: React.FC = () => {
     useFollowMouseConfiguration();
+    const [isInputImageModalOpen, setIsInputImageModalOpen] = React.useState(false);
     const { classes } = useStyles();
     const dispatch = useAppDispatch();
     const isModificationsAvailable = useAppSelector(selectIsModificationsAvailable);
     const inputUrl = useAppSelector(selectInputUrl);
-    const shouldShowFileInput = useAppSelector(selectShouldShowFileInput);
-    const shouldShowUrlInput = useAppSelector(selectShouldShowUrlInput);
+    const selectedFileName = useAppSelector(selectFileName);
     const shouldShowPlacementConfiguration = useAppSelector(selectShouldShowPlacementConfiguration);
     const placementXOffset = useAppSelector(selectPlacementXOffset);
     const placementYOffset = useAppSelector(selectPlacementYOffset);
@@ -81,10 +79,6 @@ const OverlayConfig: React.FC = () => {
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
     const inputImageLoadingStatus = useAppSelector(selectInputImageLoadingStatus);
 
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) dispatch(setInputImageAction(selectedFile));
-    };
     const handleClearInput = () => {
         dispatch(clearInputImageAction());
     };
@@ -122,22 +116,25 @@ const OverlayConfig: React.FC = () => {
 
     return (
         <Box component="form">
-            {!shouldShowUrlInput ? null : (
-                <div>
-                    <OverlayUrlInput />
-                    {!isModificationsAvailable && inputUrl && inputImageLoadingStatus === 'error' && (
-                        <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
-                            <WarningIcon />
-                        </Tooltip>
-                    )}
-                    <br />
+            <InputImageModal isOpen={isInputImageModalOpen} onClose={() => setIsInputImageModalOpen(!isInputImageModalOpen)} />
+            {selectedFileName && (
+                <div style={{ display: 'flex' }}>
+                    <Typography className={classes.fileNameWithoutExtension} variant="h6">
+                        {selectedFileName.fileNameWithoutExtension}.
+                    </Typography>
+                    <Typography variant="h6">{selectedFileName.fileExtension}</Typography>
                 </div>
             )}
-            {!shouldShowFileInput ? null : (
-                <div>
-                    <Input type="file" onChange={handleFileInputChange} />
-                    <br />
-                </div>
+            <Tooltip title="Select Overlay image">
+                <IconButton onClick={() => setIsInputImageModalOpen(!isInputImageModalOpen)}>
+                    <AttachFile />
+                </IconButton>
+            </Tooltip>
+            <ShareOverlayButton />
+            {!isModificationsAvailable && inputUrl && inputImageLoadingStatus === 'error' && (
+                <Tooltip title="Some features will not work. Most likely that current url does not support CORS requests. Some example sites that work: https://postimages.org/, https://imgur.com/, https://dropbox.com/ (For dropbox modify the url before using, replace 'www.dropbox.' with 'dl.dropboxusercontent.' )">
+                    <WarningIcon />
+                </Tooltip>
             )}
             {shouldShowPlacementConfiguration && (
                 <>
@@ -201,7 +198,6 @@ const OverlayConfig: React.FC = () => {
                     <br />
                 </>
             )}
-            <ShareOverlayButton />
         </Box>
     );
 };
