@@ -108,7 +108,7 @@ const OverlayImage: React.FC = () => {
 
     if (shouldShowImageFromData) return <OverlayImageCanvas />;
     if (shouldShowImageFromUrl) return <OverlayImageImg />;
-    return <div>unknown state...</div>;
+    return null;
 };
 
 export default OverlayImage;
