@@ -3,13 +3,17 @@ import { configureStore } from '@reduxjs/toolkit';
 import { gameSlice } from './slices/gameSlice';
 import { overlaySlice } from './slices/overlaySlice';
 
-export const store = configureStore({
-    reducer: {
-        overlay: overlaySlice.reducer,
-        game: gameSlice.reducer,
-    },
-    devTools: import.meta.env.DEV,
-});
+export function configureAppStore() {
+    return configureStore({
+        reducer: {
+            overlay: overlaySlice.reducer,
+            game: gameSlice.reducer,
+        },
+        devTools: import.meta.env.DEV,
+    });
+}
+
+export const store = configureAppStore();
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
