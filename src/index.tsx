@@ -1,9 +1,7 @@
-// tslint:disable-next-line:import-name
 import React from 'react';
 import ReactDOM from 'react-dom';
 
 import AppProvidersWrapper from './components/appProvidersWrapper';
-// import { initStore } from './store';
 
 function init(): void {
     const rootNode = document.createElement('div');
@@ -16,8 +14,6 @@ function init(): void {
         // If for some reason canvas doesn't exist, draw over everything.
         document.body.prepend(rootNode);
     }
-
-    // initStore();
 
     ReactDOM.render(<AppProvidersWrapper />, rootNode);
 }

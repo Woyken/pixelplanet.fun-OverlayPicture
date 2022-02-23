@@ -1,7 +1,11 @@
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { Cell } from '../../chunkHelper';
 import { RootState } from '../store';
+
+export interface Cell {
+    x: number;
+    y: number;
+}
 
 interface GameGuiState {
     hoverPixel: Cell;
