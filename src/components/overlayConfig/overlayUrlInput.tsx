@@ -1,10 +1,11 @@
 import { setInputImageAction } from 'actions/imageProcessing';
 import { useDebounce } from 'hooks/debounce';
+import { useIsFocused } from 'hooks/isFocused';
 import React, { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { selectInputUrl } from 'store/slices/overlaySlice';
 import { makeStyles } from 'theme/makeStyles';
-import { useIsFocused } from 'hooks/isFocused';
+
 import { TextField } from '@mui/material';
 
 const useStyles = makeStyles()({

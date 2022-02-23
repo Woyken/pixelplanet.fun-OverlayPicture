@@ -1,5 +1,4 @@
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import colorConverter from 'colorConverter';
 
 import { Cell } from '../../chunkHelper';
 import { RootState } from '../store';

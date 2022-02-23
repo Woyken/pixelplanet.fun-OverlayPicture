@@ -4,8 +4,7 @@ declare global {
     }
 }
 
-const window: Window | undefined =
-    typeof (globalThis as any).window !== 'undefined' ? (globalThis as any).window : undefined;
+const window: Window | undefined = typeof (globalThis as any).window !== 'undefined' ? (globalThis as any).window : undefined;
 
 enum LogLevel {
     error,
@@ -21,7 +20,7 @@ class Logger {
             return window.logLevel >= level;
         }
         window.logLevel = 0;
-        return 0 >= level;
+        return level <= 0;
     }
 
     public log(a: string): void {
