@@ -3,8 +3,7 @@ import { get as getColor, to as toColor } from 'color-string';
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { createMakeStyles } from 'tss-react';
-
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { ExpandLess, Palette } from '@mui/icons-material';
 import { Checkbox, FormControlLabel, IconButton, Tooltip, useTheme } from '@mui/material';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -13,7 +12,8 @@ import ConfigDropDown from '../configDropDown/configDropDown';
 import OverlayConfig from '../overlayConfig/overlayConfig';
 
 const makeStyles = createMakeStyles({ useTheme });
-const useStyles = makeStyles.makeStyles()((theme) => {
+const useStyles = makeStyles.makeStyles<{ isMinimized: boolean }>()((theme, props) => {
+    const { isMinimized } = props;
     const backgroundColor = getColor.rgb(theme.palette.background.paper);
     backgroundColor[3] = 0.9;
     return {
@@ -21,7 +21,7 @@ const useStyles = makeStyles.makeStyles()((theme) => {
             position: 'absolute',
             right: '0.9em',
             top: '0.1em',
-            width: '15em',
+            width: isMinimized ? undefined : '15em',
             border: '1px solid rgb(0, 0, 0)',
             backgroundColor: toColor.rgb(backgroundColor),
             padding: '5px',
@@ -35,7 +35,7 @@ const useStyles = makeStyles.makeStyles()((theme) => {
 
 const ConfigurationModal: React.FC = () => {
     const [isModalMinimized, setIsModalMinimized] = React.useState(false);
-    const { classes } = useStyles();
+    const { classes } = useStyles({ isMinimized: isModalMinimized });
     const dispatch = useAppDispatch();
     const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
     const onDrop = useCallback(
@@ -52,28 +52,32 @@ const ConfigurationModal: React.FC = () => {
     };
     return (
         <div {...getRootProps()} className={classes.modalRoot} style={{ border: isDragActive ? '3px dashed red' : undefined }}>
-            <input {...getInputProps()} hidden />
-            <Tooltip title="Toggle on/off Overlay. Shortcut: O">
-                <FormControlLabel control={<Checkbox color="primary" checked={isOverlayEnabled} onChange={handleToggleOverlayOnOff} />} label="Image Overlay" labelPlacement="end" />
-            </Tooltip>
-            <div
-                style={{
-                    display: isOverlayEnabled ? '' : 'none',
-                }}
-            >
-                <div
-                    style={{
-                        display: isModalMinimized ? 'none' : '',
-                    }}
-                >
-                    <div>
-                        <OverlayConfig />
-                    </div>
+            {!isModalMinimized && (
+                <>
+                    <input {...getInputProps()} hidden />
+                    <Tooltip title="Toggle on/off Overlay. Shortcut: O">
+                        <FormControlLabel control={<Checkbox color="primary" checked={isOverlayEnabled} onChange={handleToggleOverlayOnOff} />} label="Image Overlay" labelPlacement="end" />
+                    </Tooltip>
+                    <div
+                        style={{
+                            display: isOverlayEnabled ? '' : 'none',
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: isModalMinimized ? 'none' : '',
+                            }}
+                        >
+                            <div>
+                                <OverlayConfig />
+                            </div>
 
-                    <ConfigDropDown />
-                </div>
-                <IconButton onClick={(): void => setIsModalMinimized(!isModalMinimized)}>{isModalMinimized ? <ExpandMore /> : <ExpandLess />}</IconButton>
-            </div>
+                            <ConfigDropDown />
+                        </div>
+                    </div>
+                </>
+            )}
+            <IconButton onClick={(): void => setIsModalMinimized(!isModalMinimized)}>{isModalMinimized ? <Palette /> : <ExpandLess />}</IconButton>
         </div>
     );
 };
