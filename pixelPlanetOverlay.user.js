@@ -26152,9 +26152,9 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   var ExpandLess = createSvgIcon$1(/* @__PURE__ */ jsx$1("path", {
     d: "m12 8-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"
   }), "ExpandLess");
-  var ExpandMore = createSvgIcon$1(/* @__PURE__ */ jsx$1("path", {
-    d: "M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"
-  }), "ExpandMore");
+  var Palette = createSvgIcon$1(/* @__PURE__ */ jsx$1("path", {
+    d: "M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm5.5 11c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-3-4c-.83 0-1.5-.67-1.5-1.5S13.67 6 14.5 6s1.5.67 1.5 1.5S15.33 9 14.5 9zM5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S7.33 13 6.5 13 5 12.33 5 11.5zm6-4c0 .83-.67 1.5-1.5 1.5S8 8.33 8 7.5 8.67 6 9.5 6s1.5.67 1.5 1.5z"
+  }), "Palette");
   var Save = createSvgIcon$1(/* @__PURE__ */ jsx$1("path", {
     d: "M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
   }), "Save");
@@ -26841,7 +26841,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   const makeStyles = tssReact.createMakeStyles({
     useTheme
   });
-  const useStyles$1 = makeStyles.makeStyles()((theme) => {
+  const useStyles$1 = makeStyles.makeStyles()((theme, props) => {
+    const {
+      isMinimized
+    } = props;
     const backgroundColor2 = colorString.exports.get.rgb(theme.palette.background.paper);
     backgroundColor2[3] = 0.9;
     return {
@@ -26849,7 +26852,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         position: "absolute",
         right: "0.9em",
         top: "0.1em",
-        width: "15em",
+        width: isMinimized ? void 0 : "15em",
         border: "1px solid rgb(0, 0, 0)",
         backgroundColor: colorString.exports.to.rgb(backgroundColor2),
         padding: "5px",
@@ -26864,7 +26867,9 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const [isModalMinimized, setIsModalMinimized] = React$1.useState(false);
     const {
       classes
-    } = useStyles$1();
+    } = useStyles$1({
+      isMinimized: isModalMinimized
+    });
     const dispatch = useAppDispatch();
     const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
     const onDrop = react.exports.useCallback((acceptedFiles) => {
@@ -26889,34 +26894,36 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       style: {
         border: isDragActive ? "3px dashed red" : void 0
       },
-      children: [/* @__PURE__ */ jsx$1("input", __spreadProps(__spreadValues({}, getInputProps()), {
-        hidden: true
-      })), /* @__PURE__ */ jsx$1(Tooltip$1, {
-        title: "Toggle on/off Overlay. Shortcut: O",
-        children: /* @__PURE__ */ jsx$1(FormControlLabel$1, {
-          control: /* @__PURE__ */ jsx$1(Checkbox$1, {
-            color: "primary",
-            checked: isOverlayEnabled,
-            onChange: handleToggleOverlayOnOff
-          }),
-          label: "Image Overlay",
-          labelPlacement: "end"
-        })
-      }), /* @__PURE__ */ jsxs("div", {
-        style: {
-          display: isOverlayEnabled ? "" : "none"
-        },
-        children: [/* @__PURE__ */ jsxs("div", {
+      children: [!isModalMinimized && /* @__PURE__ */ jsxs(Fragment, {
+        children: [/* @__PURE__ */ jsx$1("input", __spreadProps(__spreadValues({}, getInputProps()), {
+          hidden: true
+        })), /* @__PURE__ */ jsx$1(Tooltip$1, {
+          title: "Toggle on/off Overlay. Shortcut: O",
+          children: /* @__PURE__ */ jsx$1(FormControlLabel$1, {
+            control: /* @__PURE__ */ jsx$1(Checkbox$1, {
+              color: "primary",
+              checked: isOverlayEnabled,
+              onChange: handleToggleOverlayOnOff
+            }),
+            label: "Image Overlay",
+            labelPlacement: "end"
+          })
+        }), /* @__PURE__ */ jsx$1("div", {
           style: {
-            display: isModalMinimized ? "none" : ""
+            display: isOverlayEnabled ? "" : "none"
           },
-          children: [/* @__PURE__ */ jsx$1("div", {
-            children: /* @__PURE__ */ jsx$1(OverlayConfig, {})
-          }), /* @__PURE__ */ jsx$1(ConfigDropDown, {})]
-        }), /* @__PURE__ */ jsx$1(IconButton$1, {
-          onClick: () => setIsModalMinimized(!isModalMinimized),
-          children: isModalMinimized ? /* @__PURE__ */ jsx$1(ExpandMore, {}) : /* @__PURE__ */ jsx$1(ExpandLess, {})
+          children: /* @__PURE__ */ jsxs("div", {
+            style: {
+              display: isModalMinimized ? "none" : ""
+            },
+            children: [/* @__PURE__ */ jsx$1("div", {
+              children: /* @__PURE__ */ jsx$1(OverlayConfig, {})
+            }), /* @__PURE__ */ jsx$1(ConfigDropDown, {})]
+          })
         })]
+      }), /* @__PURE__ */ jsx$1(IconButton$1, {
+        onClick: () => setIsModalMinimized(!isModalMinimized),
+        children: isModalMinimized ? /* @__PURE__ */ jsx$1(Palette, {}) : /* @__PURE__ */ jsx$1(ExpandLess, {})
       })]
     }));
   };
@@ -27021,9 +27028,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       return /* @__PURE__ */ jsx$1(OverlayImageCanvas, {});
     if (shouldShowImageFromUrl)
       return /* @__PURE__ */ jsx$1(OverlayImageImg, {});
-    return /* @__PURE__ */ jsx$1("div", {
-      children: "unknown state..."
-    });
+    return null;
   };
   function usePageStoreHoverCoords() {
     const dispatch = useAppDispatch();
