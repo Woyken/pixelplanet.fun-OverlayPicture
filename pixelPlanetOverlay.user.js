@@ -10,6 +10,13 @@
 // This script is supposed to be loaded by https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js module.
 /**/
 
+
+    (function iife() {
+      if (this !== window) {
+        window.eval(`(${iife.toString()})();`);
+        return;
+      }
+    
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
 var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
@@ -24514,27 +24521,27 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }, [setPageReduxStore]);
     return pageReduxStore;
   }
-  const selectPageStateHoverPixel = createSelector((state) => state.gui.hover, (hoverPixel) => {
-    if (!hoverPixel)
-      return void 0;
-    const x2 = hoverPixel[0];
-    const y2 = hoverPixel[1];
-    if (x2 == null || y2 == null)
+  const selectPageStateHoverPixel = createSelector((state) => {
+    var _a;
+    return (_a = state.gui.hover) == null ? void 0 : _a[0];
+  }, (state) => {
+    var _a;
+    return (_a = state.gui.hover) == null ? void 0 : _a[1];
+  }, (hoverPixelX, hoverPixelY) => {
+    if (hoverPixelX == null || hoverPixelY == null)
       return void 0;
     return {
-      x: x2,
-      y: y2
+      x: hoverPixelX,
+      y: hoverPixelY
     };
   });
   const selectPageStateViewScale = createSelector((state) => state.canvas.viewscale, (viewScale) => viewScale);
-  const selectPageStateCanvasViewCenter = createSelector((state) => state.canvas.view, (view) => {
-    const x2 = view[0];
-    const y2 = view[1];
-    if (x2 == null || y2 == null)
+  const selectPageStateCanvasViewCenter = createSelector((state) => state.canvas.view[0], (state) => state.canvas.view[1], (viewX, viewY) => {
+    if (viewX == null || viewY == null)
       return void 0;
     return {
-      x: x2,
-      y: y2
+      x: viewX,
+      y: viewY
     };
   });
   const selectPageStateRoundedCanvasViewCenter = createSelector(selectPageStateCanvasViewCenter, (view) => view ? {
@@ -27272,4 +27279,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     ReactDOM.render(/* @__PURE__ */ jsx$1(AppProvidersWrapper, {}), rootNode);
   }
   init();
+})();
+
+
 })();

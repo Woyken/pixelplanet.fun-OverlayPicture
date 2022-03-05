@@ -11,6 +11,13 @@
 // ==/UserScript==
 /**/
 
+
+    (function iife() {
+      if (this !== window) {
+        window.eval(`(${iife.toString()})();`);
+        return;
+      }
+    
 (function() {
   "use strict";
   {
@@ -18,4 +25,7 @@
     e.src = "https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay.user.js";
     document.body.appendChild(e);
   }
+})();
+
+
 })();
