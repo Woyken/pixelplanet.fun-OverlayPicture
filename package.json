@@ -16,8 +16,7 @@
         "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
-        "cleanNodeTypes": "rimraf .\\node_modules\\@types\\node",
-        "postinstall": "npm run cleanNodeTypes && husky install",
+        "postinstall": "husky install",
         "prepare": "husky install"
     },
     "keywords": [

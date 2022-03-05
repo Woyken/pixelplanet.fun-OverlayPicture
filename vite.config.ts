@@ -1,8 +1,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
+import fs from 'fs';
 import { resolve } from 'path';
 
 import { visualizer } from 'rollup-plugin-visualizer';
-import { UserConfig } from 'vite';
+import { Plugin, ResolvedConfig, UserConfig } from 'vite';
 import banner from 'vite-plugin-banner';
 import Checker from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -80,6 +81,7 @@ const config: () => UserConfig = () => ({
         ],
     },
     plugins: [
+        vitePluginWrapUserScriptOnWindow(),
         banner(isLoaderBuild ? loaderModuleBanner : moduleBanner),
         tsconfigPaths(),
         react({
@@ -115,5 +117,57 @@ const config: () => UserConfig = () => ({
         }),
     ],
 });
+
+function vitePluginWrapUserScriptOnWindow(): Plugin {
+    let viteConfig: ResolvedConfig;
+    const includeRegexp = /\.js$/i;
+    const excludeRegexp = /vendor/;
+
+    const header = (() => {
+        (function iife() {
+            // Hack to get around the sandbox restrictions in Tampermonkey. Redux devtools don't work.
+            // Inject code directly to window
+            // eslint-disable-next-line no-eval
+            if (this !== window) {
+                window.eval(`(${iife.toString()})();`);
+                return;
+            }
+        })();
+    })
+        .toString()
+        .slice(7, -9);
+    const footer = '\n})();';
+
+    return {
+        name: 'vitePluginWrapUserScriptOnWindow',
+        configResolved(resolvedConfig: ResolvedConfig) {
+            viteConfig = resolvedConfig;
+        },
+        async writeBundle(options, bundle) {
+            Object.entries(bundle).forEach(([file, source]) => {
+                // Get the full path of file
+                const { root } = viteConfig;
+                const outDir: string = viteConfig.build.outDir || 'dist';
+                const filePath = resolve(root, outDir, file);
+
+                // Only handle matching files
+                if (includeRegexp.test(file) && !excludeRegexp.test(file)) {
+                    try {
+                        // Read the content from target file
+                        let data: string = fs.readFileSync(filePath, {
+                            encoding: 'utf8',
+                        });
+                        data = `${header}\n${data}\n${footer}`;
+
+                        // Save
+                        fs.writeFileSync(filePath, data);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            });
+        },
+    };
+}
 
 export default config;
