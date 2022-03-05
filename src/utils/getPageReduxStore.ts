@@ -105,13 +105,11 @@ export function usePageReduxStore() {
 }
 
 export const selectPageStateHoverPixel = createSelector(
-    (state: PageState) => state.gui.hover,
-    (hoverPixel) => {
-        if (!hoverPixel) return undefined;
-        const x = hoverPixel[0];
-        const y = hoverPixel[1];
-        if (x == null || y == null) return undefined;
-        return { x, y };
+    (state: PageState) => state.gui.hover?.[0],
+    (state: PageState) => state.gui.hover?.[1],
+    (hoverPixelX, hoverPixelY) => {
+        if (hoverPixelX == null || hoverPixelY == null) return undefined;
+        return { x: hoverPixelX, y: hoverPixelY };
     }
 );
 
@@ -121,12 +119,11 @@ export const selectPageStateViewScale = createSelector(
 );
 
 export const selectPageStateCanvasViewCenter = createSelector(
-    (state: PageState) => state.canvas.view,
-    (view) => {
-        const x = view[0];
-        const y = view[1];
-        if (x == null || y == null) return undefined;
-        return { x, y };
+    (state: PageState) => state.canvas.view[0],
+    (state: PageState) => state.canvas.view[1],
+    (viewX, viewY) => {
+        if (viewX == null || viewY == null) return undefined;
+        return { x: viewX, y: viewY };
     }
 );
 
