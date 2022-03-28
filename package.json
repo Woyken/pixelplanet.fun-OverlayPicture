@@ -78,6 +78,7 @@
         "keycode": "^2.2.1",
         "node-eval": "^2.0.0",
         "open-cli": "^7.0.1",
+        "re-reselect": "^4.0.0",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
         "react-dropzone": "^12.0.4",
@@ -86,6 +87,7 @@
         "react-redux": "^7.2.6",
         "react-toastify": "^8.2.0",
         "redux": "^4.1.2",
+        "reselect": "^4.1.5",
         "tss-react": "^3.4.1"
     }
 }

@@ -15,8 +15,10 @@ import {
 } from '../store/slices/overlaySlice';
 import {
     pageReduxStoreSelectColorAction,
+    selectPageStateCanvasId,
     selectPageStateCanvasPalette,
     selectPageStateCanvasReservedColors,
+    selectPageStateCanvasSize,
     selectPageStateCanvasViewCenter,
     selectPageStateHoverPixel,
     selectPageStateRoundedCanvasViewCenter,
@@ -71,6 +73,18 @@ function usePageStoreCanvasReservedColors() {
     useEffect(() => {
         if (reservedColors) dispatch(gameSlice.actions.setReservedColorCount(reservedColors ?? 0));
     }, [dispatch, reservedColors]);
+}
+
+function usePageStoreCanvasId() {
+    const dispatch = useAppDispatch();
+    const canvasId = usePageReduxStoreSelector(selectPageStateCanvasId);
+    const canvasSize = usePageReduxStoreSelector(selectPageStateCanvasSize);
+    useEffect(() => {
+        if (canvasId) dispatch(gameSlice.actions.setCanvasId(canvasId));
+    }, [dispatch, canvasId]);
+    useEffect(() => {
+        if (canvasSize) dispatch(gameSlice.actions.setCanvasSize(canvasSize));
+    }, [dispatch, canvasSize]);
 }
 
 function useGlobalKeyShortcuts() {
@@ -189,6 +203,7 @@ const ProviderPageStateMapper: React.FC = ({ children }) => {
     usePageStoreViewCenter();
     usePageStoreCanvasPalette();
     usePageStoreCanvasReservedColors();
+    usePageStoreCanvasId();
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <>{children}</>;
 };

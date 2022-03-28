@@ -1,3 +1,5 @@
+import createCachedSelector from 're-reselect';
+
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { RootState } from '../store';
@@ -16,6 +18,8 @@ interface GameGuiState {
 interface CanvasState {
     palette: [number, number, number][];
     reservedColorCount: number;
+    id: number;
+    canvasSize: number;
 }
 
 interface GameState {
@@ -32,6 +36,8 @@ const initialState: GameState = {
     canvas: {
         palette: [],
         reservedColorCount: 0,
+        id: 0,
+        canvasSize: 1,
     },
 };
 
@@ -54,6 +60,12 @@ export const gameSlice = createSlice({
         setReservedColorCount: (state, action: PayloadAction<number>) => {
             state.canvas.reservedColorCount = action.payload;
         },
+        setCanvasId: (state, action: PayloadAction<number>) => {
+            state.canvas.id = action.payload;
+        },
+        setCanvasSize: (state, action: PayloadAction<number>) => {
+            state.canvas.canvasSize = action.payload;
+        },
     },
 });
 
@@ -71,6 +83,21 @@ export const selectCanvasPalette = createSelector(
     (state: RootState) => state.game.canvas.palette,
     (palette) => palette
 );
+
+export const selectCanvasId = createSelector(
+    (state: RootState) => state.game.canvas.id,
+    (id) => id
+);
+
+export const selectChunkCoords = createCachedSelector(
+    (state: RootState) => state.game.canvas.canvasSize,
+    (_: RootState, chunkId: number) => chunkId,
+    (canvasSize: number, chunkId: number) => {
+        const chunkX = chunkId % canvasSize;
+        const chunkY = Math.floor(chunkId / canvasSize);
+        return { chunkX, chunkY };
+    }
+)((state: RootState, chunkId: number) => [state.game.canvas.canvasSize, chunkId]);
 
 /**
  * Filtered out reserved colors from the palette

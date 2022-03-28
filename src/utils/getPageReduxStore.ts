@@ -149,6 +149,16 @@ export const selectPageStateCanvasReservedColors = createSelector(
     (reservedColors) => reservedColors
 );
 
+export const selectPageStateCanvasId = createSelector(
+    (state: PageState) => state.canvas.canvasId,
+    (canvasId) => canvasId
+);
+
+export const selectPageStateCanvasSize = createSelector(
+    (state: PageState) => state.canvas.canvasSize,
+    (size) => size
+);
+
 export interface PageState {
     audio: Audio;
     canvas: Canvas;
