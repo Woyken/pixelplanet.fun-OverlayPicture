@@ -1,5 +1,7 @@
 import viewport from 'gameInjection/viewport';
+import { webSocketEvents } from 'gameInjection/webSockets/webSocketEvents';
 import React, { useCallback, useEffect } from 'react';
+import { chunkDataSlice } from 'store/slices/chunkDataSlice';
 
 import { loadSavedConfigurations, startProcessingOutputImage } from '../actions/imageProcessing';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -85,6 +87,11 @@ function usePageStoreCanvasId() {
     useEffect(() => {
         if (canvasSize) dispatch(gameSlice.actions.setCanvasSize(canvasSize));
     }, [dispatch, canvasSize]);
+}
+
+function useWebSocketEvents() {
+    const dispatch = useAppDispatch();
+    useEffect(() => webSocketEvents.on('pixelUpdate', (data) => dispatch(chunkDataSlice.actions.setPixel(data))), [dispatch]);
 }
 
 function useGlobalKeyShortcuts() {
@@ -204,6 +211,7 @@ const ProviderPageStateMapper: React.FC = ({ children }) => {
     usePageStoreCanvasPalette();
     usePageStoreCanvasReservedColors();
     usePageStoreCanvasId();
+    useWebSocketEvents();
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <>{children}</>;
 };

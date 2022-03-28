@@ -1,17 +1,20 @@
+import { pixelUpdatePacket } from 'gameInjection/webSockets/packets/pixelUpdate';
 import { RootState } from 'store/store';
 
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { selectCanvasId, selectChunkCoords } from './gameSlice';
+import { selectCanvasId } from './gameSlice';
 
 type ChunkData =
     | {
           fetching: false;
-          chunkId: number;
+          chunkX: number;
+          chunkY: number;
           chunkData: Uint8Array;
       }
     | {
-          chunkId: number;
+          chunkX: number;
+          chunkY: number;
           fetching: true;
       };
 
@@ -30,21 +33,31 @@ export const chunkDataSlice = createSlice({
         addChunk: (state, action: PayloadAction<ChunkDataState['chunks'][0]>) => {
             state.chunks.push(action.payload);
         },
+        setPixel: (state, action: PayloadAction<ReturnType<typeof pixelUpdatePacket.hydrate>>) => {
+            const { chunkX, chunkY, pixels } = action.payload;
+            const chunk = state.chunks.find((x) => x.chunkX === chunkX && x.chunkY === chunkY);
+            if (!chunk || chunk.fetching) return;
+            pixels.forEach((p) => {
+                chunk.chunkData.set([p.color], p.offsetInChunk);
+            });
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(fetchChunkDataAction.pending, (state, action) => {
-            const foundChunk = state.chunks.some((x) => x.chunkId === action.meta.arg.chunkId);
+            const foundChunk = state.chunks.some((x) => x.chunkX === action.meta.arg.chunkX && x.chunkY === action.meta.arg.chunkY);
             if (!foundChunk) {
                 state.chunks.push({
-                    chunkId: action.meta.arg.chunkId,
+                    chunkX: action.meta.arg.chunkX,
+                    chunkY: action.meta.arg.chunkY,
                     fetching: true,
                 });
                 return;
             }
             state.chunks = state.chunks.map((c) => {
-                if (c.chunkId === action.meta.arg.chunkId) {
+                if (c.chunkX === action.meta.arg.chunkX && c.chunkY === action.meta.arg.chunkY) {
                     return {
-                        chunkId: action.meta.arg.chunkId,
+                        chunkX: action.meta.arg.chunkX,
+                        chunkY: action.meta.arg.chunkY,
                         fetching: true,
                     };
                 }
@@ -52,19 +65,21 @@ export const chunkDataSlice = createSlice({
             });
         });
         builder.addCase(fetchChunkDataAction.fulfilled, (state, action) => {
-            const foundChunk = state.chunks.some((x) => x.chunkId === action.meta.arg.chunkId);
+            const foundChunk = state.chunks.some((x) => x.chunkX === action.meta.arg.chunkX && x.chunkY === action.meta.arg.chunkY);
             if (!foundChunk) {
                 state.chunks.push({
-                    chunkId: action.meta.arg.chunkId,
+                    chunkX: action.meta.arg.chunkX,
+                    chunkY: action.meta.arg.chunkY,
                     chunkData: action.payload,
                     fetching: false,
                 });
                 return;
             }
             state.chunks = state.chunks.map((chunk) => {
-                if (chunk.chunkId === action.meta.arg.chunkId) {
+                if (chunk.chunkX === action.meta.arg.chunkX && chunk.chunkY === action.meta.arg.chunkY) {
                     return {
-                        ...chunk,
+                        chunkX: action.meta.arg.chunkX,
+                        chunkY: action.meta.arg.chunkY,
                         fetching: false,
                         chunkData: action.payload,
                     };
@@ -73,15 +88,14 @@ export const chunkDataSlice = createSlice({
             });
         });
         builder.addCase(fetchChunkDataAction.rejected, (state, action) => {
-            state.chunks = state.chunks.filter((x) => x.chunkId !== action.meta.arg.chunkId);
+            state.chunks = state.chunks.filter((x) => x.chunkX !== action.meta.arg.chunkX && x.chunkY !== action.meta.arg.chunkY);
         });
     },
 });
 
-const fetchChunkDataAction = createAsyncThunk<Uint8Array, { chunkId: number }, { state: RootState }>('chunkData/fetchChunkData', async (chunkCoords, { getState }) => {
+const fetchChunkDataAction = createAsyncThunk<Uint8Array, { chunkX: number; chunkY: number }, { state: RootState }>('chunkData/fetchChunkData', async (chunkCoords, { getState }) => {
     const canvasId = selectCanvasId(getState());
-    const { chunkX, chunkY } = selectChunkCoords(getState(), chunkCoords.chunkId);
-    const chunkData = await fetch(`/chunks/${canvasId}/${chunkX}/${chunkY}.bmp`)
+    const chunkData = await fetch(`/chunks/${canvasId}/${chunkCoords.chunkX}/${chunkCoords.chunkY}.bmp`)
         .then((x) => x.arrayBuffer())
         .then((x) => new Uint8Array(x));
     return chunkData;

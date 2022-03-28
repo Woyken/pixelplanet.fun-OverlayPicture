@@ -89,16 +89,6 @@ export const selectCanvasId = createSelector(
     (id) => id
 );
 
-export const selectChunkCoords = createCachedSelector(
-    (state: RootState) => state.game.canvas.canvasSize,
-    (_: RootState, chunkId: number) => chunkId,
-    (canvasSize: number, chunkId: number) => {
-        const chunkX = chunkId % canvasSize;
-        const chunkY = Math.floor(chunkId / canvasSize);
-        return { chunkX, chunkY };
-    }
-)((state: RootState, chunkId: number) => [state.game.canvas.canvasSize, chunkId]);
-
 /**
  * Filtered out reserved colors from the palette
  */
