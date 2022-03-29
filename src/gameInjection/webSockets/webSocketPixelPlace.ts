@@ -9,6 +9,9 @@ const waitingForPixelReturnList: {
     rejectPromise: () => void;
 }[] = [];
 
+/**
+ * On intercepted sending pixelUpdate event, add to waiting list
+ */
 webSocketSenderEvents.on('pixelUpdate', () => {
     let promiseResolve: ((data: ReturnType<typeof pixelReturnPacket.hydrate>) => void) | undefined;
     let promiseReject: (() => void) | undefined;
