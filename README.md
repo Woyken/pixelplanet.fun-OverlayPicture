@@ -1,5 +1,9 @@
 # Overlay Picture for pixelplanet.fun
 
+<a href="https://forthebadge.com"><img src="https://forthebadge.com/images/badges/made-with-typescript.svg" height="35"></a>
+<a href="https://forthebadge.com"><img src="https://forthebadge.com/images/badges/gluten-free.svg" height="35"></a>
+<a href="https://forthebadge.com"><img src="https://forthebadge.com/images/badges/powered-by-coders-sweat.svg" height="35"></a>
+
 ## How to setup
 
 1. Install tampermonkey addon for your browser from - <https://www.tampermonkey.net/> .
