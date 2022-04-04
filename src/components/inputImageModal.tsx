@@ -2,7 +2,7 @@ import { setInputImageAction } from 'actions/imageProcessing';
 import { useClipboardPasteFile } from 'hooks/clipboardPasteFile';
 import React, { useCallback } from 'react';
 import Dropzone from 'react-dropzone';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'store/hooks';
 import { makeStyles, useAppTheme } from 'theme/makeStyles';
 
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
@@ -36,7 +36,7 @@ const useStyles = makeStyles()((theme) => ({
 export const InputImageModal: React.FC<IProps> = (props) => {
     const { isOpen, onClose } = props;
     const { classes } = useStyles();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const theme = useAppTheme();
     const onReceiveFile = useCallback(
         (file: File) => {
