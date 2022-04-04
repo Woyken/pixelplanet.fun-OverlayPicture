@@ -6,7 +6,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Slider, TextField, Tooltip, Typography } from '@mui/material';
 
 import { clearInputImageAction } from '../../actions/imageProcessing';
-import viewport from '../../gameInjection/viewport';
+import { viewPortEvents } from '../../gameInjection/viewport';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectHoverPixel } from '../../store/slices/gameSlice';
 import {
@@ -27,6 +27,8 @@ import {
 } from '../../store/slices/overlaySlice';
 import { InputImageModal } from '../inputImageModal';
 import { ShareOverlayButton } from '../shareOverlayModal/shareOverlayButton';
+
+import TogglePlacementQueue from './togglePlacementQueue';
 
 const useStyles = makeStyles()({
     inputWithMargin: {
@@ -52,11 +54,10 @@ function useFollowMouseConfiguration() {
     }, [dispatch, placementIsFollowMouseActive, hoverPixel]);
 
     useEffect(() => {
-        viewport.onMouseUp = (e) => {
+        return viewPortEvents.on('mouseUpPassive', (e) => {
             if (e.button !== 0) return;
             dispatch(overlaySlice.actions.setPlacementIsFollowMouseActive(false));
-        };
-        // dispatch(overlaySlice.actions.togglePlacementFollowMouse());
+        });
     }, [dispatch]);
 }
 
@@ -116,6 +117,7 @@ const OverlayConfig: React.FC = () => {
 
     return (
         <Box component="form">
+            {/* <TogglePlacementQueue /> */}
             <InputImageModal isOpen={isInputImageModalOpen} onClose={() => setIsInputImageModalOpen(false)} />
             {selectedFileName && (
                 <div style={{ display: 'flex' }}>

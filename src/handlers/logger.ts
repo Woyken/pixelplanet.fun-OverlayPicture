@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 declare global {
     interface Window {
         logLevel?: unknown;
@@ -23,21 +24,21 @@ class Logger {
         return level <= 0;
     }
 
-    public log(a: string): void {
+    public log(a: string, ...args: unknown[]): void {
         if (this.isLogLevelEnabled(LogLevel.info)) {
-            console.log(a);
+            console.log(a, ...args);
         }
     }
 
-    public logWarn(a: string): void {
+    public logWarn(a: string, ...args: unknown[]): void {
         if (this.isLogLevelEnabled(LogLevel.warn)) {
-            console.warn(a);
+            console.warn(a, ...args);
         }
     }
 
-    public logError(a: string): void {
+    public logError(a: string, ...args: unknown[]): void {
         if (this.isLogLevelEnabled(LogLevel.error)) {
-            console.error(a);
+            console.error(a, ...args);
         }
     }
 }

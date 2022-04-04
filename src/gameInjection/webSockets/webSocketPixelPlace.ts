@@ -1,3 +1,8 @@
+import { gameSlice, selectCanvasSize } from 'store/slices/gameSlice';
+import { pixelPlacementSlice } from 'store/slices/pixelPlacementSlice';
+import { store } from 'store/store';
+import { chunkToGameCoords } from 'utils/coordConversion';
+
 import { pixelReturnPacket } from './packets/pixelReturn';
 import { PixelUpdateData, pixelUpdatePacket } from './packets/pixelUpdate';
 import { webSocketEvents } from './webSocketEvents';
@@ -14,24 +19,34 @@ const waitingForPixelReturnList: {
  */
 webSocketSenderEvents.on('pixelUpdate', () => {
     let promiseResolve: ((data: ReturnType<typeof pixelReturnPacket.hydrate>) => void) | undefined;
-    let promiseReject: (() => void) | undefined;
+    let promiseReject: ((reason?: unknown) => void) | undefined;
     const promise = new Promise<ReturnType<typeof pixelReturnPacket.hydrate>>((resolve, reject) => {
         promiseResolve = resolve;
         promiseReject = reject;
     });
     const timeoutHandle = setTimeout(() => {
-        promiseReject?.();
-    }, 2000);
+        promiseReject?.(new Error('Pixel update timeout'));
+    }, 4000);
     promise.finally(() => clearTimeout(timeoutHandle));
 
     waitingForPixelReturnList.push({
         promise,
         resolvePromise: (data: ReturnType<typeof pixelReturnPacket.hydrate>) => promiseResolve?.(data),
-        rejectPromise: () => promiseReject?.(),
+        rejectPromise: () => promiseReject?.(new Error('Pixel update rejected')),
     });
 });
 
+/**
+ * On intercepted pixelReturn event, add to custom pixel placement queue
+ */
+webSocketSenderEvents.on('pixelPlacementIntercepted', (data) => {
+    const canvasSize = selectCanvasSize(store.getState());
+    const pixels = data.pixels.map((x) => ({ coord: chunkToGameCoords(data.chunkX, data.chunkY, x.offsetInChunk, canvasSize), color: x.color }));
+    store.dispatch(pixelPlacementSlice.actions.addPixelsToPlaceQueue(pixels));
+});
+
 webSocketEvents.on('pixelReturn', (data) => {
+    if (data.coolDownSeconds > 0) store.dispatch(gameSlice.actions.setLatestPixelReturnCooldown(data.coolDownSeconds * 1000));
     waitingForPixelReturnList.shift()?.resolvePromise(data);
 });
 
@@ -44,7 +59,7 @@ export async function placePixel(chunkX: number, chunkY: number, pixels: PixelUp
     return {
         retCode: response.retCode,
         cooldownSeconds: response.coolDownSeconds,
-        wait: response.wait,
+        waitMs: response.waitMs,
         successfulPixels,
     };
 }

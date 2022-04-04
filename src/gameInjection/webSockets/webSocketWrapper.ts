@@ -1,9 +1,13 @@
 import { createNanoEvents } from 'nanoevents';
+import { selectPixelPlaceQueueEnabled } from 'store/slices/pixelPlacementSlice';
+import { store } from 'store/store';
 
+import { pixelReturnPacket, PixelUpdateReturnCode } from './packets/pixelReturn';
 import { pixelUpdatePacket } from './packets/pixelUpdate';
 
 interface Events {
     pixelUpdate: (data: ReturnType<typeof pixelUpdatePacket.hydrate>) => void;
+    pixelPlacementIntercepted: (data: ReturnType<typeof pixelUpdatePacket.hydrate>) => void;
 }
 
 export const webSocketSenderEvents = createNanoEvents<Events>();
@@ -11,21 +15,32 @@ export const webSocketSenderEvents = createNanoEvents<Events>();
 const originalSend = WebSocket.prototype.send;
 
 WebSocket.prototype.send = function newSend(data) {
+    webSocketWrapper.resetWs(this);
     if (data instanceof ArrayBuffer) {
         const dataView = new DataView(data);
         const opCode = dataView.getUint8(0);
         switch (opCode) {
             case pixelUpdatePacket.OP_CODE: {
                 const updateData = pixelUpdatePacket.hydrate(dataView);
-
                 webSocketSenderEvents.emit('pixelUpdate', updateData);
+
+                const isToggledPlacementQueue = selectPixelPlaceQueueEnabled(store.getState());
+                if (!webSocketWrapper.isLocalEvent && isToggledPlacementQueue) {
+                    Promise.resolve().then(() => {
+                        const fakeReturnPacketData = pixelReturnPacket.dehydrate(PixelUpdateReturnCode.protectedPixel, 0, 0, 0);
+                        const messageEvent = new MessageEvent('message', { data: fakeReturnPacketData });
+                        this.dispatchEvent(messageEvent);
+                    });
+                    webSocketSenderEvents.emit('pixelPlacementIntercepted', updateData);
+                    // Return and not send the actual packet
+                    return;
+                }
                 break;
             }
             default:
                 break;
         }
     }
-    webSocketWrapper.resetWs(this);
     originalSend.apply(this, [data]);
 };
 
@@ -42,6 +57,8 @@ class WebSocketWrapper {
 
     private listeners: WebSocketListener[] = [];
 
+    public isLocalEvent = false;
+
     public resetWs(ws: WebSocket) {
         if (this.ws === ws) return;
         this.listeners.forEach((x) => this.ws?.removeEventListener(x.type, x.listener));
@@ -50,7 +67,9 @@ class WebSocketWrapper {
     }
 
     public send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+        this.isLocalEvent = true;
         this.ws?.send(data);
+        this.isLocalEvent = false;
     }
 
     public subscribe<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => unknown) {

@@ -104,6 +104,16 @@ export function usePageReduxStore() {
     return pageReduxStore;
 }
 
+export const selectPageStatePixelWaitDate = createSelector(
+    (state: PageState) => state.user.wait,
+    (pixelWaitDate) => pixelWaitDate
+);
+
+export const selectPageStateCurrentSelectedColor = createSelector(
+    (state: PageState) => state.canvas.selectedColor,
+    (currentSelectedColor) => currentSelectedColor
+);
+
 export const selectPageStateHoverPixel = createSelector(
     (state: PageState) => state.gui.hover?.[0],
     (state: PageState) => state.gui.hover?.[1],
@@ -159,6 +169,21 @@ export const selectPageStateCanvasSize = createSelector(
     (size) => size
 );
 
+export const selectPageStateCanvasMaxTimeoutMs = createSelector(
+    (state: PageState) => state.canvas.canvases[state.canvas.canvasId]?.cds,
+    (canvasMaxTimeout) => canvasMaxTimeout
+);
+
+export const selectPageStateCanvasTimeoutOnBaseMs = createSelector(
+    (state: PageState) => state.canvas.canvases[state.canvas.canvasId]?.bcd,
+    (canvasTimeoutOnBase) => canvasTimeoutOnBase
+);
+
+export const selectPaseStateCanvasTimeoutOnPlacedMs = createSelector(
+    (state: PageState) => state.canvas.canvases[state.canvas.canvasId]?.pcd,
+    (canvasTimeoutOnPlaced) => canvasTimeoutOnPlaced
+);
+
 export interface PageState {
     audio: Audio;
     canvas: Canvas;
@@ -206,7 +231,7 @@ export interface Canvas {
     view: number[];
     viewscale: number;
     scale: number;
-    canvases: { [key: string]: Canvase };
+    canvases: { [key: number]: Canvase };
     isHistoricalView: boolean;
     historicalDate: null;
     historicalTime: null;
@@ -319,7 +344,7 @@ export interface TotalRanking {
 export interface User {
     id: null;
     name: null;
-    wait: null;
+    wait: Date | null;
     coolDown: null;
     lastCoolDownEnd: null;
     requestingPixel: boolean;

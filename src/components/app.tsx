@@ -1,4 +1,4 @@
-import viewport from 'gameInjection/viewport';
+import { viewPortEvents } from 'gameInjection/viewport';
 import { webSocketEvents } from 'gameInjection/webSockets/webSocketEvents';
 import React, { useCallback, useEffect } from 'react';
 import { chunkDataSlice } from 'store/slices/chunkDataSlice';
@@ -18,19 +18,41 @@ import {
 import {
     pageReduxStoreSelectColorAction,
     selectPageStateCanvasId,
+    selectPageStateCanvasMaxTimeoutMs,
     selectPageStateCanvasPalette,
     selectPageStateCanvasReservedColors,
     selectPageStateCanvasSize,
+    selectPageStateCanvasTimeoutOnBaseMs,
     selectPageStateCanvasViewCenter,
+    selectPageStateCurrentSelectedColor,
     selectPageStateHoverPixel,
+    selectPageStatePixelWaitDate,
     selectPageStateRoundedCanvasViewCenter,
     selectPageStateViewScale,
+    selectPaseStateCanvasTimeoutOnPlacedMs,
     usePageReduxStoreDispatch,
     usePageReduxStoreSelector,
 } from '../utils/getPageReduxStore';
 
 import ConfigurationModal from './configurationModal/configurationModal';
 import OverlayImage from './overlayImage/overlayImage';
+
+function usePageStoreWaitDate() {
+    const dispatch = useAppDispatch();
+    const waitDate = usePageReduxStoreSelector(selectPageStatePixelWaitDate);
+    useEffect(() => {
+        if (waitDate) dispatch(gameSlice.actions.setWaitDate(waitDate));
+        else dispatch(gameSlice.actions.setWaitDate(new Date()));
+    }, [dispatch, waitDate]);
+}
+
+function usePageStoreCurrentSelectedColor() {
+    const dispatch = useAppDispatch();
+    const currentSelectedColor = usePageReduxStoreSelector(selectPageStateCurrentSelectedColor);
+    useEffect(() => {
+        if (currentSelectedColor) dispatch(gameSlice.actions.setSelectedColor(currentSelectedColor));
+    }, [dispatch, currentSelectedColor]);
+}
 
 function usePageStoreHoverCoords() {
     const dispatch = useAppDispatch();
@@ -81,12 +103,25 @@ function usePageStoreCanvasId() {
     const dispatch = useAppDispatch();
     const canvasId = usePageReduxStoreSelector(selectPageStateCanvasId);
     const canvasSize = usePageReduxStoreSelector(selectPageStateCanvasSize);
+    const maxTimeoutMs = usePageReduxStoreSelector(selectPageStateCanvasMaxTimeoutMs);
+    const timeoutOnBaseMs = usePageReduxStoreSelector(selectPageStateCanvasTimeoutOnBaseMs);
+    const timeoutOnPlacedMs = usePageReduxStoreSelector(selectPaseStateCanvasTimeoutOnPlacedMs);
+
     useEffect(() => {
         if (canvasId) dispatch(gameSlice.actions.setCanvasId(canvasId));
     }, [dispatch, canvasId]);
     useEffect(() => {
         if (canvasSize) dispatch(gameSlice.actions.setCanvasSize(canvasSize));
     }, [dispatch, canvasSize]);
+    useEffect(() => {
+        if (maxTimeoutMs) dispatch(gameSlice.actions.setMaxTimeoutMs(maxTimeoutMs));
+    }, [dispatch, maxTimeoutMs]);
+    useEffect(() => {
+        if (timeoutOnBaseMs) dispatch(gameSlice.actions.setTimeoutOnBaseMs(timeoutOnBaseMs));
+    }, [dispatch, timeoutOnBaseMs]);
+    useEffect(() => {
+        if (timeoutOnPlacedMs) dispatch(gameSlice.actions.setTimeoutOnPlacedMs(timeoutOnPlacedMs));
+    }, [dispatch, timeoutOnPlacedMs]);
 }
 
 function useWebSocketEvents() {
@@ -181,10 +216,7 @@ function useAutoHandleTouchInputsToHoverState() {
             const y = Math.floor((clientY - innerHeight / 2) / viewScale + viewCenter.y);
             dispatch(gameSlice.actions.setHoverPixel({ x, y }));
         };
-        viewport.onTouchStart = handleTouchStart;
-        return () => {
-            viewport.onTouchStart = undefined;
-        };
+        return viewPortEvents.on('touchStartPassive', handleTouchStart);
     }, [dispatch, windowSize, viewScale, viewCenter]);
 }
 
@@ -205,6 +237,8 @@ const ProviderPageStateMapper: React.FC = ({ children }) => {
     useReprocessOutputImage();
     useGlobalKeyShortcuts();
     useLoadSavedConfigurations();
+    usePageStoreWaitDate();
+    usePageStoreCurrentSelectedColor();
     usePageStoreHoverCoords();
     usePageStoreViewScale();
     usePageStoreViewCenter();

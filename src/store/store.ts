@@ -3,6 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { chunkDataSlice } from './slices/chunkDataSlice';
 import { gameSlice } from './slices/gameSlice';
 import { overlaySlice } from './slices/overlaySlice';
+import { pixelPlacementSlice } from './slices/pixelPlacementSlice';
 
 export function configureAppStore() {
     return configureStore({
@@ -10,6 +11,7 @@ export function configureAppStore() {
             overlay: overlaySlice.reducer,
             game: gameSlice.reducer,
             chunkData: chunkDataSlice.reducer,
+            pixelPlacement: pixelPlacementSlice.reducer,
         },
         devTools: import.meta.env.DEV,
     });

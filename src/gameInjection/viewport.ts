@@ -1,17 +1,20 @@
+import { createNanoEvents } from 'nanoevents';
+
 import logger from '../handlers/logger';
+
+interface Events {
+    touchStartPassive: (event: TouchEvent, canvas: HTMLCanvasElement) => void;
+    mouseMovePassive: (e: MouseEvent, canvas: HTMLCanvasElement) => void;
+    mouseUpPassive: (e: MouseEvent, canvas: HTMLCanvasElement) => void;
+    mouseDownPassive: (e: MouseEvent, canvas: HTMLCanvasElement) => void;
+    wheelPassive: (e: WheelEvent, canvas: HTMLCanvasElement) => void;
+    mouseDownCaptured: (e: MouseEvent, canvas: HTMLCanvasElement) => void;
+}
+
+export const viewPortEvents = createNanoEvents<Events>();
 
 class Viewport {
     public currentActiveViewport: HTMLCanvasElement | undefined;
-
-    public onTouchStart: ((event: TouchEvent, canvas: HTMLCanvasElement) => void) | undefined;
-
-    public onMouseMove: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
-
-    public onMouseUp: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
-
-    public onMouseDown: ((e: MouseEvent, canvas: HTMLCanvasElement) => void) | undefined;
-
-    public onWheel: ((e: WheelEvent, canvas: HTMLCanvasElement) => void) | undefined;
 
     public constructor() {
         logger.log('Trying to find viewport...');
@@ -31,6 +34,8 @@ class Viewport {
         const mutationObserver = new MutationObserver(this.onMutationEvent);
         mutationObserver.observe(document.body, { childList: true });
         // Not bothering with disconnecting observer, since we need to watch this all the time.
+
+        document.addEventListener('mousedown', this.onMouseDownDocumentCaptureHook, true);
     }
 
     private onMutationEvent = (mutations: MutationRecord[]): void => {
@@ -74,52 +79,65 @@ class Viewport {
     }
 
     private initHooks(): void {
-        this.currentActiveViewport?.addEventListener('touchstart', this.onTouchStartHook, { passive: true });
-        this.currentActiveViewport?.addEventListener('mousemove', this.onMouseMoveHook, { passive: true });
-        this.currentActiveViewport?.addEventListener('mousedown', this.onMouseDownHook, { passive: true });
-        this.currentActiveViewport?.addEventListener('mouseup', this.onMouseUpHook, { passive: true });
-        this.currentActiveViewport?.addEventListener('wheel', this.onWheelHook, { passive: true });
+        if (!this.currentActiveViewport) return;
+
+        this.currentActiveViewport.addEventListener('touchstart', this.onTouchStartHookPassive, { passive: true });
+        this.currentActiveViewport.addEventListener('mousemove', this.onMouseMoveHookPassive, { passive: true });
+        this.currentActiveViewport.addEventListener('mousedown', this.onMouseDownHookPassive, { passive: true });
+        this.currentActiveViewport.addEventListener('mouseup', this.onMouseUpHookPassive, { passive: true });
+        this.currentActiveViewport.addEventListener('wheel', this.onWheelHookPassive, { passive: true });
+
+        if (this.currentActiveViewport.onmousedown) {
+            const originalMouseDown = this.currentActiveViewport.onmousedown;
+            this.currentActiveViewport.onmousedown = null;
+            this.currentActiveViewport.addEventListener('mousedown', originalMouseDown);
+        }
     }
 
     private removeHooks(): void {
-        this.currentActiveViewport?.removeEventListener('touchstart', this.onTouchStartHook);
-        this.currentActiveViewport?.removeEventListener('mousemove', this.onMouseMoveHook);
-        this.currentActiveViewport?.removeEventListener('mousedown', this.onMouseDownHook);
-        this.currentActiveViewport?.removeEventListener('mouseup', this.onMouseUpHook);
-        this.currentActiveViewport?.removeEventListener('wheel', this.onWheelHook);
+        this.currentActiveViewport?.removeEventListener('touchstart', this.onTouchStartHookPassive);
+        this.currentActiveViewport?.removeEventListener('mousemove', this.onMouseMoveHookPassive);
+        this.currentActiveViewport?.removeEventListener('mousedown', this.onMouseDownHookPassive);
+        this.currentActiveViewport?.removeEventListener('mouseup', this.onMouseUpHookPassive);
+        this.currentActiveViewport?.removeEventListener('wheel', this.onWheelHookPassive);
     }
 
-    private onTouchStartHook = (e: TouchEvent) => {
+    private onTouchStartHookPassive = (e: TouchEvent) => {
         if (!this.currentActiveViewport) return;
-        this.onTouchStart?.(e, this.currentActiveViewport);
+        viewPortEvents.emit('touchStartPassive', e, this.currentActiveViewport);
     };
 
-    private onMouseMoveHook = (e: MouseEvent): void => {
+    private onMouseMoveHookPassive = (e: MouseEvent): void => {
         if (!this.currentActiveViewport) {
             return;
         }
-        this.onMouseMove?.(e, this.currentActiveViewport);
+        viewPortEvents.emit('mouseMovePassive', e, this.currentActiveViewport);
     };
 
-    private onMouseDownHook = (e: MouseEvent): void => {
+    private onMouseDownHookPassive = (e: MouseEvent): void => {
         if (!this.currentActiveViewport) {
             return;
         }
-        this.onMouseDown?.(e, this.currentActiveViewport);
+        viewPortEvents.emit('mouseDownPassive', e, this.currentActiveViewport);
     };
 
-    private onMouseUpHook = (e: MouseEvent): void => {
+    private onMouseUpHookPassive = (e: MouseEvent): void => {
         if (!this.currentActiveViewport) {
             return;
         }
-        this.onMouseUp?.(e, this.currentActiveViewport);
+        viewPortEvents.emit('mouseUpPassive', e, this.currentActiveViewport);
     };
 
-    private onWheelHook = (e: WheelEvent): void => {
+    private onWheelHookPassive = (e: WheelEvent): void => {
         if (!this.currentActiveViewport) {
             return;
         }
-        this.onWheel?.(e, this.currentActiveViewport);
+        viewPortEvents.emit('wheelPassive', e, this.currentActiveViewport);
+    };
+
+    private onMouseDownDocumentCaptureHook = (e: MouseEvent): void => {
+        if (e.target !== this.currentActiveViewport) return;
+        viewPortEvents.emit('mouseDownCaptured', e, this.currentActiveViewport);
     };
 }
 
