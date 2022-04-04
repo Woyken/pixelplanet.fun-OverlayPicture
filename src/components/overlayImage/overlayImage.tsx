@@ -26,6 +26,18 @@ const useStyles = makeStyles()({
         transformOrigin: 'top left',
         imageRendering: 'pixelated',
     },
+    overlayImageSplitChunk: {
+        transform: `scale(${1 / 3})`,
+        transformOrigin: 'top left',
+        position: 'absolute',
+        pointerEvents: 'none',
+    },
+    overlayImageSplitChunkWrapper: {
+        position: 'fixed',
+        pointerEvents: 'none',
+        transformOrigin: 'top left',
+        imageRendering: 'pixelated',
+    },
 });
 
 const splitRenderCanvasSize = 1024;
@@ -40,14 +52,19 @@ const PlaceQueuePixels: React.FC = () => {
     const canvasPalette = useAppSelector(selectCanvasPalette);
     const canvasSize = useAppSelector(selectCanvasSize);
     const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize);
+    const [canvasTopLeftOnScreen, setCanvasTopLeftOnScreen] = useState<ReturnType<typeof gameCoordsToScreen>>({ clientX: 0, clientY: 0 });
+    useEffect(() => {
+        const canvasTopLeft = gameCoordsToScreen({ x: -canvasSize / 2, y: -canvasSize / 2 }, { height: windowSize.innerHeight, width: windowSize.innerWidth }, gameViewCenter, viewScale);
+        setCanvasTopLeftOnScreen(canvasTopLeft);
+    }, [canvasSize, gameViewCenter, viewScale, windowSize.innerHeight, windowSize.innerWidth]);
     const [splitCanvases, setSplitCanvases] = useState<
         {
             gameCoordsTopLeft: {
                 x: number;
                 y: number;
             };
-            leftCanvasOffsetOnScreen: number;
-            topCanvasOffsetOnScreen: number;
+            leftCanvasOffsetFromCanvasCorner: number;
+            topCanvasOffsetFromCanvasCorner: number;
             splitRenderCanvasId: number;
             pixels: {
                 color: number;
@@ -81,17 +98,16 @@ const PlaceQueuePixels: React.FC = () => {
                         x: (x.splitRenderCanvasId % splitCanvasesWidth) * splitRenderCanvasSize - canvasSize / 2,
                         y: Math.floor(x.splitRenderCanvasId / splitCanvasesWidth) * splitRenderCanvasSize - canvasSize / 2,
                     };
-                    const screenCoords = gameCoordsToScreen(gameCoordsTopLeft, { height: windowSize.innerHeight, width: windowSize.innerWidth }, gameViewCenter, viewScale);
                     return {
                         ...x,
                         gameCoordsTopLeft,
-                        leftCanvasOffsetOnScreen: screenCoords.clientX,
-                        topCanvasOffsetOnScreen: screenCoords.clientY,
+                        leftCanvasOffsetFromCanvasCorner: gameCoordsTopLeft.x + canvasSize / 2,
+                        topCanvasOffsetFromCanvasCorner: gameCoordsTopLeft.y + canvasSize / 2,
                     };
                 });
             setSplitCanvases(splits);
         });
-    }, [canvasSize, gameViewCenter, placeQueue, splitCanvasesWidth, viewScale, windowSize.innerHeight, windowSize.innerWidth]);
+    }, [canvasSize, placeQueue, splitCanvasesWidth]);
 
     // TODO need to optimize the heck out of this.
     // Create some sort of selector to split pixels queue into chunked arrays (separate from splitCanvases obj), then we'll have to do less redraws
@@ -124,18 +140,24 @@ const PlaceQueuePixels: React.FC = () => {
     }, [canvasPalette, splitCanvases]);
 
     return (
-        <div>
+        <div
+            className={classes.overlayImageSplitChunkWrapper}
+            style={{
+                left: canvasTopLeftOnScreen.clientX,
+                top: canvasTopLeftOnScreen.clientY,
+                transform: `scale(${viewScale})`,
+            }}
+        >
             {splitCanvases.map((x) => (
                 <canvas
                     key={x.splitRenderCanvasId}
                     ref={(ref) => {
                         if (ref) canvasesRef.current[x.splitRenderCanvasId] = ref;
                     }}
-                    className={classes.overlayImage}
+                    className={classes.overlayImageSplitChunk}
                     style={{
-                        left: x.leftCanvasOffsetOnScreen,
-                        top: x.topCanvasOffsetOnScreen,
-                        transform: `scale(${viewScale / 3})`,
+                        left: x.leftCanvasOffsetFromCanvasCorner,
+                        top: x.topCanvasOffsetFromCanvasCorner,
                     }}
                 />
             ))}
