@@ -11,4 +11,13 @@ function init(): void {
     ReactDOM.render(<AppProvidersWrapper />, rootNode);
 }
 
-init();
+if (document.readyState !== 'complete') {
+    document.addEventListener('readystatechange', function readyStateChange() {
+        if (document.readyState === 'complete') {
+            document.removeEventListener('readystatechange', readyStateChange);
+            init();
+        }
+    });
+} else {
+    init();
+}
