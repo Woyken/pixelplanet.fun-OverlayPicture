@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 
 import AppProvidersWrapper from './components/appProvidersWrapper';
 
@@ -8,7 +8,8 @@ function init(): void {
     rootNode.id = 'PictureOverlay_RootNode';
     document.body.prepend(rootNode);
 
-    ReactDOM.render(<AppProvidersWrapper />, rootNode);
+    const root = createRoot(rootNode);
+    root.render(<AppProvidersWrapper />);
 }
 
 if (document.readyState !== 'complete') {
