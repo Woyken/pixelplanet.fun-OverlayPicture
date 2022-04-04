@@ -34,8 +34,8 @@
         "@types/color-string": "^1.5.2",
         "@types/jest": "^27.4.0",
         "@types/pako": "^1.0.3",
-        "@types/react": "^17.0.39",
-        "@types/react-dom": "^17.0.11",
+        "@types/react": "^17.0.43",
+        "@types/react-dom": "^17.0.14",
         "@typescript-eslint/eslint-plugin": "^5.12.0",
         "@typescript-eslint/parser": "^5.12.0",
         "@vitejs/plugin-react": "^1.2.0",
@@ -66,11 +66,11 @@
         "vite-tsconfig-paths": "^3.4.0"
     },
     "dependencies": {
-        "@emotion/react": "^11.7.1",
-        "@emotion/styled": "^11.6.0",
-        "@mui/icons-material": "^5.4.2",
-        "@mui/material": "^5.4.2",
-        "@reduxjs/toolkit": "^1.7.2",
+        "@emotion/react": "^11.8.2",
+        "@emotion/styled": "^11.8.1",
+        "@mui/icons-material": "^5.5.1",
+        "@mui/material": "^5.5.3",
+        "@reduxjs/toolkit": "^1.8.1",
         "@types/offscreencanvas": "^2019.6.4",
         "color-string": "^1.9.0",
         "comlink": "^4.3.1",
@@ -80,15 +80,15 @@
         "node-eval": "^2.0.0",
         "open-cli": "^7.0.1",
         "re-reselect": "^4.0.0",
-        "react": "^17.0.2",
-        "react-dom": "^17.0.2",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0",
         "react-dropzone": "^12.0.4",
         "react-error-boundary": "^3.1.4",
-        "react-i18next": "^11.15.4",
-        "react-redux": "^7.2.6",
+        "react-i18next": "^11.16.2",
+        "react-redux": "^8.0.0-beta.4",
         "react-toastify": "^8.2.0",
         "redux": "^4.1.2",
         "reselect": "^4.1.5",
-        "tss-react": "^3.4.1"
+        "tss-react": "^3.6.0"
     }
 }
