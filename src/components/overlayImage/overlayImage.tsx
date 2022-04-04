@@ -1,5 +1,5 @@
 import colorConverter from 'colorConverter';
-import React, { useEffect, useRef } from 'react';
+import React, { startTransition, useEffect, useRef, useState } from 'react';
 import { selectPixelsToPlaceQueue } from 'store/slices/pixelPlacementSlice';
 import { gameCoordsToScreen } from 'utils/coordConversion';
 
@@ -40,69 +40,91 @@ const PlaceQueuePixels: React.FC = () => {
     const canvasPalette = useAppSelector(selectCanvasPalette);
     const canvasSize = useAppSelector(selectCanvasSize);
     const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize);
-    const splitCanvases = placeQueue
-        .map((x) => ({
-            ...x,
-            splitRenderCanvasX: Math.floor((x.coord.x + canvasSize / 2) / splitRenderCanvasSize),
-            splitRenderCanvasY: Math.floor((x.coord.y + canvasSize / 2) / splitRenderCanvasSize),
-        }))
-        .map((x) => ({ ...x, splitRenderCanvasId: x.splitRenderCanvasX + x.splitRenderCanvasY * splitCanvasesWidth }))
-        .reduce((acc, x) => {
-            const foundAccumulator = acc[x.splitRenderCanvasId];
-            if (!foundAccumulator) {
-                acc[x.splitRenderCanvasId] = {
-                    pixels: [{ color: x.color, coord: x.coord }],
-                    splitRenderCanvasId: x.splitRenderCanvasId,
-                };
-                return acc;
-            }
-            foundAccumulator.pixels.push({ color: x.color, coord: x.coord });
-            return acc;
-        }, [] as { splitRenderCanvasId: number; pixels: { color: number; coord: Cell }[] }[])
-        .map((x) => {
-            const gameCoordsTopLeft = {
-                x: (x.splitRenderCanvasId % splitCanvasesWidth) * splitRenderCanvasSize - canvasSize / 2,
-                y: Math.floor(x.splitRenderCanvasId / splitCanvasesWidth) * splitRenderCanvasSize - canvasSize / 2,
+    const [splitCanvases, setSplitCanvases] = useState<
+        {
+            gameCoordsTopLeft: {
+                x: number;
+                y: number;
             };
-            const screenCoords = gameCoordsToScreen(gameCoordsTopLeft, { height: windowSize.innerHeight, width: windowSize.innerWidth }, gameViewCenter, viewScale);
-            return {
-                ...x,
-                gameCoordsTopLeft,
-                leftCanvasOffsetOnScreen: screenCoords.clientX,
-                topCanvasOffsetOnScreen: screenCoords.clientY,
-            };
+            leftCanvasOffsetOnScreen: number;
+            topCanvasOffsetOnScreen: number;
+            splitRenderCanvasId: number;
+            pixels: {
+                color: number;
+                coord: Cell;
+            }[];
+        }[]
+    >([]);
+    useEffect(() => {
+        startTransition(() => {
+            const splits = placeQueue
+                .map((x) => ({
+                    ...x,
+                    splitRenderCanvasX: Math.floor((x.coord.x + canvasSize / 2) / splitRenderCanvasSize),
+                    splitRenderCanvasY: Math.floor((x.coord.y + canvasSize / 2) / splitRenderCanvasSize),
+                }))
+                .map((x) => ({ ...x, splitRenderCanvasId: x.splitRenderCanvasX + x.splitRenderCanvasY * splitCanvasesWidth }))
+                .reduce((acc, x) => {
+                    const foundAccumulator = acc[x.splitRenderCanvasId];
+                    if (!foundAccumulator) {
+                        acc[x.splitRenderCanvasId] = {
+                            pixels: [{ color: x.color, coord: x.coord }],
+                            splitRenderCanvasId: x.splitRenderCanvasId,
+                        };
+                        return acc;
+                    }
+                    foundAccumulator.pixels.push({ color: x.color, coord: x.coord });
+                    return acc;
+                }, [] as { splitRenderCanvasId: number; pixels: { color: number; coord: Cell }[] }[])
+                .map((x) => {
+                    const gameCoordsTopLeft = {
+                        x: (x.splitRenderCanvasId % splitCanvasesWidth) * splitRenderCanvasSize - canvasSize / 2,
+                        y: Math.floor(x.splitRenderCanvasId / splitCanvasesWidth) * splitRenderCanvasSize - canvasSize / 2,
+                    };
+                    const screenCoords = gameCoordsToScreen(gameCoordsTopLeft, { height: windowSize.innerHeight, width: windowSize.innerWidth }, gameViewCenter, viewScale);
+                    return {
+                        ...x,
+                        gameCoordsTopLeft,
+                        leftCanvasOffsetOnScreen: screenCoords.clientX,
+                        topCanvasOffsetOnScreen: screenCoords.clientY,
+                    };
+                });
+            setSplitCanvases(splits);
         });
+    }, [canvasSize, gameViewCenter, placeQueue, splitCanvasesWidth, viewScale, windowSize.innerHeight, windowSize.innerWidth]);
 
     // TODO need to optimize the heck out of this.
     // Create some sort of selector to split pixels queue into chunked arrays (separate from splitCanvases obj), then we'll have to do less redraws
 
     useEffect(() => {
-        splitCanvases.forEach((splitCanvas) => {
-            const canvas = canvasesRef.current[splitCanvas.splitRenderCanvasId];
-            if (!canvas) return;
-            const imageDataWidth = splitRenderCanvasSize * 3;
-            const imageData = new ImageData(imageDataWidth, imageDataWidth);
-            canvas.width = imageData.width;
-            canvas.height = imageData.height;
-            splitCanvas.pixels.forEach((x) => {
-                const currentXOffsetFromCorner = x.coord.x - splitCanvas.gameCoordsTopLeft.x;
-                const currentYOffsetFromCorner = x.coord.y - splitCanvas.gameCoordsTopLeft.y;
-                const rgb = colorConverter.getActualColorFromPalette(canvasPalette, x.color);
-                if (!rgb) return;
-                // eslint-disable-next-line no-bitwise
-                const idx = (currentXOffsetFromCorner * 3 + 1 + (currentYOffsetFromCorner * 3 + 1) * imageDataWidth) << 2;
-                const [r, g, b] = rgb;
-                imageData.data[idx] = r;
-                imageData.data[idx + 1] = g;
-                imageData.data[idx + 2] = b;
-                imageData.data[idx + 3] = 255;
+        startTransition(() => {
+            splitCanvases.forEach((splitCanvas) => {
+                const canvas = canvasesRef.current[splitCanvas.splitRenderCanvasId];
+                if (!canvas) return;
+                const imageDataWidth = splitRenderCanvasSize * 3;
+                const imageData = new ImageData(imageDataWidth, imageDataWidth);
+                canvas.width = imageData.width;
+                canvas.height = imageData.height;
+                splitCanvas.pixels.forEach((x) => {
+                    const currentXOffsetFromCorner = x.coord.x - splitCanvas.gameCoordsTopLeft.x;
+                    const currentYOffsetFromCorner = x.coord.y - splitCanvas.gameCoordsTopLeft.y;
+                    const rgb = colorConverter.getActualColorFromPalette(canvasPalette, x.color);
+                    if (!rgb) return;
+                    // eslint-disable-next-line no-bitwise
+                    const idx = (currentXOffsetFromCorner * 3 + 1 + (currentYOffsetFromCorner * 3 + 1) * imageDataWidth) << 2;
+                    const [r, g, b] = rgb;
+                    imageData.data[idx] = r;
+                    imageData.data[idx + 1] = g;
+                    imageData.data[idx + 2] = b;
+                    imageData.data[idx + 3] = 255;
+                });
+                canvas.getContext('2d')?.putImageData(imageData, 0, 0);
             });
-            canvas.getContext('2d')?.putImageData(imageData, 0, 0);
         });
     }, [canvasPalette, splitCanvases]);
 
     return (
-        <>
+        <div>
             {splitCanvases.map((x) => (
                 <canvas
                     key={x.splitRenderCanvasId}
@@ -117,7 +139,7 @@ const PlaceQueuePixels: React.FC = () => {
                     }}
                 />
             ))}
-        </>
+        </div>
     );
 };
 

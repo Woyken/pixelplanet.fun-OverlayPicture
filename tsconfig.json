@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "types": ["vite/client"],
+        "types": ["vite/client", "react/next"],
         "strict": true,
         "outDir": "./dist/",
         "noImplicitAny": true,
