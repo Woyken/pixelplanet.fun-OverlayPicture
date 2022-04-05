@@ -42,7 +42,7 @@ webSocketSenderEvents.on('pixelUpdate', () => {
 webSocketSenderEvents.on('pixelPlacementIntercepted', (data) => {
     const canvasSize = selectCanvasSize(store.getState());
     const pixels = data.pixels.map((x) => ({ coord: chunkToGameCoords(data.chunkX, data.chunkY, x.offsetInChunk, canvasSize), color: x.color }));
-    store.dispatch(pixelPlacementSlice.actions.addPixelsToPlaceQueue(pixels));
+    store.dispatch(pixelPlacementSlice.actions.addPixelsToPlaceQueue({ canvasSize, pixels }));
 });
 
 webSocketEvents.on('pixelReturn', (data) => {

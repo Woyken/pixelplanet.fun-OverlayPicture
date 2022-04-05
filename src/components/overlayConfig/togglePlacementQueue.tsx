@@ -65,7 +65,7 @@ const TogglePlacementQueue: React.FC = () => {
                 case PixelUpdateReturnCode.yOutOfBounds:
                 case PixelUpdateReturnCode.zOutOfBounds:
                 case PixelUpdateReturnCode.colorOutOfBounds:
-                    dispatch(pixelPlacementSlice.actions.removePixelsFromPlaceQueue([pixelToPlace]));
+                    dispatch(pixelPlacementSlice.actions.removePixelsFromPlaceQueue({ canvasSize, pixels: [pixelToPlace] }));
                     break;
                 case PixelUpdateReturnCode.catchaNeeded:
                 case PixelUpdateReturnCode.canvasDoesntExist:
