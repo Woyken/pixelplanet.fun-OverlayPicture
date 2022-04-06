@@ -7,6 +7,7 @@ import { selectCanvasPalette, selectCanvasSize, selectGameViewScale } from '../.
 import {
     selectInputFile,
     selectInputUrl,
+    selectModifierSmolPixels,
     selectOverlayOffsetCoordsOnScreen,
     selectPlacementTransparency,
     selectRenderImageData,
@@ -117,6 +118,8 @@ const OverlayImageCanvas: React.FC = () => {
     const { leftOffset, topOffset } = useAppSelector(selectOverlayOffsetCoordsOnScreen);
     const opacity = useAppSelector(selectPlacementTransparency) / 100;
     const viewScale = useAppSelector(selectGameViewScale);
+    const modifierSmolPixels = useAppSelector(selectModifierSmolPixels);
+    const canvasScaleModifier = modifierSmolPixels ? 1 / 3 : 1;
 
     useEffect(() => {
         if (!imageData) return;
@@ -136,7 +139,7 @@ const OverlayImageCanvas: React.FC = () => {
             className={classes.overlayImage}
             style={{
                 opacity,
-                transform: `scale(${viewScale})`,
+                transform: `scale(${viewScale * canvasScaleModifier})`,
                 left: leftOffset,
                 top: topOffset,
             }}

@@ -18,6 +18,7 @@ import {
     selectIsOutputImageProcessing,
     selectModifierImageBrightness,
     selectModifierShouldConvertColors,
+    selectModifierSmolPixels,
     selectPlacementAutoSelectColor,
     selectPlacementIsFollowMouseActive,
     selectPlacementTransparency,
@@ -79,6 +80,7 @@ const OverlayConfig: React.FC = () => {
     const isOutputImageProcessing = useAppSelector(selectIsOutputImageProcessing);
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
     const inputImageLoadingStatus = useAppSelector(selectInputImageLoadingStatus);
+    const modifierSmolPixels = useAppSelector(selectModifierSmolPixels);
 
     const handleClearInput = () => {
         dispatch(clearInputImageAction());
@@ -113,6 +115,9 @@ const OverlayConfig: React.FC = () => {
             return;
         }
         dispatch(overlaySlice.actions.setModifierImageBrightness(value));
+    };
+    const handleSmolPixelsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(overlaySlice.actions.setModifierSmolPixels(e.target.checked));
     };
 
     return (
@@ -168,6 +173,9 @@ const OverlayConfig: React.FC = () => {
             )}
             {isModificationsAvailable && (
                 <>
+                    <Tooltip title="Show only small colored boxes in the middle of pixels">
+                        <FormControlLabel control={<Checkbox color="primary" checked={modifierSmolPixels} onChange={handleSmolPixelsChange} />} label="Smol pixels" labelPlacement="end" />
+                    </Tooltip>
                     <FormControlLabel
                         control={<Checkbox color="primary" checked={modifierShouldConvertColors} onChange={handleShouldConvertColorsChange} />}
                         label="Convert colors"

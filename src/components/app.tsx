@@ -13,6 +13,7 @@ import {
     selectIsOverlayEnabled,
     selectModifierImageBrightness,
     selectModifierShouldConvertColors,
+    selectModifierSmolPixels,
     selectWindowSize,
 } from '../store/slices/overlaySlice';
 import {
@@ -184,10 +185,11 @@ function useReprocessOutputImage() {
     const palette = useAppSelector(selectCanvasUserPalette);
     const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
+    const modifierSmolPixels = useAppSelector(selectModifierSmolPixels);
     useEffect(() => {
         dispatch(startProcessingOutputImage());
         // If anything changes, restart processing
-    }, [dispatch, url, palette, modifierShouldConvertColors, modifierImageBrightness]);
+    }, [dispatch, url, palette, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels]);
 }
 
 function useSubscribeToWindowResize() {

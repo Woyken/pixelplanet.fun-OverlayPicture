@@ -47,6 +47,7 @@ interface PlacementConfigurationState {
 interface ImageModifiersState {
     shouldConvertColors: boolean;
     imageBrightness: number;
+    smolPixels: boolean;
 }
 
 export interface OverlaySavedConfigurationState {
@@ -75,7 +76,7 @@ const initialState: OverlayState = {
     overlayEnabled: true,
     overlayImage: { inputImage: { loadedImage: { status: 'none' } }, outputImage: { isProcessing: false } },
     placementConfiguration: { yOffset: 0, xOffset: 0, transparency: 92, isFollowMouseActive: false, autoSelectColor: false },
-    modifications: { imageBrightness: 0, shouldConvertColors: false },
+    modifications: { imageBrightness: 0, shouldConvertColors: false, smolPixels: true },
     isBotModalVisible: false,
     browserWindow: { innerWidth: 100, innerHeight: 100 },
 };
@@ -107,6 +108,9 @@ export const overlaySlice = createSlice({
         },
         setModifierShouldConvertColors: (state, action: PayloadAction<boolean>) => {
             state.modifications.shouldConvertColors = action.payload;
+        },
+        setModifierSmolPixels: (state, action: PayloadAction<boolean>) => {
+            state.modifications.smolPixels = action.payload;
         },
         setOverlayEnabled: (state, action: PayloadAction<boolean>) => {
             state.overlayEnabled = action.payload;
@@ -245,6 +249,11 @@ export const selectModifierShouldConvertColors = createSelector(
     (shouldConvertColors) => shouldConvertColors
 );
 
+export const selectModifierSmolPixels = createSelector(
+    (state: RootState) => state.overlay.modifications.smolPixels,
+    (smolPixels) => smolPixels
+);
+
 export const selectIsOverlayEnabled = createSelector(
     (state: RootState) => state.overlay.overlayEnabled,
     (overlayEnabled) => overlayEnabled
@@ -318,17 +327,20 @@ export const selectOverlayOffsetCoordsOnScreen = createSelector(
 
 export const selectCurrentHoverPixelOnOutputImageColorIndexInPalette = createSelector(
     selectPlacementAutoSelectColor,
+    selectModifierSmolPixels,
     selectHoverPixel,
     selectPlacementXOffset,
     selectPlacementYOffset,
     selectRenderImageData,
     selectCanvasPalette,
     selectCanvasReservedColorCount,
-    (autoSelectColor, hoverPixel, placementXOffset, placementYOffset, renderImageData, palette, reservedColorCount) => {
+    (autoSelectColor, modifierSmolPixels, hoverPixel, placementXOffset, placementYOffset, renderImageData, palette, reservedColorCount) => {
         if (!autoSelectColor) return undefined;
         if (!renderImageData) return undefined;
-        const offsetXInImage = hoverPixel.x - placementXOffset;
-        const offsetYInImage = hoverPixel.y - placementYOffset;
+        const smolPixelsCanvasSizeModifier = modifierSmolPixels ? 3 : 1;
+        const smolPixelsCanvasExtraOffsetToMiddle = Math.floor(smolPixelsCanvasSizeModifier / 2);
+        const offsetXInImage = (hoverPixel.x - placementXOffset) * smolPixelsCanvasSizeModifier + smolPixelsCanvasExtraOffsetToMiddle;
+        const offsetYInImage = (hoverPixel.y - placementYOffset) * smolPixelsCanvasSizeModifier + smolPixelsCanvasExtraOffsetToMiddle;
         if (offsetXInImage < 0 || offsetXInImage >= renderImageData.width || offsetYInImage < 0 || offsetYInImage >= renderImageData.height) return undefined;
         // eslint-disable-next-line no-bitwise
         const idx = (renderImageData.width * offsetYInImage + offsetXInImage) << 2;

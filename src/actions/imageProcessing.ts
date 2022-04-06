@@ -9,6 +9,7 @@ import {
     selectInputUrl,
     selectModifierImageBrightness,
     selectModifierShouldConvertColors,
+    selectModifierSmolPixels,
     selectSavedConfigurations,
 } from '../store/slices/overlaySlice';
 import { RootState } from '../store/store';
@@ -78,13 +79,14 @@ export const startProcessingOutputImage = createAsyncThunk<{ outImageData: Image
         const palette = selectCanvasUserPalette(getState());
         const modifierShouldConvertColors = selectModifierShouldConvertColors(getState());
         const modifierImageBrightness = selectModifierImageBrightness(getState());
+        const modifierSmolPixels = selectModifierSmolPixels(getState());
         const inputImageData = selectInputImageData(getState());
         if (inputImageData == null) throw new Error("Can't process output image without input image data");
         const abortController = new AbortController();
         const outImageData = await new Promise<ImageData>((resolve, reject) => {
             abortController.signal.onabort = () => reject(new Error('aborted'));
             pictureConverterApi
-                .applyModificationsToImageData(palette, inputImageData, modifierShouldConvertColors, modifierImageBrightness)
+                .applyModificationsToImageData(palette, inputImageData, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels)
                 .then((imageData) => {
                     resolve(imageData);
                 })
