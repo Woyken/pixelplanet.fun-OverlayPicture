@@ -10509,7 +10509,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     modifications: {
       imageBrightness: 0,
       shouldConvertColors: false,
-      smolPixels: true
+      smolPixels: false
     },
     isBotModalVisible: false,
     browserWindow: {
