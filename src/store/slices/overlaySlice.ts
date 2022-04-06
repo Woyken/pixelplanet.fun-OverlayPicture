@@ -76,7 +76,7 @@ const initialState: OverlayState = {
     overlayEnabled: true,
     overlayImage: { inputImage: { loadedImage: { status: 'none' } }, outputImage: { isProcessing: false } },
     placementConfiguration: { yOffset: 0, xOffset: 0, transparency: 92, isFollowMouseActive: false, autoSelectColor: false },
-    modifications: { imageBrightness: 0, shouldConvertColors: false, smolPixels: true },
+    modifications: { imageBrightness: 0, shouldConvertColors: false, smolPixels: false },
     isBotModalVisible: false,
     browserWindow: { innerWidth: 100, innerHeight: 100 },
 };
