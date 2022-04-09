@@ -8,7 +8,6 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { gameSlice, selectCanvasUserPalette, selectGameViewCenter, selectGameViewScale } from '../store/slices/gameSlice';
 import {
     overlaySlice,
-    selectCurrentHoverPixelOnOutputImageColorIndexInPalette,
     selectInputUrl,
     selectIsOverlayEnabled,
     selectModifierImageBrightness,
@@ -17,7 +16,6 @@ import {
     selectWindowSize,
 } from '../store/slices/overlaySlice';
 import {
-    pageReduxStoreSelectColorAction,
     selectPageStateCanvasId,
     selectPageStateCanvasMaxTimeoutMs,
     selectPageStateCanvasPalette,
@@ -26,12 +24,9 @@ import {
     selectPageStateCanvasTimeoutOnBaseMs,
     selectPageStateCanvasViewCenter,
     selectPageStateCurrentSelectedColor,
-    selectPageStateHoverPixel,
     selectPageStatePixelWaitDate,
-    selectPageStateRoundedCanvasViewCenter,
     selectPageStateViewScale,
     selectPaseStateCanvasTimeoutOnPlacedMs,
-    usePageReduxStoreDispatch,
     usePageReduxStoreSelector,
 } from '../utils/getPageReduxStore';
 
@@ -53,17 +48,6 @@ function usePageStoreCurrentSelectedColor() {
     useEffect(() => {
         if (currentSelectedColor) dispatch(gameSlice.actions.setSelectedColor(currentSelectedColor));
     }, [dispatch, currentSelectedColor]);
-}
-
-function usePageStoreHoverCoords() {
-    const dispatch = useAppDispatch();
-    const pageHoverCoords = usePageReduxStoreSelector(selectPageStateHoverPixel);
-    const pageRoundedViewCenter = usePageReduxStoreSelector(selectPageStateRoundedCanvasViewCenter);
-
-    useEffect(() => {
-        if (pageHoverCoords) dispatch(gameSlice.actions.setHoverPixel(pageHoverCoords));
-        else if (pageRoundedViewCenter) dispatch(gameSlice.actions.setHoverPixel(pageRoundedViewCenter));
-    }, [dispatch, pageHoverCoords, pageRoundedViewCenter]);
 }
 
 function usePageStoreViewScale() {
@@ -222,26 +206,14 @@ function useAutoHandleTouchInputsToHoverState() {
     }, [dispatch, windowSize, viewScale, viewCenter]);
 }
 
-function useAutoSelectColor() {
-    const pageDispatch = usePageReduxStoreDispatch();
-    const colorIndex = useAppSelector(selectCurrentHoverPixelOnOutputImageColorIndexInPalette);
-    useEffect(() => {
-        if (!pageDispatch) return;
-        if (colorIndex == null) return;
-        pageDispatch(pageReduxStoreSelectColorAction(colorIndex));
-    }, [pageDispatch, colorIndex]);
-}
-
 const ProviderPageStateMapper: React.FC = ({ children }) => {
     useAutoHandleTouchInputsToHoverState();
-    useAutoSelectColor();
     useSubscribeToWindowResize();
     useReprocessOutputImage();
     useGlobalKeyShortcuts();
     useLoadSavedConfigurations();
     usePageStoreWaitDate();
     usePageStoreCurrentSelectedColor();
-    usePageStoreHoverCoords();
     usePageStoreViewScale();
     usePageStoreViewCenter();
     usePageStoreCanvasPalette();
