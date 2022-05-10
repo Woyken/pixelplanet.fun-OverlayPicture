@@ -48,21 +48,25 @@ const isGhPagesHtmlBuild = process.env.APP_MODULE === 'html';
 const mode = process.env.APP_ENV;
 const isDev = mode === 'development';
 
+let buildLib: UserConfig['build']['lib'];
+if (isGhPagesHtmlBuild) buildLib = undefined;
+else if (isLoaderBuild)
+    buildLib = {
+        fileName: () => 'pixelPlanetOverlay-loader.user.js',
+        entry: 'src/userscript-loader-module/pixelPlanetOverlay-loader.ts',
+        formats: ['iife'],
+        name: 'userscript-loader-build-with-vite.js',
+    };
+else {
+    buildLib = { fileName: () => 'pixelPlanetOverlay.user.js', entry: 'src/index.tsx', formats: ['iife'], name: 'userscript-build-with-vite.js' };
+}
+
 // https://vitejs.dev/config/
 const config: () => UserConfig = () => ({
     mode,
     build: {
         emptyOutDir: !doNotClean,
-        lib: isGhPagesHtmlBuild
-            ? undefined
-            : isLoaderBuild
-            ? {
-                  fileName: () => 'pixelPlanetOverlay-loader.user.js',
-                  entry: 'src/userscript-loader-module/pixelPlanetOverlay-loader.ts',
-                  formats: ['iife'],
-                  name: 'userscript-loader-build-with-vite.js',
-              }
-            : { fileName: () => 'pixelPlanetOverlay.user.js', entry: 'src/index.tsx', formats: ['iife'], name: 'userscript-build-with-vite.js' },
+        lib: buildLib,
         sourcemap: isDev ? 'inline' : false,
         minify: isDev ? false : undefined,
         rollupOptions: {
