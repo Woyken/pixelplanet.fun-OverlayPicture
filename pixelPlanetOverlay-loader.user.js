@@ -11,21 +11,12 @@
 // ==/UserScript==
 /**/
 
-
-    (function iife() {
-      if (this !== window) {
-        window.eval(`(${iife.toString()})();`);
-        return;
-      }
-    
-(function() {
-  "use strict";
-  {
-    const e = document.createElement("script");
-    e.src = "https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay.user.js";
-    document.body.appendChild(e);
-  }
-})();
-
-
-})();
+{
+  const e = document.createElement("script");
+  if (window.location.host.startsWith("localhost"))
+    e.src = new URL("src/userscript-loader-module/pixelPlanetOverlay.user.ts", window.location.href).href;
+  else
+    e.src = "https://woyken.github.io/pixelplanet.fun-OverlayPicture/assets/pixelPlanetOverlay.user.js";
+  e.type = "module";
+  document.body.appendChild(e);
+}
