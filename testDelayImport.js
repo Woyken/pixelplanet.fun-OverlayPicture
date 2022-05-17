@@ -1,3 +1,5 @@
-import('./test1.js');
+console.log('testDelayImport - before')
+
+import('./testDelayImport.js');
 
 console.log('testDelayImport')
