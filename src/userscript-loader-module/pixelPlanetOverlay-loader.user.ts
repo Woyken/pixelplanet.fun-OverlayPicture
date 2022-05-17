@@ -14,7 +14,7 @@
     // This makes it update more in real time rather than allowing it to update itself via usual auto-updates.
     const e = document.createElement('script');
     if (window.location.host.startsWith('localhost')) e.src = new URL('src/userscript-loader-module/pixelPlanetOverlay.user.ts', window.location.href).href;
-    else e.src = 'https://woyken.github.io/pixelplanet.fun-OverlayPicture/assets/pixelPlanetOverlay.user.js';
+    else e.src = 'https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay.user.js';
     e.type = 'module';
     document.body.appendChild(e);
 }
