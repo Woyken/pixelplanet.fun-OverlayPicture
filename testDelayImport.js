@@ -1,6 +1,6 @@
 console.log('testDelayImport - before')
 
-import('./testDelayImport.js')
+import('./testDelayImport2.js')
     .then((module) => {
         module.test();
     })
