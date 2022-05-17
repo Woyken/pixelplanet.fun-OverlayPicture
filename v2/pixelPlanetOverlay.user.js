@@ -10111,26 +10111,6 @@ var m$5 = reactDom.exports;
 {
   createRoot = m$5.createRoot;
 }
-var runtime = { exports: {} };
-/**
- * @license React
- * react-refresh-runtime.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-throw Error("React Refresh runtime should not be included in the production bundle.");
-var reactRefreshRuntime_production_min = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  [Symbol.toStringTag]: "Module"
-});
-var require$$0$1 = /* @__PURE__ */ getAugmentedNamespace(reactRefreshRuntime_production_min);
-{
-  runtime.exports = require$$0$1;
-}
-var RefreshRuntime = runtime.exports;
 function _setPrototypeOf(o2, p2) {
   _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf2(o3, p3) {
     o3.__proto__ = p3;
@@ -28763,12 +28743,6 @@ const AppProvidersWrapper = () => {
     })
   });
 };
-RefreshRuntime.injectIntoGlobalHook(window);
-const anyWindow = window;
-anyWindow.$RefreshReg$ = () => {
-};
-anyWindow.$RefreshSig$ = () => (type) => type;
-anyWindow.__vite_plugin_react_preamble_installed__ = true;
 function init() {
   executeAllHooks();
   const rootNode = document.createElement("div");
