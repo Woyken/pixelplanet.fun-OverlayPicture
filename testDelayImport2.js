@@ -1,5 +1,5 @@
 console.log('testDelayImport2 - before')
 
-await import('./test1.js').catch(console.error);
+import('./test1.js').then(console.warn).catch(console.error);
 
 console.log('testDelayImport2')
