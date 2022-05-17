@@ -1,5 +1,9 @@
 console.log('testDelayImport - before')
 
-import('./testDelayImport.js').then(console.warn).catch(console.error);
+import('./testDelayImport.js')
+    .then((module) => {
+        module.test();
+    })
+    .catch(console.error);
 
 console.log('testDelayImport')
