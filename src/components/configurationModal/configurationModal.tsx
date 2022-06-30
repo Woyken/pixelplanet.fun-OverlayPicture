@@ -3,7 +3,8 @@ import { get as getColor, to as toColor } from 'color-string';
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { createMakeStyles } from 'tss-react';
-import { ExpandLess, Palette } from '@mui/icons-material';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import Palette from '@mui/icons-material/Palette';
 import { Checkbox, FormControlLabel, IconButton, Tooltip, useTheme } from '@mui/material';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';

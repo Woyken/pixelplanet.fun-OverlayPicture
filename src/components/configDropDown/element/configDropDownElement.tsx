@@ -2,7 +2,7 @@ import React from 'react';
 import { OverlaySavedConfigurationState } from 'store/slices/overlaySlice';
 import { makeStyles } from 'theme/makeStyles';
 
-import { DeleteForever } from '@mui/icons-material';
+import DeleteForever from '@mui/icons-material/DeleteForever';
 import { IconButton } from '@mui/material';
 
 const useStyles = makeStyles()({

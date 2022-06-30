@@ -5,7 +5,7 @@ import { OverlaySavedConfigurationState, overlaySlice, selectCurrentStateAsConfi
 import { makeStyles } from 'theme/makeStyles';
 import { setViewCoordinates, usePageReduxStoreDispatch } from 'utils/getPageReduxStore';
 
-import { Save } from '@mui/icons-material';
+import Save from '@mui/icons-material/Save';
 import { FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip } from '@mui/material';
 
 import logger from '../../handlers/logger';

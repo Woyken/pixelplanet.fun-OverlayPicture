@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { makeStyles } from 'theme/makeStyles';
 
-import { AttachFile } from '@mui/icons-material';
+import AttachFile from '@mui/icons-material/AttachFile';
 import WarningIcon from '@mui/icons-material/Warning';
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Slider, TextField, Tooltip, Typography } from '@mui/material';
 
