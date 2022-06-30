@@ -59,7 +59,6 @@
         "vite-plugin-banner": "0.2.0",
         "vite-plugin-checker": "0.4.2",
         "vite-plugin-mkcert": "1.6.0",
-        "vite-plugin-pwa": "0.11.13",
         "vite-react-jsx": "1.1.2",
         "vite-tsconfig-paths": "3.4.0"
     },
