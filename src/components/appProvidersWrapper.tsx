@@ -5,7 +5,7 @@ import { configureAppStore, store } from 'store/store';
 import { useAppTheme } from 'theme/makeStyles';
 import { GlobalStyles } from 'tss-react';
 
-import { CssBaseline, ThemeProvider } from '@mui/material';
+import { ScopedCssBaseline, ThemeProvider } from '@mui/material';
 
 import App from './app';
 import { ErrorBoundaryFallbackModal } from './errorBoundaryFallbackModal';
@@ -25,10 +25,11 @@ const AppProvidersWrapper: React.FC = () => {
                     }}
                 />
                 <ThemeProvider theme={theme}>
-                    <CssBaseline />
-                    <ErrorBoundary FallbackComponent={ErrorBoundaryFallbackModal} onReset={() => setAppStore(configureAppStore())}>
-                        <App />
-                    </ErrorBoundary>
+                    <ScopedCssBaseline>
+                        <ErrorBoundary FallbackComponent={ErrorBoundaryFallbackModal} onReset={() => setAppStore(configureAppStore())}>
+                            <App />
+                        </ErrorBoundary>
+                    </ScopedCssBaseline>
                 </ThemeProvider>
             </Provider>
         </React.StrictMode>
