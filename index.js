@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.2
+// @version      1.1.3
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -87,4 +87,3 @@ const __vitePreload = function preload(baseModule, deps) {
   })).then(() => baseModule());
 };
 __vitePreload(() => import("./pixelPlanetOverlay-loader.user.js"), true ? [] : void 0);
-__vitePreload(() => import("./pixelPlanetOverlay.user.js"), true ? [] : void 0);
