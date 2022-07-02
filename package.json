@@ -26,7 +26,7 @@
     "author": "Woyken",
     "license": "ISC",
     "devDependencies": {
-        "@babel/core": "7.17.3",
+        "@babel/core": "7.18.6",
         "@open-wc/rollup-plugin-html": "1.2.5",
         "@types/color-string": "1.5.2",
         "@types/jest": "27.4.0",
