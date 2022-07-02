@@ -73,7 +73,7 @@
         "comlink": "^4.3.1",
         "fast-png": "^6.1.0",
         "keycode": "^2.2.1",
-        "nanoevents": "^6.0.2",
+        "nanoevents": "^7.0.0",
         "node-eval": "^2.0.0",
         "open-cli": "^7.0.1",
         "re-reselect": "^4.0.0",
