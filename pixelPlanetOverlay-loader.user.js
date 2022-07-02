@@ -25962,11 +25962,18 @@ const {
 let createNanoEvents = () => ({
   events: {},
   emit(event, ...args) {
-    (this.events[event] || []).forEach((i2) => i2(...args));
+    let callbacks = this.events[event] || [];
+    for (let i2 = 0, length2 = callbacks.length; i2 < length2; i2++) {
+      callbacks[i2](...args);
+    }
   },
   on(event, cb2) {
-    (this.events[event] = this.events[event] || []).push(cb2);
-    return () => this.events[event] = (this.events[event] || []).filter((i2) => i2 !== cb2);
+    var _a;
+    ((_a = this.events[event]) == null ? void 0 : _a.push(cb2)) || (this.events[event] = [cb2]);
+    return () => {
+      var _a2;
+      this.events[event] = (_a2 = this.events[event]) == null ? void 0 : _a2.filter((i2) => cb2 !== i2);
+    };
   }
 });
 const viewPortEvents = createNanoEvents();
