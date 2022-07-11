@@ -206,7 +206,7 @@ function useAutoHandleTouchInputsToHoverState() {
     }, [dispatch, windowSize, viewScale, viewCenter]);
 }
 
-const ProviderPageStateMapper: React.FC<React.PropsWithChildren> = ({ children }) => {
+const ProviderPageStateMapper: React.FC = ({ children }) => {
     useAutoHandleTouchInputsToHoverState();
     useSubscribeToWindowResize();
     useReprocessOutputImage();
