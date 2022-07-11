@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.3
+// @version      1.1.4
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -583,8 +583,8 @@ function createStore(reducer2, preloadedState, enhancer) {
     }
     return currentState;
   }
-  function subscribe(listener) {
-    if (typeof listener !== "function") {
+  function subscribe(listener2) {
+    if (typeof listener2 !== "function") {
       throw new Error(formatProdErrorMessage(4));
     }
     if (isDispatching) {
@@ -592,7 +592,7 @@ function createStore(reducer2, preloadedState, enhancer) {
     }
     var isSubscribed = true;
     ensureCanMutateNextListeners();
-    nextListeners.push(listener);
+    nextListeners.push(listener2);
     return function unsubscribe() {
       if (!isSubscribed) {
         return;
@@ -602,7 +602,7 @@ function createStore(reducer2, preloadedState, enhancer) {
       }
       isSubscribed = false;
       ensureCanMutateNextListeners();
-      var index = nextListeners.indexOf(listener);
+      var index = nextListeners.indexOf(listener2);
       nextListeners.splice(index, 1);
       currentListeners = null;
     };
@@ -625,8 +625,8 @@ function createStore(reducer2, preloadedState, enhancer) {
     }
     var listeners = currentListeners = nextListeners;
     for (var i2 = 0; i2 < listeners.length; i2++) {
-      var listener = listeners[i2];
-      listener();
+      var listener2 = listeners[i2];
+      listener2();
     }
     return action;
   }
@@ -1611,10 +1611,466 @@ function unwrapResult(action) {
 function isThenable(value) {
   return value !== null && typeof value === "object" && typeof value.then === "function";
 }
+var hasMatchFunction = function(v2) {
+  return v2 && typeof v2.match === "function";
+};
+var matches = function(matcher, action) {
+  if (hasMatchFunction(matcher)) {
+    return matcher.match(action);
+  } else {
+    return matcher(action);
+  }
+};
+function isAnyOf() {
+  var matchers = [];
+  for (var _i = 0; _i < arguments.length; _i++) {
+    matchers[_i] = arguments[_i];
+  }
+  return function(action) {
+    return matchers.some(function(matcher) {
+      return matches(matcher, action);
+    });
+  };
+}
+var assertFunction = function(func, expected) {
+  if (typeof func !== "function") {
+    throw new TypeError(expected + " is not a function");
+  }
+};
+var noop$2 = function() {
+};
+var catchRejection = function(promise, onError) {
+  if (onError === void 0) {
+    onError = noop$2;
+  }
+  promise.catch(onError);
+  return promise;
+};
+var addAbortSignalListener = function(abortSignal, callback) {
+  abortSignal.addEventListener("abort", callback, { once: true });
+};
+var abortControllerWithReason = function(abortController, reason) {
+  var signal = abortController.signal;
+  if (signal.aborted) {
+    return;
+  }
+  if (!("reason" in signal)) {
+    Object.defineProperty(signal, "reason", {
+      enumerable: true,
+      value: reason,
+      configurable: true,
+      writable: true
+    });
+  }
+  abortController.abort(reason);
+};
+var task = "task";
+var listener = "listener";
+var completed = "completed";
+var cancelled = "cancelled";
+var taskCancelled = "task-" + cancelled;
+var taskCompleted = "task-" + completed;
+var listenerCancelled = listener + "-" + cancelled;
+var listenerCompleted = listener + "-" + completed;
+var TaskAbortError = function() {
+  function TaskAbortError2(code) {
+    this.code = code;
+    this.name = "TaskAbortError";
+    this.message = task + " " + cancelled + " (reason: " + code + ")";
+  }
+  return TaskAbortError2;
+}();
+var validateActive = function(signal) {
+  if (signal.aborted) {
+    throw new TaskAbortError(signal.reason);
+  }
+};
+var promisifyAbortSignal = function(signal) {
+  return catchRejection(new Promise(function(_2, reject) {
+    var notifyRejection = function() {
+      return reject(new TaskAbortError(signal.reason));
+    };
+    if (signal.aborted) {
+      notifyRejection();
+    } else {
+      addAbortSignalListener(signal, notifyRejection);
+    }
+  }));
+};
+var runTask = function(task2, cleanUp) {
+  return __async(void 0, null, function() {
+    var value, error_1;
+    return __generator$1(this, function(_c) {
+      switch (_c.label) {
+        case 0:
+          _c.trys.push([0, 3, 4, 5]);
+          return [4, Promise.resolve()];
+        case 1:
+          _c.sent();
+          return [4, task2()];
+        case 2:
+          value = _c.sent();
+          return [2, {
+            status: "ok",
+            value
+          }];
+        case 3:
+          error_1 = _c.sent();
+          return [2, {
+            status: error_1 instanceof TaskAbortError ? "cancelled" : "rejected",
+            error: error_1
+          }];
+        case 4:
+          cleanUp == null ? void 0 : cleanUp();
+          return [7];
+        case 5:
+          return [2];
+      }
+    });
+  });
+};
+var createPause = function(signal) {
+  return function(promise) {
+    return catchRejection(Promise.race([promisifyAbortSignal(signal), promise]).then(function(output) {
+      validateActive(signal);
+      return output;
+    }));
+  };
+};
+var createDelay = function(signal) {
+  var pause = createPause(signal);
+  return function(timeoutMs) {
+    return pause(new Promise(function(resolve) {
+      return setTimeout(resolve, timeoutMs);
+    }));
+  };
+};
+var assign$1 = Object.assign;
+var INTERNAL_NIL_TOKEN = {};
 var alm = "listenerMiddleware";
-createAction(alm + "/add");
-createAction(alm + "/removeAll");
-createAction(alm + "/remove");
+var createFork = function(parentAbortSignal) {
+  var linkControllers = function(controller) {
+    return addAbortSignalListener(parentAbortSignal, function() {
+      return abortControllerWithReason(controller, parentAbortSignal.reason);
+    });
+  };
+  return function(taskExecutor) {
+    assertFunction(taskExecutor, "taskExecutor");
+    var childAbortController = new AbortController();
+    linkControllers(childAbortController);
+    var result = runTask(function() {
+      return __async(void 0, null, function() {
+        var result2;
+        return __generator$1(this, function(_c) {
+          switch (_c.label) {
+            case 0:
+              validateActive(parentAbortSignal);
+              validateActive(childAbortController.signal);
+              return [4, taskExecutor({
+                pause: createPause(childAbortController.signal),
+                delay: createDelay(childAbortController.signal),
+                signal: childAbortController.signal
+              })];
+            case 1:
+              result2 = _c.sent();
+              validateActive(childAbortController.signal);
+              return [2, result2];
+          }
+        });
+      });
+    }, function() {
+      return abortControllerWithReason(childAbortController, taskCompleted);
+    });
+    return {
+      result: createPause(parentAbortSignal)(result),
+      cancel: function() {
+        abortControllerWithReason(childAbortController, taskCancelled);
+      }
+    };
+  };
+};
+var createTakePattern = function(startListening, signal) {
+  var take = function(predicate, timeout) {
+    return __async(void 0, null, function() {
+      var unsubscribe, tuplePromise, promises, output;
+      return __generator$1(this, function(_c) {
+        switch (_c.label) {
+          case 0:
+            validateActive(signal);
+            unsubscribe = function() {
+            };
+            tuplePromise = new Promise(function(resolve) {
+              unsubscribe = startListening({
+                predicate,
+                effect: function(action, listenerApi) {
+                  listenerApi.unsubscribe();
+                  resolve([
+                    action,
+                    listenerApi.getState(),
+                    listenerApi.getOriginalState()
+                  ]);
+                }
+              });
+            });
+            promises = [
+              promisifyAbortSignal(signal),
+              tuplePromise
+            ];
+            if (timeout != null) {
+              promises.push(new Promise(function(resolve) {
+                return setTimeout(resolve, timeout, null);
+              }));
+            }
+            _c.label = 1;
+          case 1:
+            _c.trys.push([1, , 3, 4]);
+            return [4, Promise.race(promises)];
+          case 2:
+            output = _c.sent();
+            validateActive(signal);
+            return [2, output];
+          case 3:
+            unsubscribe();
+            return [7];
+          case 4:
+            return [2];
+        }
+      });
+    });
+  };
+  return function(predicate, timeout) {
+    return catchRejection(take(predicate, timeout));
+  };
+};
+var getListenerEntryPropsFrom = function(options) {
+  var type = options.type, actionCreator = options.actionCreator, matcher = options.matcher, predicate = options.predicate, effect2 = options.effect;
+  if (type) {
+    predicate = createAction(type).match;
+  } else if (actionCreator) {
+    type = actionCreator.type;
+    predicate = actionCreator.match;
+  } else if (matcher) {
+    predicate = matcher;
+  } else if (predicate)
+    ;
+  else {
+    throw new Error("Creating or removing a listener requires one of the known fields for matching an action");
+  }
+  assertFunction(effect2, "options.listener");
+  return { predicate, type, effect: effect2 };
+};
+var createListenerEntry = function(options) {
+  var _c = getListenerEntryPropsFrom(options), type = _c.type, predicate = _c.predicate, effect2 = _c.effect;
+  var id2 = nanoid();
+  var entry = {
+    id: id2,
+    effect: effect2,
+    type,
+    predicate,
+    pending: /* @__PURE__ */ new Set(),
+    unsubscribe: function() {
+      throw new Error("Unsubscribe not initialized");
+    }
+  };
+  return entry;
+};
+var createClearListenerMiddleware = function(listenerMap) {
+  return function() {
+    listenerMap.forEach(cancelActiveListeners);
+    listenerMap.clear();
+  };
+};
+var safelyNotifyError = function(errorHandler, errorToNotify, errorInfo) {
+  try {
+    errorHandler(errorToNotify, errorInfo);
+  } catch (errorHandlerError) {
+    setTimeout(function() {
+      throw errorHandlerError;
+    }, 0);
+  }
+};
+var addListener = createAction(alm + "/add");
+var clearAllListeners = createAction(alm + "/removeAll");
+var removeListener = createAction(alm + "/remove");
+var defaultErrorHandler = function() {
+  var args = [];
+  for (var _i = 0; _i < arguments.length; _i++) {
+    args[_i] = arguments[_i];
+  }
+  console.error.apply(console, __spreadArray([alm + "/error"], args));
+};
+var cancelActiveListeners = function(entry) {
+  entry.pending.forEach(function(controller) {
+    abortControllerWithReason(controller, listenerCancelled);
+  });
+};
+function createListenerMiddleware(middlewareOptions) {
+  var _this = this;
+  if (middlewareOptions === void 0) {
+    middlewareOptions = {};
+  }
+  var listenerMap = /* @__PURE__ */ new Map();
+  var extra = middlewareOptions.extra, _c = middlewareOptions.onError, onError = _c === void 0 ? defaultErrorHandler : _c;
+  assertFunction(onError, "onError");
+  var insertEntry = function(entry) {
+    entry.unsubscribe = function() {
+      return listenerMap.delete(entry.id);
+    };
+    listenerMap.set(entry.id, entry);
+    return function(cancelOptions) {
+      entry.unsubscribe();
+      if (cancelOptions == null ? void 0 : cancelOptions.cancelActive) {
+        cancelActiveListeners(entry);
+      }
+    };
+  };
+  var findListenerEntry = function(comparator) {
+    for (var _i = 0, _c2 = listenerMap.values(); _i < _c2.length; _i++) {
+      var entry = _c2[_i];
+      if (comparator(entry)) {
+        return entry;
+      }
+    }
+    return void 0;
+  };
+  var startListening = function(options) {
+    var entry = findListenerEntry(function(existingEntry) {
+      return existingEntry.effect === options.effect;
+    });
+    if (!entry) {
+      entry = createListenerEntry(options);
+    }
+    return insertEntry(entry);
+  };
+  var stopListening = function(options) {
+    var _c2 = getListenerEntryPropsFrom(options), type = _c2.type, effect2 = _c2.effect, predicate = _c2.predicate;
+    var entry = findListenerEntry(function(entry2) {
+      var matchPredicateOrType = typeof type === "string" ? entry2.type === type : entry2.predicate === predicate;
+      return matchPredicateOrType && entry2.effect === effect2;
+    });
+    if (entry) {
+      entry.unsubscribe();
+      if (options.cancelActive) {
+        cancelActiveListeners(entry);
+      }
+    }
+    return !!entry;
+  };
+  var notifyListener = function(entry, action, api, getOriginalState) {
+    return __async(_this, null, function() {
+      var internalTaskController, take, listenerError_1;
+      return __generator$1(this, function(_c2) {
+        switch (_c2.label) {
+          case 0:
+            internalTaskController = new AbortController();
+            take = createTakePattern(startListening, internalTaskController.signal);
+            _c2.label = 1;
+          case 1:
+            _c2.trys.push([1, 3, 4, 5]);
+            entry.pending.add(internalTaskController);
+            return [4, Promise.resolve(entry.effect(action, assign$1({}, api, {
+              getOriginalState,
+              condition: function(predicate, timeout) {
+                return take(predicate, timeout).then(Boolean);
+              },
+              take,
+              delay: createDelay(internalTaskController.signal),
+              pause: createPause(internalTaskController.signal),
+              extra,
+              signal: internalTaskController.signal,
+              fork: createFork(internalTaskController.signal),
+              unsubscribe: entry.unsubscribe,
+              subscribe: function() {
+                listenerMap.set(entry.id, entry);
+              },
+              cancelActiveListeners: function() {
+                entry.pending.forEach(function(controller, _2, set) {
+                  if (controller !== internalTaskController) {
+                    abortControllerWithReason(controller, listenerCancelled);
+                    set.delete(controller);
+                  }
+                });
+              }
+            })))];
+          case 2:
+            _c2.sent();
+            return [3, 5];
+          case 3:
+            listenerError_1 = _c2.sent();
+            if (!(listenerError_1 instanceof TaskAbortError)) {
+              safelyNotifyError(onError, listenerError_1, {
+                raisedBy: "effect"
+              });
+            }
+            return [3, 5];
+          case 4:
+            abortControllerWithReason(internalTaskController, listenerCompleted);
+            entry.pending.delete(internalTaskController);
+            return [7];
+          case 5:
+            return [2];
+        }
+      });
+    });
+  };
+  var clearListenerMiddleware = createClearListenerMiddleware(listenerMap);
+  var middleware2 = function(api) {
+    return function(next2) {
+      return function(action) {
+        if (addListener.match(action)) {
+          return startListening(action.payload);
+        }
+        if (clearAllListeners.match(action)) {
+          clearListenerMiddleware();
+          return;
+        }
+        if (removeListener.match(action)) {
+          return stopListening(action.payload);
+        }
+        var originalState = api.getState();
+        var getOriginalState = function() {
+          if (originalState === INTERNAL_NIL_TOKEN) {
+            throw new Error(alm + ": getOriginalState can only be called synchronously");
+          }
+          return originalState;
+        };
+        var result;
+        try {
+          result = next2(action);
+          if (listenerMap.size > 0) {
+            var currentState = api.getState();
+            var listenerEntries = Array.from(listenerMap.values());
+            for (var _i = 0, listenerEntries_1 = listenerEntries; _i < listenerEntries_1.length; _i++) {
+              var entry = listenerEntries_1[_i];
+              var runListener = false;
+              try {
+                runListener = entry.predicate(action, currentState, originalState);
+              } catch (predicateError) {
+                runListener = false;
+                safelyNotifyError(onError, predicateError, {
+                  raisedBy: "predicate"
+                });
+              }
+              if (!runListener) {
+                continue;
+              }
+              notifyListener(entry, action, api, getOriginalState);
+            }
+          }
+        } finally {
+          originalState = INTERNAL_NIL_TOKEN;
+        }
+        return result;
+      };
+    };
+  };
+  return {
+    middleware: middleware2,
+    startListening,
+    stopListening,
+    clearListeners: clearListenerMiddleware
+  };
+}
 N$2();
 const initialState$5 = {
   gameGui: {
@@ -2178,18 +2634,6 @@ const loadSavedConfigurations = createAsyncThunk("imageProcessing/loadSavedConfi
 }) => {
   return JSON.parse(localStorage.getItem("OverlaySavedConfigurationsv2") || "[]");
 });
-const saveCurrentConfigurationsToLocalStorage = createAsyncThunk("imageProcessing/saveCurrentConfigurationsToLocalStorage", async (_2, {
-  getState
-}) => {
-  const savedConfigurations = selectSavedConfigurations(getState());
-  localStorage.setItem("OverlaySavedConfigurationsv2", JSON.stringify(savedConfigurations));
-});
-const saveConfiguration = createAsyncThunk("imageProcessing/saveConfiguration", async (configuration, {
-  dispatch
-}) => {
-  delay(0).then(() => dispatch(saveCurrentConfigurationsToLocalStorage()));
-  return configuration;
-});
 const initialState$4 = {
   savedConfigs: [],
   overlayEnabled: true,
@@ -2258,6 +2702,16 @@ const overlaySlice = createSlice({
     setWindowSize: (state, action) => {
       state.browserWindow = action.payload;
     },
+    saveConfiguration: (state, action) => {
+      const savedConfigurations = state.savedConfigs;
+      const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload.imageUrl);
+      if (existingConfiguration != null) {
+        existingConfiguration.modifiers = action.payload.modifiers;
+        existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
+      } else {
+        savedConfigurations.push(action.payload);
+      }
+    },
     removeSavedConfig: (state, action) => {
       const savedConfigurations = state.savedConfigs;
       const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload);
@@ -2307,16 +2761,6 @@ const overlaySlice = createSlice({
     });
     builder.addCase(loadSavedConfigurations.fulfilled, (state, action) => {
       state.savedConfigs = action.payload;
-    });
-    builder.addCase(saveConfiguration.fulfilled, (state, action) => {
-      const savedConfigurations = state.savedConfigs;
-      const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload.imageUrl);
-      if (existingConfiguration != null) {
-        existingConfiguration.modifiers = action.payload.modifiers;
-        existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
-      } else {
-        savedConfigurations.push(action.payload);
-      }
     });
   }
 });
@@ -2702,6 +3146,8 @@ const selectPixelsToPlaceBySplitRenderCanvasId = createCachedSelector(selectPixe
     return [];
   return pixelIdsToPlace.map((pixelId) => pixelsToPlaceQueue[pixelId]).filter((pixel) => !!pixel).map((pixel) => pixel);
 })((_2, renderCanvasId) => renderCanvasId);
+const listenerMiddleware = createListenerMiddleware();
+const startAppListening = listenerMiddleware.startListening;
 function configureAppStore() {
   return configureStore({
     reducer: {
@@ -2710,7 +3156,10 @@ function configureAppStore() {
       chunkData: chunkDataSlice.reducer,
       pixelPlacement: pixelPlacementSlice.reducer
     },
-    devTools: false
+    devTools: false,
+    middleware(getDefaultMiddleware2) {
+      return getDefaultMiddleware2().concat([listenerMiddleware.middleware]);
+    }
   });
 }
 const store = configureAppStore();
@@ -10913,47 +11362,47 @@ function createListenerCollection() {
     },
     notify() {
       batch2(() => {
-        let listener = first;
-        while (listener) {
-          listener.callback();
-          listener = listener.next;
+        let listener2 = first;
+        while (listener2) {
+          listener2.callback();
+          listener2 = listener2.next;
         }
       });
     },
     get() {
       let listeners = [];
-      let listener = first;
-      while (listener) {
-        listeners.push(listener);
-        listener = listener.next;
+      let listener2 = first;
+      while (listener2) {
+        listeners.push(listener2);
+        listener2 = listener2.next;
       }
       return listeners;
     },
     subscribe(callback) {
       let isSubscribed = true;
-      let listener = last = {
+      let listener2 = last = {
         callback,
         next: null,
         prev: last
       };
-      if (listener.prev) {
-        listener.prev.next = listener;
+      if (listener2.prev) {
+        listener2.prev.next = listener2;
       } else {
-        first = listener;
+        first = listener2;
       }
       return function unsubscribe() {
         if (!isSubscribed || first === null)
           return;
         isSubscribed = false;
-        if (listener.next) {
-          listener.next.prev = listener.prev;
+        if (listener2.next) {
+          listener2.next.prev = listener2.prev;
         } else {
-          last = listener.prev;
+          last = listener2.prev;
         }
-        if (listener.prev) {
-          listener.prev.next = listener.next;
+        if (listener2.prev) {
+          listener2.prev.next = listener2.next;
         } else {
-          first = listener.next;
+          first = listener2.next;
         }
       };
     }
@@ -10967,9 +11416,9 @@ const nullListeners = {
 function createSubscription(store2, parentSub) {
   let unsubscribe;
   let listeners = nullListeners;
-  function addNestedSub(listener) {
+  function addNestedSub(listener2) {
     trySubscribe();
-    return listeners.subscribe(listener);
+    return listeners.subscribe(listener2);
   }
   function notifyNestedSubs() {
     listeners.notify();
@@ -22800,9 +23249,9 @@ function useMediaQueryNew(query, defaultMatches, matchMedia, ssrMatchMedia) {
   const getServerSnapshot = react.exports.useMemo(() => {
     if (ssrMatchMedia !== null) {
       const {
-        matches
+        matches: matches2
       } = ssrMatchMedia(query);
-      return () => matches;
+      return () => matches2;
     }
     return getDefaultSnapshot;
   }, [getDefaultSnapshot, query, ssrMatchMedia]);
@@ -26234,17 +26683,17 @@ class WebSocketWrapper {
     (_a = this.ws) == null ? void 0 : _a.send(data);
     this.isLocalEvent = false;
   }
-  subscribe(type, listener) {
+  subscribe(type, listener2) {
     var _a;
     this.listeners.push({
       type,
-      listener
+      listener: listener2
     });
-    (_a = this.ws) == null ? void 0 : _a.addEventListener(type, listener);
+    (_a = this.ws) == null ? void 0 : _a.addEventListener(type, listener2);
     return () => {
       var _a2;
-      (_a2 = this.ws) == null ? void 0 : _a2.removeEventListener(type, listener);
-      const index = this.listeners.findIndex((x2) => x2.type === type && x2.listener === listener);
+      (_a2 = this.ws) == null ? void 0 : _a2.removeEventListener(type, listener2);
+      const index = this.listeners.findIndex((x2) => x2.type === type && x2.listener === listener2);
       if (index === -1)
         return;
       this.listeners.splice(index, 1);
@@ -28031,12 +28480,25 @@ const usePageReduxStoreSetViewCoordsAction = () => {
       dispatch(setViewCoordinates([x2, y2]));
   };
 };
+const useSavedConfigurations = () => {
+  react.exports.useEffect(() => {
+    const unsubscribeSaveConfig = startAppListening({
+      matcher: isAnyOf(overlaySlice.actions.saveConfiguration, overlaySlice.actions.removeSavedConfig),
+      effect: (action, listenerApi) => {
+        const savedConfigurations = selectSavedConfigurations(listenerApi.getState());
+        localStorage.setItem("OverlaySavedConfigurationsv2", JSON.stringify(savedConfigurations));
+      }
+    });
+    return () => unsubscribeSaveConfig();
+  });
+  return useAppSelector(selectSavedConfigurations);
+};
 const ConfigDropDown = () => {
   const {
     classes
   } = useStyles$6();
   const dispatch = useAppDispatch();
-  const savedConfigurations = useAppSelector(selectSavedConfigurations);
+  const savedConfigurations = useSavedConfigurations();
   const inputUrl = useAppSelector(selectInputUrl);
   const currentStateAsConfiguration = useAppSelector(selectCurrentStateAsConfiguration);
   const setViewCoords = usePageReduxStoreSetViewCoordsAction();
@@ -28059,7 +28521,7 @@ const ConfigDropDown = () => {
   };
   const onSaveActiveConfiguration = () => {
     if (currentStateAsConfiguration)
-      dispatch(saveConfiguration(currentStateAsConfiguration));
+      dispatch(overlaySlice.actions.saveConfiguration(currentStateAsConfiguration));
   };
   const onRemoveConfig = (config2) => {
     dispatch(overlaySlice.actions.removeSavedConfig(config2.imageUrl));
