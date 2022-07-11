@@ -4,6 +4,7 @@ import { chunkDataSlice } from './slices/chunkDataSlice';
 import { gameSlice } from './slices/gameSlice';
 import { overlaySlice } from './slices/overlaySlice';
 import { pixelPlacementSlice } from './slices/pixelPlacementSlice';
+import { listenerMiddleware } from './storeMiddlewareCreator';
 
 export function configureAppStore() {
     return configureStore({
@@ -14,6 +15,9 @@ export function configureAppStore() {
             pixelPlacement: pixelPlacementSlice.reducer,
         },
         devTools: import.meta.env.DEV,
+        middleware(getDefaultMiddleware) {
+            return getDefaultMiddleware().concat([listenerMiddleware.middleware]);
+        },
     });
 }
 

@@ -1,5 +1,5 @@
-import { saveConfiguration, setInputImageAction } from 'actions/imageProcessing';
-import React from 'react';
+import { setInputImageAction } from 'actions/imageProcessing';
+import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { OverlaySavedConfigurationState, overlaySlice, selectCurrentStateAsConfiguration, selectInputUrl, selectSavedConfigurations } from 'store/slices/overlaySlice';
 import { makeStyles } from 'theme/makeStyles';
@@ -11,6 +11,8 @@ import { FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip } from '
 import logger from '../../handlers/logger';
 
 import { ConfigDropDownElement } from './element/configDropDownElement';
+import { startAppListening } from 'store/storeMiddlewareCreator';
+import { isAnyOf } from '@reduxjs/toolkit';
 
 const useStyles = makeStyles()({
     configDropDownSelector: {
@@ -33,10 +35,25 @@ export const usePageReduxStoreSetViewCoordsAction = () => {
     };
 };
 
+const useSavedConfigurations = () => {
+    useEffect(() => {
+        const unsubscribeSaveConfig = startAppListening({
+            matcher: isAnyOf(overlaySlice.actions.saveConfiguration, overlaySlice.actions.removeSavedConfig),
+            effect: (action, listenerApi) => {
+                const savedConfigurations = selectSavedConfigurations(listenerApi.getState());
+                localStorage.setItem('OverlaySavedConfigurationsv2', JSON.stringify(savedConfigurations));
+            },
+        });
+        return () => unsubscribeSaveConfig();
+    });
+
+    return useAppSelector(selectSavedConfigurations);
+};
+
 const ConfigDropDown: React.FC = () => {
     const { classes } = useStyles();
     const dispatch = useAppDispatch();
-    const savedConfigurations = useAppSelector(selectSavedConfigurations);
+    const savedConfigurations = useSavedConfigurations();
     const inputUrl = useAppSelector(selectInputUrl);
     const currentStateAsConfiguration = useAppSelector(selectCurrentStateAsConfiguration);
 
@@ -60,7 +77,7 @@ const ConfigDropDown: React.FC = () => {
     };
 
     const onSaveActiveConfiguration = () => {
-        if (currentStateAsConfiguration) dispatch(saveConfiguration(currentStateAsConfiguration));
+        if (currentStateAsConfiguration) dispatch(overlaySlice.actions.saveConfiguration(currentStateAsConfiguration));
     };
 
     const onRemoveConfig = (config: OverlaySavedConfigurationState) => {
