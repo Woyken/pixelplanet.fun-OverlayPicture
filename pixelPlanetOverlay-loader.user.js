@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.4
+// @version      1.1.5
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -3503,13 +3503,13 @@ function getStoreFromReactInternalEl(el2) {
   return parentStore;
 }
 function findReactRootContainerEl() {
-  return Array.from(document.getElementsByTagName("div")).filter((el2) => el2.id !== "PictureOverlay_RootNode").find((el2) => {
-    var _a, _b;
-    return !!((_b = (_a = el2._reactRootContainer) == null ? void 0 : _a._internalRoot) == null ? void 0 : _b.current);
-  });
+  return document.getElementById("app");
 }
 function findStoreInRoot(el2) {
-  const root = el2._reactRootContainer._internalRoot.current;
+  const reactContainerName = Object.keys(el2).filter((k2) => k2.startsWith("__reactContainer"))[0];
+  if (!reactContainerName)
+    throw new Error("couldn't find internal react root");
+  const root = el2[reactContainerName];
   let checkedReactInternalElement = root;
   while (checkedReactInternalElement.child) {
     const store2 = getStoreFromReactInternalEl(checkedReactInternalElement);
