@@ -1,4 +1,4 @@
-import { clearInputImageAction, startNewImageReadingProcess } from 'actions/imageProcessing';
+import { clearInputImageAction, clearOutputImageAction, startNewImageReadingProcess, startProcessingOutputImage } from 'actions/imageProcessing';
 
 import { createSlice } from '@reduxjs/toolkit';
 
@@ -10,13 +10,23 @@ interface LoadedImageState {
     };
 }
 
+interface OverlayImageOutputState {
+    abortController?: AbortController;
+    isProcessing: boolean;
+    imageData?: ImageData;
+}
+
 interface ProcessedImagesState {
     inputImage: LoadedImageState;
+    outputImage: OverlayImageOutputState;
 }
 
 const initialState: ProcessedImagesState = {
     inputImage: {
         loadedImage: { status: 'none' },
+    },
+    outputImage: {
+        isProcessing: false,
     },
 };
 
@@ -41,6 +51,19 @@ export const processedImagesSlice = createSlice({
             state.inputImage.loadedImage.status = 'none';
             state.inputImage.loadedImage.error = undefined;
             state.inputImage.loadedImage.imageData = undefined;
+        });
+        builder.addCase(startProcessingOutputImage.pending, (state) => {
+            state.outputImage.isProcessing = true;
+        });
+        builder.addCase(startProcessingOutputImage.fulfilled, (state, action) => {
+            state.outputImage.isProcessing = false;
+            state.outputImage.imageData = action.payload.outImageData;
+            state.outputImage.abortController = action.payload.abortController;
+        });
+        builder.addCase(clearOutputImageAction.fulfilled, (state) => {
+            state.outputImage.imageData = undefined;
+            state.outputImage.abortController = undefined;
+            state.outputImage.isProcessing = false;
         });
     },
 });

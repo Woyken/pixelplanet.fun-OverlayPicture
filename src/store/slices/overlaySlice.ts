@@ -11,15 +11,9 @@ interface OverlayImageInputState {
     url?: string;
     file?: File;
 }
-interface OverlayImageOutputState {
-    abortController?: AbortController;
-    isProcessing: boolean;
-    imageData?: ImageData;
-}
 
 interface OverlayImageState {
     inputImage: OverlayImageInputState;
-    outputImage: OverlayImageOutputState;
 }
 
 interface PlacementConfigurationState {
@@ -60,7 +54,7 @@ interface OverlayState {
 const initialState: OverlayState = {
     savedConfigs: [],
     overlayEnabled: true,
-    overlayImage: { inputImage: {}, outputImage: { isProcessing: false } },
+    overlayImage: { inputImage: {} },
     placementConfiguration: { yOffset: 0, xOffset: 0, transparency: 92, isFollowMouseActive: false, autoSelectColor: false },
     modifications: { imageBrightness: 0, shouldConvertColors: false, smolPixels: false },
     isBotModalVisible: false,
@@ -130,19 +124,6 @@ export const overlaySlice = createSlice({
         builder.addCase(clearInputImageAction.fulfilled, (state) => {
             state.overlayImage.inputImage.file = undefined;
             state.overlayImage.inputImage.url = undefined;
-        });
-        builder.addCase(startProcessingOutputImage.pending, (state) => {
-            state.overlayImage.outputImage.isProcessing = true;
-        });
-        builder.addCase(startProcessingOutputImage.fulfilled, (state, action) => {
-            state.overlayImage.outputImage.isProcessing = false;
-            state.overlayImage.outputImage.imageData = action.payload.outImageData;
-            state.overlayImage.outputImage.abortController = action.payload.abortController;
-        });
-        builder.addCase(clearOutputImageAction.fulfilled, (state) => {
-            state.overlayImage.outputImage.imageData = undefined;
-            state.overlayImage.outputImage.abortController = undefined;
-            state.overlayImage.outputImage.isProcessing = false;
         });
         builder.addCase(loadSavedConfigurations.fulfilled, (state, action) => {
             state.savedConfigs = action.payload;
@@ -234,14 +215,14 @@ export const selectInputImageLoadingStatus = createSelector(
 );
 
 export const selectIsOutputImageProcessing = createSelector(
-    (state: RootState) => state.overlay.overlayImage.outputImage.isProcessing,
+    (state: RootState) => state.processedImages.outputImage.isProcessing,
     (isProcessing) => isProcessing
 );
 
 const selectOutputImageData = createSelector(
-    (state: RootState) => state.overlay.overlayImage.outputImage.isProcessing,
-    (state: RootState) => state.overlay.overlayImage.outputImage.imageData,
-    (state: RootState) => state.overlay.overlayImage.outputImage.abortController,
+    (state: RootState) => state.processedImages.outputImage.isProcessing,
+    (state: RootState) => state.processedImages.outputImage.imageData,
+    (state: RootState) => state.processedImages.outputImage.abortController,
     (isProcessing, imageData, abortController) => {
         if (!isProcessing && imageData) {
             return imageData;

@@ -48,7 +48,7 @@ export const clearInputImageAction = createAsyncThunk<void, void, { state: RootS
 });
 
 export const clearOutputImageAction = createAsyncThunk<void, void, { state: RootState }>('imageProcessing/clearOutputImage', async (_, { getState }) => {
-    getState().overlay.overlayImage.outputImage.abortController?.abort();
+    getState().processedImages.outputImage.abortController?.abort();
     // const url = selectCombinedInputUrl(getState());
     // if (url == null) return;
     // delete outputImageDataMap[url];
