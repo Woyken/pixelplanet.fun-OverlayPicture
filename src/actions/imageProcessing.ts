@@ -19,14 +19,12 @@ type InputImage = File | string;
 type SetInputImageActionResult = {
     url?: string;
     file?: File;
-    fileId?: number;
 };
 export const setInputImageAction = createAsyncThunk<SetInputImageActionResult, InputImage, { state: RootState }>('imageProcessing/setInputImage', async (input, { dispatch, getState }) => {
     await dispatch(clearInputImageAction());
 
     const file = typeof input !== 'string' ? input : undefined;
     const url = typeof input === 'string' ? input : undefined;
-    const fileId = typeof input === 'number' ? input : undefined;
 
     // if (typeof input !== 'string') {
     //     dbAddFile({inputImage: input, });
@@ -38,7 +36,6 @@ export const setInputImageAction = createAsyncThunk<SetInputImageActionResult, I
     return {
         file,
         url,
-        fileId,
     };
 });
 

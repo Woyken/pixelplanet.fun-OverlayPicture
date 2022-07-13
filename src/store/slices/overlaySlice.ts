@@ -18,7 +18,6 @@ import { selectCanvasPalette, selectCanvasReservedColorCount, selectGameViewCent
 interface OverlayImageInputState {
     url?: string;
     file?: File;
-    fileId?: number;
     loadedImage: {
         status: 'loading' | 'loaded' | 'error' | 'none';
         error?: string;
@@ -128,7 +127,6 @@ export const overlaySlice = createSlice({
     },
     extraReducers: (builder) => {
         builder.addCase(setInputImageAction.fulfilled, (state, action) => {
-            state.overlayImage.inputImage.fileId = action.payload.fileId;
             state.overlayImage.inputImage.url = action.payload.url;
             state.overlayImage.inputImage.file = action.payload.file;
         });
@@ -147,7 +145,6 @@ export const overlaySlice = createSlice({
         builder.addCase(clearInputImageAction.fulfilled, (state) => {
             state.overlayImage.inputImage.file = undefined;
             state.overlayImage.inputImage.url = undefined;
-            state.overlayImage.inputImage.fileId = undefined;
             state.overlayImage.inputImage.loadedImage.status = 'none';
             state.overlayImage.inputImage.loadedImage.error = undefined;
             state.overlayImage.inputImage.loadedImage.imageData = undefined;
@@ -287,14 +284,9 @@ export const selectRenderImageData = createSelector(selectOutputImageData, selec
 
 export const selectShouldShowImageFromData = createSelector(selectRenderImageData, (imageData) => !!imageData);
 
-const selectInputFileId = createSelector(
-    (state: RootState) => state.overlay.overlayImage.inputImage.fileId,
-    (fileId) => fileId
-);
-
-export const selectShouldShowImageFromUrl = createSelector(selectShouldShowImageFromData, selectInputFile, selectInputFileId, selectInputUrl, (shouldShowImageFromData, file, fileId, url) => {
+export const selectShouldShowImageFromUrl = createSelector(selectShouldShowImageFromData, selectInputFile, selectInputUrl, (shouldShowImageFromData, file, url) => {
     if (shouldShowImageFromData) return false;
-    if (file || fileId || url) return true;
+    if (file || url) return true;
     return false;
 });
 
