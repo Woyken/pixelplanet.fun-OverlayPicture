@@ -2,15 +2,7 @@ import colorConverter from 'colorConverter';
 
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import {
-    clearInputImageAction,
-    clearOutputImageAction,
-    loadSavedConfigurations,
-    saveConfiguration,
-    setInputImageAction,
-    startNewImageReadingProcess,
-    startProcessingOutputImage,
-} from '../../actions/imageProcessing';
+import { clearInputImageAction, clearOutputImageAction, loadSavedConfigurations, saveConfiguration, setInputImageAction, startProcessingOutputImage } from '../../actions/imageProcessing';
 import { RootState } from '../store';
 
 import { selectCanvasPalette, selectCanvasReservedColorCount, selectGameViewCenter, selectGameViewScale, selectHoverPixel } from './gameSlice';
@@ -18,11 +10,6 @@ import { selectCanvasPalette, selectCanvasReservedColorCount, selectGameViewCent
 interface OverlayImageInputState {
     url?: string;
     file?: File;
-    loadedImage: {
-        status: 'loading' | 'loaded' | 'error' | 'none';
-        error?: string;
-        imageData?: ImageData;
-    };
 }
 interface OverlayImageOutputState {
     abortController?: AbortController;
@@ -73,7 +60,7 @@ interface OverlayState {
 const initialState: OverlayState = {
     savedConfigs: [],
     overlayEnabled: true,
-    overlayImage: { inputImage: { loadedImage: { status: 'none' } }, outputImage: { isProcessing: false } },
+    overlayImage: { inputImage: {}, outputImage: { isProcessing: false } },
     placementConfiguration: { yOffset: 0, xOffset: 0, transparency: 92, isFollowMouseActive: false, autoSelectColor: false },
     modifications: { imageBrightness: 0, shouldConvertColors: false, smolPixels: false },
     isBotModalVisible: false,
@@ -130,24 +117,9 @@ export const overlaySlice = createSlice({
             state.overlayImage.inputImage.url = action.payload.url;
             state.overlayImage.inputImage.file = action.payload.file;
         });
-        builder.addCase(startNewImageReadingProcess.pending, (state) => {
-            state.overlayImage.inputImage.loadedImage.status = 'loading';
-            state.overlayImage.inputImage.loadedImage.error = undefined;
-        });
-        builder.addCase(startNewImageReadingProcess.fulfilled, (state, action) => {
-            state.overlayImage.inputImage.loadedImage.status = 'loaded';
-            state.overlayImage.inputImage.loadedImage.imageData = action.payload;
-        });
-        builder.addCase(startNewImageReadingProcess.rejected, (state, action) => {
-            state.overlayImage.inputImage.loadedImage.status = 'error';
-            state.overlayImage.inputImage.loadedImage.error = action.error.message;
-        });
         builder.addCase(clearInputImageAction.fulfilled, (state) => {
             state.overlayImage.inputImage.file = undefined;
             state.overlayImage.inputImage.url = undefined;
-            state.overlayImage.inputImage.loadedImage.status = 'none';
-            state.overlayImage.inputImage.loadedImage.error = undefined;
-            state.overlayImage.inputImage.loadedImage.imageData = undefined;
         });
         builder.addCase(startProcessingOutputImage.pending, (state) => {
             state.overlayImage.outputImage.isProcessing = true;
@@ -184,7 +156,7 @@ export const selectInputUrl = createSelector(
 );
 
 export const selectInputImageData = createSelector(
-    (state: RootState) => state.overlay.overlayImage.inputImage.loadedImage.imageData,
+    (state: RootState) => state.processedImages.inputImage.loadedImage.imageData,
     (imageData) => imageData
 );
 
@@ -257,7 +229,7 @@ export const selectIsOverlayEnabled = createSelector(
 );
 
 export const selectInputImageLoadingStatus = createSelector(
-    (state: RootState) => state.overlay.overlayImage.inputImage.loadedImage.status,
+    (state: RootState) => state.processedImages.inputImage.loadedImage.status,
     (status) => status
 );
 

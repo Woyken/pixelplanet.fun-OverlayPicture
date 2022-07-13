@@ -4,6 +4,7 @@ import { chunkDataSlice } from './slices/chunkDataSlice';
 import { gameSlice } from './slices/gameSlice';
 import { overlaySlice } from './slices/overlaySlice';
 import { pixelPlacementSlice } from './slices/pixelPlacementSlice';
+import { processedImagesSlice } from './slices/precessedImages';
 
 export function configureAppStore() {
     return configureStore({
@@ -12,6 +13,7 @@ export function configureAppStore() {
             game: gameSlice.reducer,
             chunkData: chunkDataSlice.reducer,
             pixelPlacement: pixelPlacementSlice.reducer,
+            processedImages: processedImagesSlice.reducer,
         },
         devTools: import.meta.env.DEV,
     });
