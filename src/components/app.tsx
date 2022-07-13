@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { gameSlice, selectCanvasUserPalette, selectGameViewCenter, selectGameViewScale } from '../store/slices/gameSlice';
 import {
     overlaySlice,
+    selectInputImageData,
     selectInputUrl,
     selectIsOverlayEnabled,
     selectModifierImageBrightness,
@@ -170,10 +171,11 @@ function useReprocessOutputImage() {
     const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
     const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
     const modifierSmolPixels = useAppSelector(selectModifierSmolPixels);
+    const inputImageData = useAppSelector(selectInputImageData);
     useEffect(() => {
         dispatch(startProcessingOutputImage());
         // If anything changes, restart processing
-    }, [dispatch, url, palette, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels]);
+    }, [dispatch, url, palette, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels, inputImageData]);
 }
 
 function useSubscribeToWindowResize() {
