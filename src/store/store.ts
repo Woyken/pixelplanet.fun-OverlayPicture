@@ -1,3 +1,6 @@
+import localforage from 'localforage';
+import { persistReducer, persistStore } from 'redux-persist';
+
 import { configureStore } from '@reduxjs/toolkit';
 
 import { chunkDataSlice } from './slices/chunkDataSlice';
@@ -7,10 +10,23 @@ import { pixelPlacementSlice } from './slices/pixelPlacementSlice';
 import { processedImagesSlice } from './slices/precessedImages';
 import { listenerMiddleware } from './storeMiddlewareCreator';
 
+const reduxPersistedStorage = localforage.createInstance({
+    name: 'picture_overlay',
+    storeName: 'redux_persisted',
+});
+
+const commonPersistReducerParams = {
+    serialize: false,
+    deserialize: false,
+    storage: reduxPersistedStorage,
+};
+
+const persistedOverlayReducer = persistReducer({ ...commonPersistReducerParams, key: 'overlay' }, overlaySlice.reducer);
+
 export function configureAppStore() {
     return configureStore({
         reducer: {
-            overlay: overlaySlice.reducer,
+            overlay: persistedOverlayReducer,
             game: gameSlice.reducer,
             chunkData: chunkDataSlice.reducer,
             pixelPlacement: pixelPlacementSlice.reducer,
@@ -24,6 +40,7 @@ export function configureAppStore() {
 }
 
 export const store = configureAppStore();
+export const persistor = persistStore(store);
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,7 +1,8 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Provider } from 'react-redux';
-import { configureAppStore, store } from 'store/store';
+import { PersistGate } from 'redux-persist/integration/react';
+import { configureAppStore, persistor, store } from 'store/store';
 import { useAppTheme } from 'theme/makeStyles';
 import { GlobalStyles } from 'tss-react';
 
@@ -16,21 +17,23 @@ const AppProvidersWrapper: React.FC = () => {
     return (
         <React.StrictMode>
             <Provider store={appStore}>
-                <GlobalStyles
-                    styles={{
-                        body: {
-                            margin: 0,
-                            padding: 0,
-                        },
-                    }}
-                />
-                <ThemeProvider theme={theme}>
-                    <ScopedCssBaseline>
-                        <ErrorBoundary FallbackComponent={ErrorBoundaryFallbackModal} onReset={() => setAppStore(configureAppStore())}>
-                            <App />
-                        </ErrorBoundary>
-                    </ScopedCssBaseline>
-                </ThemeProvider>
+                <PersistGate loading={null} persistor={persistor}>
+                    <GlobalStyles
+                        styles={{
+                            body: {
+                                margin: 0,
+                                padding: 0,
+                            },
+                        }}
+                    />
+                    <ThemeProvider theme={theme}>
+                        <ScopedCssBaseline>
+                            <ErrorBoundary FallbackComponent={ErrorBoundaryFallbackModal} onReset={() => setAppStore(configureAppStore())}>
+                                <App />
+                            </ErrorBoundary>
+                        </ScopedCssBaseline>
+                    </ThemeProvider>
+                </PersistGate>
             </Provider>
         </React.StrictMode>
     );
