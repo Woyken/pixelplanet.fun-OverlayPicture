@@ -3,7 +3,7 @@ import { webSocketEvents } from 'gameInjection/webSockets/webSocketEvents';
 import React, { useCallback, useEffect } from 'react';
 import { chunkDataSlice } from 'store/slices/chunkDataSlice';
 
-import { loadSavedConfigurations, startProcessingOutputImage } from '../actions/imageProcessing';
+import { loadSavedConfigurations, startProcessingOutputImage, useReadingInputImageProcess } from '../actions/imageProcessing';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { gameSlice, selectCanvasUserPalette, selectGameViewCenter, selectGameViewScale } from '../store/slices/gameSlice';
 import {
@@ -220,6 +220,7 @@ const ProviderPageStateMapper: React.FC<React.PropsWithChildren> = ({ children }
     usePageStoreCanvasReservedColors();
     usePageStoreCanvasId();
     useWebSocketEvents();
+    useReadingInputImageProcess();
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <>{children}</>;
 };

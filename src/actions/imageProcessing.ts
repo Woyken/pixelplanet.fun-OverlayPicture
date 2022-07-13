@@ -1,4 +1,6 @@
 import { createAsyncThunk, isAnyOf } from '@reduxjs/toolkit';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
 
 import { pictureConverterApi, tryReadingImageData } from '../pictureConversionApi';
 import { selectCanvasUserPalette } from '../store/slices/gameSlice';
@@ -25,13 +27,6 @@ export const setInputImageAction = createAsyncThunk<SetInputImageActionResult, I
     const file = typeof input !== 'string' ? input : undefined;
     const url = typeof input === 'string' ? input : undefined;
 
-    // if (typeof input !== 'string') {
-    //     dbAddFile({inputImage: input, });
-    // }
-
-    // TODO check if this is needed.
-    // Probably will have to wait for a small timeout until state actually updates
-    delay(0).then(() => dispatch(startNewImageReadingProcess()));
     return {
         file,
         url,
@@ -54,6 +49,16 @@ export const clearOutputImageAction = createAsyncThunk<void, void, { state: Root
     // delete outputImageDataMap[url];
     // cancelOngoingInputFileProcess(url);
 });
+
+export function useReadingInputImageProcess() {
+    const inputFile = useAppSelector(selectInputFile);
+    const inputUrl = useAppSelector(selectInputUrl);
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+        dispatch(startNewImageReadingProcess());
+    }, [inputFile, inputUrl]);
+}
 
 export const startNewImageReadingProcess = createAsyncThunk<ImageData | undefined, void, { state: RootState }>('imageProcessing/startNewImageReadingProcess', async (_, { dispatch, getState }) => {
     const url = selectInputUrl(getState());
