@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.5
+// @version      1.1.6
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -490,7 +490,7 @@ an.applyPatches.bind(an);
 an.createDraft.bind(an);
 an.finishDraft.bind(an);
 var createNextState2 = fn;
-function _defineProperty$2(obj, key, value) {
+function _defineProperty$6(obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
       value,
@@ -503,7 +503,7 @@ function _defineProperty$2(obj, key, value) {
   }
   return obj;
 }
-function ownKeys$2(object, enumerableOnly) {
+function ownKeys$5(object, enumerableOnly) {
   var keys = Object.keys(object);
   if (Object.getOwnPropertySymbols) {
     var symbols = Object.getOwnPropertySymbols(object);
@@ -516,9 +516,9 @@ function ownKeys$2(object, enumerableOnly) {
 function _objectSpread2(target) {
   for (var i2 = 1; i2 < arguments.length; i2++) {
     var source = arguments[i2] != null ? arguments[i2] : {};
-    i2 % 2 ? ownKeys$2(Object(source), true).forEach(function(key) {
-      _defineProperty$2(target, key, source[key]);
-    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$2(Object(source)).forEach(function(key) {
+    i2 % 2 ? ownKeys$5(Object(source), true).forEach(function(key) {
+      _defineProperty$6(target, key, source[key]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$5(Object(source)).forEach(function(key) {
       Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
     });
   }
@@ -2072,7 +2072,7 @@ function createListenerMiddleware(middlewareOptions) {
   };
 }
 N$2();
-const initialState$5 = {
+const initialState$7 = {
   gameGui: {
     hoverPixel: {
       x: 0,
@@ -2098,7 +2098,7 @@ const initialState$5 = {
   }
 };
 const gameSlice = createSlice({
-  initialState: initialState$5,
+  initialState: initialState$7,
   name: "game",
   reducers: {
     setHoverPixel: (state, action) => {
@@ -2206,963 +2206,6 @@ const colorConverter = {
     return [r2, g2, b2];
   }
 };
-const proxyMarker = Symbol("Comlink.proxy");
-const createEndpoint = Symbol("Comlink.endpoint");
-const releaseProxy = Symbol("Comlink.releaseProxy");
-const throwMarker = Symbol("Comlink.thrown");
-const isObject$1 = (val) => typeof val === "object" && val !== null || typeof val === "function";
-const proxyTransferHandler = {
-  canHandle: (val) => isObject$1(val) && val[proxyMarker],
-  serialize(obj) {
-    const { port1, port2 } = new MessageChannel();
-    expose(obj, port1);
-    return [port2, [port2]];
-  },
-  deserialize(port) {
-    port.start();
-    return wrap(port);
-  }
-};
-const throwTransferHandler = {
-  canHandle: (value) => isObject$1(value) && throwMarker in value,
-  serialize({ value }) {
-    let serialized;
-    if (value instanceof Error) {
-      serialized = {
-        isError: true,
-        value: {
-          message: value.message,
-          name: value.name,
-          stack: value.stack
-        }
-      };
-    } else {
-      serialized = { isError: false, value };
-    }
-    return [serialized, []];
-  },
-  deserialize(serialized) {
-    if (serialized.isError) {
-      throw Object.assign(new Error(serialized.value.message), serialized.value);
-    }
-    throw serialized.value;
-  }
-};
-const transferHandlers = /* @__PURE__ */ new Map([
-  ["proxy", proxyTransferHandler],
-  ["throw", throwTransferHandler]
-]);
-function expose(obj, ep = self) {
-  ep.addEventListener("message", function callback(ev) {
-    if (!ev || !ev.data) {
-      return;
-    }
-    const { id: id2, type, path } = Object.assign({ path: [] }, ev.data);
-    const argumentList = (ev.data.argumentList || []).map(fromWireValue);
-    let returnValue;
-    try {
-      const parent = path.slice(0, -1).reduce((obj2, prop) => obj2[prop], obj);
-      const rawValue = path.reduce((obj2, prop) => obj2[prop], obj);
-      switch (type) {
-        case "GET":
-          {
-            returnValue = rawValue;
-          }
-          break;
-        case "SET":
-          {
-            parent[path.slice(-1)[0]] = fromWireValue(ev.data.value);
-            returnValue = true;
-          }
-          break;
-        case "APPLY":
-          {
-            returnValue = rawValue.apply(parent, argumentList);
-          }
-          break;
-        case "CONSTRUCT":
-          {
-            const value = new rawValue(...argumentList);
-            returnValue = proxy(value);
-          }
-          break;
-        case "ENDPOINT":
-          {
-            const { port1, port2 } = new MessageChannel();
-            expose(obj, port2);
-            returnValue = transfer(port1, [port1]);
-          }
-          break;
-        case "RELEASE":
-          {
-            returnValue = void 0;
-          }
-          break;
-        default:
-          return;
-      }
-    } catch (value) {
-      returnValue = { value, [throwMarker]: 0 };
-    }
-    Promise.resolve(returnValue).catch((value) => {
-      return { value, [throwMarker]: 0 };
-    }).then((returnValue2) => {
-      const [wireValue, transferables] = toWireValue(returnValue2);
-      ep.postMessage(Object.assign(Object.assign({}, wireValue), { id: id2 }), transferables);
-      if (type === "RELEASE") {
-        ep.removeEventListener("message", callback);
-        closeEndPoint(ep);
-      }
-    });
-  });
-  if (ep.start) {
-    ep.start();
-  }
-}
-function isMessagePort(endpoint) {
-  return endpoint.constructor.name === "MessagePort";
-}
-function closeEndPoint(endpoint) {
-  if (isMessagePort(endpoint))
-    endpoint.close();
-}
-function wrap(ep, target) {
-  return createProxy(ep, [], target);
-}
-function throwIfProxyReleased(isReleased) {
-  if (isReleased) {
-    throw new Error("Proxy has been released and is not useable");
-  }
-}
-function createProxy(ep, path = [], target = function() {
-}) {
-  let isProxyReleased = false;
-  const proxy2 = new Proxy(target, {
-    get(_target, prop) {
-      throwIfProxyReleased(isProxyReleased);
-      if (prop === releaseProxy) {
-        return () => {
-          return requestResponseMessage(ep, {
-            type: "RELEASE",
-            path: path.map((p2) => p2.toString())
-          }).then(() => {
-            closeEndPoint(ep);
-            isProxyReleased = true;
-          });
-        };
-      }
-      if (prop === "then") {
-        if (path.length === 0) {
-          return { then: () => proxy2 };
-        }
-        const r2 = requestResponseMessage(ep, {
-          type: "GET",
-          path: path.map((p2) => p2.toString())
-        }).then(fromWireValue);
-        return r2.then.bind(r2);
-      }
-      return createProxy(ep, [...path, prop]);
-    },
-    set(_target, prop, rawValue) {
-      throwIfProxyReleased(isProxyReleased);
-      const [value, transferables] = toWireValue(rawValue);
-      return requestResponseMessage(ep, {
-        type: "SET",
-        path: [...path, prop].map((p2) => p2.toString()),
-        value
-      }, transferables).then(fromWireValue);
-    },
-    apply(_target, _thisArg, rawArgumentList) {
-      throwIfProxyReleased(isProxyReleased);
-      const last = path[path.length - 1];
-      if (last === createEndpoint) {
-        return requestResponseMessage(ep, {
-          type: "ENDPOINT"
-        }).then(fromWireValue);
-      }
-      if (last === "bind") {
-        return createProxy(ep, path.slice(0, -1));
-      }
-      const [argumentList, transferables] = processArguments(rawArgumentList);
-      return requestResponseMessage(ep, {
-        type: "APPLY",
-        path: path.map((p2) => p2.toString()),
-        argumentList
-      }, transferables).then(fromWireValue);
-    },
-    construct(_target, rawArgumentList) {
-      throwIfProxyReleased(isProxyReleased);
-      const [argumentList, transferables] = processArguments(rawArgumentList);
-      return requestResponseMessage(ep, {
-        type: "CONSTRUCT",
-        path: path.map((p2) => p2.toString()),
-        argumentList
-      }, transferables).then(fromWireValue);
-    }
-  });
-  return proxy2;
-}
-function myFlat(arr) {
-  return Array.prototype.concat.apply([], arr);
-}
-function processArguments(argumentList) {
-  const processed = argumentList.map(toWireValue);
-  return [processed.map((v2) => v2[0]), myFlat(processed.map((v2) => v2[1]))];
-}
-const transferCache = /* @__PURE__ */ new WeakMap();
-function transfer(obj, transfers) {
-  transferCache.set(obj, transfers);
-  return obj;
-}
-function proxy(obj) {
-  return Object.assign(obj, { [proxyMarker]: true });
-}
-function toWireValue(value) {
-  for (const [name2, handler] of transferHandlers) {
-    if (handler.canHandle(value)) {
-      const [serializedValue, transferables] = handler.serialize(value);
-      return [
-        {
-          type: "HANDLER",
-          name: name2,
-          value: serializedValue
-        },
-        transferables
-      ];
-    }
-  }
-  return [
-    {
-      type: "RAW",
-      value
-    },
-    transferCache.get(value) || []
-  ];
-}
-function fromWireValue(value) {
-  switch (value.type) {
-    case "HANDLER":
-      return transferHandlers.get(value.name).deserialize(value.value);
-    case "RAW":
-      return value.value;
-  }
-}
-function requestResponseMessage(ep, msg, transfers) {
-  return new Promise((resolve) => {
-    const id2 = generateUUID();
-    ep.addEventListener("message", function l2(ev) {
-      if (!ev.data || !ev.data.id || ev.data.id !== id2) {
-        return;
-      }
-      ep.removeEventListener("message", l2);
-      resolve(ev.data);
-    });
-    if (ep.start) {
-      ep.start();
-    }
-    ep.postMessage(Object.assign({ id: id2 }, msg), transfers);
-  });
-}
-function generateUUID() {
-  return new Array(4).fill(0).map(() => Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(16)).join("-");
-}
-const window$1 = typeof globalThis.window !== "undefined" ? globalThis.window : void 0;
-class Logger {
-  isLogLevelEnabled(level) {
-    if (typeof window$1 === "undefined")
-      return true;
-    if (typeof window$1.logLevel === "number") {
-      return window$1.logLevel >= level;
-    }
-    window$1.logLevel = 0;
-    return level <= 0;
-  }
-  log(a2, ...args) {
-    if (this.isLogLevelEnabled(2)) {
-      console.log(a2, ...args);
-    }
-  }
-  logWarn(a2, ...args) {
-    if (this.isLogLevelEnabled(1)) {
-      console.warn(a2, ...args);
-    }
-  }
-  logError(a2, ...args) {
-    if (this.isLogLevelEnabled(0)) {
-      console.error(a2, ...args);
-    }
-  }
-}
-var logger = new Logger();
-const encodedJs = "KGZ1bmN0aW9uKCkgewogICJ1c2Ugc3RyaWN0IjsKICBjb25zdCBwcm94eU1hcmtlciA9IFN5bWJvbCgiQ29tbGluay5wcm94eSIpOwogIGNvbnN0IGNyZWF0ZUVuZHBvaW50ID0gU3ltYm9sKCJDb21saW5rLmVuZHBvaW50Iik7CiAgY29uc3QgcmVsZWFzZVByb3h5ID0gU3ltYm9sKCJDb21saW5rLnJlbGVhc2VQcm94eSIpOwogIGNvbnN0IHRocm93TWFya2VyID0gU3ltYm9sKCJDb21saW5rLnRocm93biIpOwogIGNvbnN0IGlzT2JqZWN0ID0gKHZhbCkgPT4gdHlwZW9mIHZhbCA9PT0gIm9iamVjdCIgJiYgdmFsICE9PSBudWxsIHx8IHR5cGVvZiB2YWwgPT09ICJmdW5jdGlvbiI7CiAgY29uc3QgcHJveHlUcmFuc2ZlckhhbmRsZXIgPSB7CiAgICBjYW5IYW5kbGU6ICh2YWwpID0+IGlzT2JqZWN0KHZhbCkgJiYgdmFsW3Byb3h5TWFya2VyXSwKICAgIHNlcmlhbGl6ZShvYmopIHsKICAgICAgY29uc3QgeyBwb3J0MSwgcG9ydDIgfSA9IG5ldyBNZXNzYWdlQ2hhbm5lbCgpOwogICAgICBleHBvc2Uob2JqLCBwb3J0MSk7CiAgICAgIHJldHVybiBbcG9ydDIsIFtwb3J0Ml1dOwogICAgfSwKICAgIGRlc2VyaWFsaXplKHBvcnQpIHsKICAgICAgcG9ydC5zdGFydCgpOwogICAgICByZXR1cm4gd3JhcChwb3J0KTsKICAgIH0KICB9OwogIGNvbnN0IHRocm93VHJhbnNmZXJIYW5kbGVyID0gewogICAgY2FuSGFuZGxlOiAodmFsdWUpID0+IGlzT2JqZWN0KHZhbHVlKSAmJiB0aHJvd01hcmtlciBpbiB2YWx1ZSwKICAgIHNlcmlhbGl6ZSh7IHZhbHVlIH0pIHsKICAgICAgbGV0IHNlcmlhbGl6ZWQ7CiAgICAgIGlmICh2YWx1ZSBpbnN0YW5jZW9mIEVycm9yKSB7CiAgICAgICAgc2VyaWFsaXplZCA9IHsKICAgICAgICAgIGlzRXJyb3I6IHRydWUsCiAgICAgICAgICB2YWx1ZTogewogICAgICAgICAgICBtZXNzYWdlOiB2YWx1ZS5tZXNzYWdlLAogICAgICAgICAgICBuYW1lOiB2YWx1ZS5uYW1lLAogICAgICAgICAgICBzdGFjazogdmFsdWUuc3RhY2sKICAgICAgICAgIH0KICAgICAgICB9OwogICAgICB9IGVsc2UgewogICAgICAgIHNlcmlhbGl6ZWQgPSB7IGlzRXJyb3I6IGZhbHNlLCB2YWx1ZSB9OwogICAgICB9CiAgICAgIHJldHVybiBbc2VyaWFsaXplZCwgW11dOwogICAgfSwKICAgIGRlc2VyaWFsaXplKHNlcmlhbGl6ZWQpIHsKICAgICAgaWYgKHNlcmlhbGl6ZWQuaXNFcnJvcikgewogICAgICAgIHRocm93IE9iamVjdC5hc3NpZ24obmV3IEVycm9yKHNlcmlhbGl6ZWQudmFsdWUubWVzc2FnZSksIHNlcmlhbGl6ZWQudmFsdWUpOwogICAgICB9CiAgICAgIHRocm93IHNlcmlhbGl6ZWQudmFsdWU7CiAgICB9CiAgfTsKICBjb25zdCB0cmFuc2ZlckhhbmRsZXJzID0gLyogQF9fUFVSRV9fICovIG5ldyBNYXAoWwogICAgWyJwcm94eSIsIHByb3h5VHJhbnNmZXJIYW5kbGVyXSwKICAgIFsidGhyb3ciLCB0aHJvd1RyYW5zZmVySGFuZGxlcl0KICBdKTsKICBmdW5jdGlvbiBleHBvc2Uob2JqLCBlcCA9IHNlbGYpIHsKICAgIGVwLmFkZEV2ZW50TGlzdGVuZXIoIm1lc3NhZ2UiLCBmdW5jdGlvbiBjYWxsYmFjayhldikgewogICAgICBpZiAoIWV2IHx8ICFldi5kYXRhKSB7CiAgICAgICAgcmV0dXJuOwogICAgICB9CiAgICAgIGNvbnN0IHsgaWQsIHR5cGUsIHBhdGggfSA9IE9iamVjdC5hc3NpZ24oeyBwYXRoOiBbXSB9LCBldi5kYXRhKTsKICAgICAgY29uc3QgYXJndW1lbnRMaXN0ID0gKGV2LmRhdGEuYXJndW1lbnRMaXN0IHx8IFtdKS5tYXAoZnJvbVdpcmVWYWx1ZSk7CiAgICAgIGxldCByZXR1cm5WYWx1ZTsKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCBwYXJlbnQgPSBwYXRoLnNsaWNlKDAsIC0xKS5yZWR1Y2UoKG9iajIsIHByb3ApID0+IG9iajJbcHJvcF0sIG9iaik7CiAgICAgICAgY29uc3QgcmF3VmFsdWUgPSBwYXRoLnJlZHVjZSgob2JqMiwgcHJvcCkgPT4gb2JqMltwcm9wXSwgb2JqKTsKICAgICAgICBzd2l0Y2ggKHR5cGUpIHsKICAgICAgICAgIGNhc2UgIkdFVCI6CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICByZXR1cm5WYWx1ZSA9IHJhd1ZhbHVlOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgY2FzZSAiU0VUIjoKICAgICAgICAgICAgewogICAgICAgICAgICAgIHBhcmVudFtwYXRoLnNsaWNlKC0xKVswXV0gPSBmcm9tV2lyZVZhbHVlKGV2LmRhdGEudmFsdWUpOwogICAgICAgICAgICAgIHJldHVyblZhbHVlID0gdHJ1ZTsKICAgICAgICAgICAgfQogICAgICAgICAgICBicmVhazsKICAgICAgICAgIGNhc2UgIkFQUExZIjoKICAgICAgICAgICAgewogICAgICAgICAgICAgIHJldHVyblZhbHVlID0gcmF3VmFsdWUuYXBwbHkocGFyZW50LCBhcmd1bWVudExpc3QpOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgY2FzZSAiQ09OU1RSVUNUIjoKICAgICAgICAgICAgewogICAgICAgICAgICAgIGNvbnN0IHZhbHVlID0gbmV3IHJhd1ZhbHVlKC4uLmFyZ3VtZW50TGlzdCk7CiAgICAgICAgICAgICAgcmV0dXJuVmFsdWUgPSBwcm94eSh2YWx1ZSk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgYnJlYWs7CiAgICAgICAgICBjYXNlICJFTkRQT0lOVCI6CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICBjb25zdCB7IHBvcnQxLCBwb3J0MiB9ID0gbmV3IE1lc3NhZ2VDaGFubmVsKCk7CiAgICAgICAgICAgICAgZXhwb3NlKG9iaiwgcG9ydDIpOwogICAgICAgICAgICAgIHJldHVyblZhbHVlID0gdHJhbnNmZXIocG9ydDEsIFtwb3J0MV0pOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgY2FzZSAiUkVMRUFTRSI6CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICByZXR1cm5WYWx1ZSA9IHZvaWQgMDsKICAgICAgICAgICAgfQogICAgICAgICAgICBicmVhazsKICAgICAgICAgIGRlZmF1bHQ6CiAgICAgICAgICAgIHJldHVybjsKICAgICAgICB9CiAgICAgIH0gY2F0Y2ggKHZhbHVlKSB7CiAgICAgICAgcmV0dXJuVmFsdWUgPSB7IHZhbHVlLCBbdGhyb3dNYXJrZXJdOiAwIH07CiAgICAgIH0KICAgICAgUHJvbWlzZS5yZXNvbHZlKHJldHVyblZhbHVlKS5jYXRjaCgodmFsdWUpID0+IHsKICAgICAgICByZXR1cm4geyB2YWx1ZSwgW3Rocm93TWFya2VyXTogMCB9OwogICAgICB9KS50aGVuKChyZXR1cm5WYWx1ZTIpID0+IHsKICAgICAgICBjb25zdCBbd2lyZVZhbHVlLCB0cmFuc2ZlcmFibGVzXSA9IHRvV2lyZVZhbHVlKHJldHVyblZhbHVlMik7CiAgICAgICAgZXAucG9zdE1lc3NhZ2UoT2JqZWN0LmFzc2lnbihPYmplY3QuYXNzaWduKHt9LCB3aXJlVmFsdWUpLCB7IGlkIH0pLCB0cmFuc2ZlcmFibGVzKTsKICAgICAgICBpZiAodHlwZSA9PT0gIlJFTEVBU0UiKSB7CiAgICAgICAgICBlcC5yZW1vdmVFdmVudExpc3RlbmVyKCJtZXNzYWdlIiwgY2FsbGJhY2spOwogICAgICAgICAgY2xvc2VFbmRQb2ludChlcCk7CiAgICAgICAgfQogICAgICB9KTsKICAgIH0pOwogICAgaWYgKGVwLnN0YXJ0KSB7CiAgICAgIGVwLnN0YXJ0KCk7CiAgICB9CiAgfQogIGZ1bmN0aW9uIGlzTWVzc2FnZVBvcnQoZW5kcG9pbnQpIHsKICAgIHJldHVybiBlbmRwb2ludC5jb25zdHJ1Y3Rvci5uYW1lID09PSAiTWVzc2FnZVBvcnQiOwogIH0KICBmdW5jdGlvbiBjbG9zZUVuZFBvaW50KGVuZHBvaW50KSB7CiAgICBpZiAoaXNNZXNzYWdlUG9ydChlbmRwb2ludCkpCiAgICAgIGVuZHBvaW50LmNsb3NlKCk7CiAgfQogIGZ1bmN0aW9uIHdyYXAoZXAsIHRhcmdldCkgewogICAgcmV0dXJuIGNyZWF0ZVByb3h5KGVwLCBbXSwgdGFyZ2V0KTsKICB9CiAgZnVuY3Rpb24gdGhyb3dJZlByb3h5UmVsZWFzZWQoaXNSZWxlYXNlZCkgewogICAgaWYgKGlzUmVsZWFzZWQpIHsKICAgICAgdGhyb3cgbmV3IEVycm9yKCJQcm94eSBoYXMgYmVlbiByZWxlYXNlZCBhbmQgaXMgbm90IHVzZWFibGUiKTsKICAgIH0KICB9CiAgZnVuY3Rpb24gY3JlYXRlUHJveHkoZXAsIHBhdGggPSBbXSwgdGFyZ2V0ID0gZnVuY3Rpb24oKSB7CiAgfSkgewogICAgbGV0IGlzUHJveHlSZWxlYXNlZCA9IGZhbHNlOwogICAgY29uc3QgcHJveHkyID0gbmV3IFByb3h5KHRhcmdldCwgewogICAgICBnZXQoX3RhcmdldCwgcHJvcCkgewogICAgICAgIHRocm93SWZQcm94eVJlbGVhc2VkKGlzUHJveHlSZWxlYXNlZCk7CiAgICAgICAgaWYgKHByb3AgPT09IHJlbGVhc2VQcm94eSkgewogICAgICAgICAgcmV0dXJuICgpID0+IHsKICAgICAgICAgICAgcmV0dXJuIHJlcXVlc3RSZXNwb25zZU1lc3NhZ2UoZXAsIHsKICAgICAgICAgICAgICB0eXBlOiAiUkVMRUFTRSIsCiAgICAgICAgICAgICAgcGF0aDogcGF0aC5tYXAoKHApID0+IHAudG9TdHJpbmcoKSkKICAgICAgICAgICAgfSkudGhlbigoKSA9PiB7CiAgICAgICAgICAgICAgY2xvc2VFbmRQb2ludChlcCk7CiAgICAgICAgICAgICAgaXNQcm94eVJlbGVhc2VkID0gdHJ1ZTsKICAgICAgICAgICAgfSk7CiAgICAgICAgICB9OwogICAgICAgIH0KICAgICAgICBpZiAocHJvcCA9PT0gInRoZW4iKSB7CiAgICAgICAgICBpZiAocGF0aC5sZW5ndGggPT09IDApIHsKICAgICAgICAgICAgcmV0dXJuIHsgdGhlbjogKCkgPT4gcHJveHkyIH07CiAgICAgICAgICB9CiAgICAgICAgICBjb25zdCByID0gcmVxdWVzdFJlc3BvbnNlTWVzc2FnZShlcCwgewogICAgICAgICAgICB0eXBlOiAiR0VUIiwKICAgICAgICAgICAgcGF0aDogcGF0aC5tYXAoKHApID0+IHAudG9TdHJpbmcoKSkKICAgICAgICAgIH0pLnRoZW4oZnJvbVdpcmVWYWx1ZSk7CiAgICAgICAgICByZXR1cm4gci50aGVuLmJpbmQocik7CiAgICAgICAgfQogICAgICAgIHJldHVybiBjcmVhdGVQcm94eShlcCwgWy4uLnBhdGgsIHByb3BdKTsKICAgICAgfSwKICAgICAgc2V0KF90YXJnZXQsIHByb3AsIHJhd1ZhbHVlKSB7CiAgICAgICAgdGhyb3dJZlByb3h5UmVsZWFzZWQoaXNQcm94eVJlbGVhc2VkKTsKICAgICAgICBjb25zdCBbdmFsdWUsIHRyYW5zZmVyYWJsZXNdID0gdG9XaXJlVmFsdWUocmF3VmFsdWUpOwogICAgICAgIHJldHVybiByZXF1ZXN0UmVzcG9uc2VNZXNzYWdlKGVwLCB7CiAgICAgICAgICB0eXBlOiAiU0VUIiwKICAgICAgICAgIHBhdGg6IFsuLi5wYXRoLCBwcm9wXS5tYXAoKHApID0+IHAudG9TdHJpbmcoKSksCiAgICAgICAgICB2YWx1ZQogICAgICAgIH0sIHRyYW5zZmVyYWJsZXMpLnRoZW4oZnJvbVdpcmVWYWx1ZSk7CiAgICAgIH0sCiAgICAgIGFwcGx5KF90YXJnZXQsIF90aGlzQXJnLCByYXdBcmd1bWVudExpc3QpIHsKICAgICAgICB0aHJvd0lmUHJveHlSZWxlYXNlZChpc1Byb3h5UmVsZWFzZWQpOwogICAgICAgIGNvbnN0IGxhc3QgPSBwYXRoW3BhdGgubGVuZ3RoIC0gMV07CiAgICAgICAgaWYgKGxhc3QgPT09IGNyZWF0ZUVuZHBvaW50KSB7CiAgICAgICAgICByZXR1cm4gcmVxdWVzdFJlc3BvbnNlTWVzc2FnZShlcCwgewogICAgICAgICAgICB0eXBlOiAiRU5EUE9JTlQiCiAgICAgICAgICB9KS50aGVuKGZyb21XaXJlVmFsdWUpOwogICAgICAgIH0KICAgICAgICBpZiAobGFzdCA9PT0gImJpbmQiKSB7CiAgICAgICAgICByZXR1cm4gY3JlYXRlUHJveHkoZXAsIHBhdGguc2xpY2UoMCwgLTEpKTsKICAgICAgICB9CiAgICAgICAgY29uc3QgW2FyZ3VtZW50TGlzdCwgdHJhbnNmZXJhYmxlc10gPSBwcm9jZXNzQXJndW1lbnRzKHJhd0FyZ3VtZW50TGlzdCk7CiAgICAgICAgcmV0dXJuIHJlcXVlc3RSZXNwb25zZU1lc3NhZ2UoZXAsIHsKICAgICAgICAgIHR5cGU6ICJBUFBMWSIsCiAgICAgICAgICBwYXRoOiBwYXRoLm1hcCgocCkgPT4gcC50b1N0cmluZygpKSwKICAgICAgICAgIGFyZ3VtZW50TGlzdAogICAgICAgIH0sIHRyYW5zZmVyYWJsZXMpLnRoZW4oZnJvbVdpcmVWYWx1ZSk7CiAgICAgIH0sCiAgICAgIGNvbnN0cnVjdChfdGFyZ2V0LCByYXdBcmd1bWVudExpc3QpIHsKICAgICAgICB0aHJvd0lmUHJveHlSZWxlYXNlZChpc1Byb3h5UmVsZWFzZWQpOwogICAgICAgIGNvbnN0IFthcmd1bWVudExpc3QsIHRyYW5zZmVyYWJsZXNdID0gcHJvY2Vzc0FyZ3VtZW50cyhyYXdBcmd1bWVudExpc3QpOwogICAgICAgIHJldHVybiByZXF1ZXN0UmVzcG9uc2VNZXNzYWdlKGVwLCB7CiAgICAgICAgICB0eXBlOiAiQ09OU1RSVUNUIiwKICAgICAgICAgIHBhdGg6IHBhdGgubWFwKChwKSA9PiBwLnRvU3RyaW5nKCkpLAogICAgICAgICAgYXJndW1lbnRMaXN0CiAgICAgICAgfSwgdHJhbnNmZXJhYmxlcykudGhlbihmcm9tV2lyZVZhbHVlKTsKICAgICAgfQogICAgfSk7CiAgICByZXR1cm4gcHJveHkyOwogIH0KICBmdW5jdGlvbiBteUZsYXQoYXJyKSB7CiAgICByZXR1cm4gQXJyYXkucHJvdG90eXBlLmNvbmNhdC5hcHBseShbXSwgYXJyKTsKICB9CiAgZnVuY3Rpb24gcHJvY2Vzc0FyZ3VtZW50cyhhcmd1bWVudExpc3QpIHsKICAgIGNvbnN0IHByb2Nlc3NlZCA9IGFyZ3VtZW50TGlzdC5tYXAodG9XaXJlVmFsdWUpOwogICAgcmV0dXJuIFtwcm9jZXNzZWQubWFwKCh2KSA9PiB2WzBdKSwgbXlGbGF0KHByb2Nlc3NlZC5tYXAoKHYpID0+IHZbMV0pKV07CiAgfQogIGNvbnN0IHRyYW5zZmVyQ2FjaGUgPSAvKiBAX19QVVJFX18gKi8gbmV3IFdlYWtNYXAoKTsKICBmdW5jdGlvbiB0cmFuc2ZlcihvYmosIHRyYW5zZmVycykgewogICAgdHJhbnNmZXJDYWNoZS5zZXQob2JqLCB0cmFuc2ZlcnMpOwogICAgcmV0dXJuIG9iajsKICB9CiAgZnVuY3Rpb24gcHJveHkob2JqKSB7CiAgICByZXR1cm4gT2JqZWN0LmFzc2lnbihvYmosIHsgW3Byb3h5TWFya2VyXTogdHJ1ZSB9KTsKICB9CiAgZnVuY3Rpb24gdG9XaXJlVmFsdWUodmFsdWUpIHsKICAgIGZvciAoY29uc3QgW25hbWUsIGhhbmRsZXJdIG9mIHRyYW5zZmVySGFuZGxlcnMpIHsKICAgICAgaWYgKGhhbmRsZXIuY2FuSGFuZGxlKHZhbHVlKSkgewogICAgICAgIGNvbnN0IFtzZXJpYWxpemVkVmFsdWUsIHRyYW5zZmVyYWJsZXNdID0gaGFuZGxlci5zZXJpYWxpemUodmFsdWUpOwogICAgICAgIHJldHVybiBbCiAgICAgICAgICB7CiAgICAgICAgICAgIHR5cGU6ICJIQU5ETEVSIiwKICAgICAgICAgICAgbmFtZSwKICAgICAgICAgICAgdmFsdWU6IHNlcmlhbGl6ZWRWYWx1ZQogICAgICAgICAgfSwKICAgICAgICAgIHRyYW5zZmVyYWJsZXMKICAgICAgICBdOwogICAgICB9CiAgICB9CiAgICByZXR1cm4gWwogICAgICB7CiAgICAgICAgdHlwZTogIlJBVyIsCiAgICAgICAgdmFsdWUKICAgICAgfSwKICAgICAgdHJhbnNmZXJDYWNoZS5nZXQodmFsdWUpIHx8IFtdCiAgICBdOwogIH0KICBmdW5jdGlvbiBmcm9tV2lyZVZhbHVlKHZhbHVlKSB7CiAgICBzd2l0Y2ggKHZhbHVlLnR5cGUpIHsKICAgICAgY2FzZSAiSEFORExFUiI6CiAgICAgICAgcmV0dXJuIHRyYW5zZmVySGFuZGxlcnMuZ2V0KHZhbHVlLm5hbWUpLmRlc2VyaWFsaXplKHZhbHVlLnZhbHVlKTsKICAgICAgY2FzZSAiUkFXIjoKICAgICAgICByZXR1cm4gdmFsdWUudmFsdWU7CiAgICB9CiAgfQogIGZ1bmN0aW9uIHJlcXVlc3RSZXNwb25zZU1lc3NhZ2UoZXAsIG1zZywgdHJhbnNmZXJzKSB7CiAgICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUpID0+IHsKICAgICAgY29uc3QgaWQgPSBnZW5lcmF0ZVVVSUQoKTsKICAgICAgZXAuYWRkRXZlbnRMaXN0ZW5lcigibWVzc2FnZSIsIGZ1bmN0aW9uIGwoZXYpIHsKICAgICAgICBpZiAoIWV2LmRhdGEgfHwgIWV2LmRhdGEuaWQgfHwgZXYuZGF0YS5pZCAhPT0gaWQpIHsKICAgICAgICAgIHJldHVybjsKICAgICAgICB9CiAgICAgICAgZXAucmVtb3ZlRXZlbnRMaXN0ZW5lcigibWVzc2FnZSIsIGwpOwogICAgICAgIHJlc29sdmUoZXYuZGF0YSk7CiAgICAgIH0pOwogICAgICBpZiAoZXAuc3RhcnQpIHsKICAgICAgICBlcC5zdGFydCgpOwogICAgICB9CiAgICAgIGVwLnBvc3RNZXNzYWdlKE9iamVjdC5hc3NpZ24oeyBpZCB9LCBtc2cpLCB0cmFuc2ZlcnMpOwogICAgfSk7CiAgfQogIGZ1bmN0aW9uIGdlbmVyYXRlVVVJRCgpIHsKICAgIHJldHVybiBuZXcgQXJyYXkoNCkuZmlsbCgwKS5tYXAoKCkgPT4gTWF0aC5mbG9vcihNYXRoLnJhbmRvbSgpICogTnVtYmVyLk1BWF9TQUZFX0lOVEVHRVIpLnRvU3RyaW5nKDE2KSkuam9pbigiLSIpOwogIH0KICBjb25zdCBjb2xvckNvbnZlcnRlciA9IHsKICAgIGdldENsb3Nlc3RDb2xvckZyb21QYWxldHRlKGdhbWVQYWxldHRlLCByZXNlcnZlZE9mZnNldCwgciwgZywgYikgewogICAgICBjb25zdCBpZHggPSB0aGlzLmNvbnZlcnRBY3R1YWxDb2xvckZyb21QYWxldHRlKGdhbWVQYWxldHRlLCByZXNlcnZlZE9mZnNldCwgciwgZywgYik7CiAgICAgIHJldHVybiB0aGlzLmdldEFjdHVhbENvbG9yRnJvbVBhbGV0dGUoZ2FtZVBhbGV0dGUsIGlkeCk7CiAgICB9LAogICAgY29udmVydEFjdHVhbENvbG9yRnJvbVBhbGV0dGUoZ2FtZVBhbGV0dGUsIHJlc2VydmVkT2Zmc2V0LCByLCBnLCBiKSB7CiAgICAgIHZhciBfYTsKICAgICAgY29uc3QgcmVzdWx0Q29sb3JJZHggPSAoX2EgPSBnYW1lUGFsZXR0ZS5tYXAoKGNvbG9yLCBpKSA9PiB7CiAgICAgICAgaWYgKGkgPCByZXNlcnZlZE9mZnNldCkKICAgICAgICAgIHJldHVybiB2b2lkIDA7CiAgICAgICAgY29uc3QgZGlmZmVyZW5jZSA9IE1hdGguc3FydCgociAtIGNvbG9yWzBdKSAqKiAyICsgKGcgLSBjb2xvclsxXSkgKiogMiArIChiIC0gY29sb3JbMl0pICoqIDIpOwogICAgICAgIHJldHVybiB7CiAgICAgICAgICBkaWZmZXJlbmNlLAogICAgICAgICAgY29sb3IsCiAgICAgICAgICBpbmRleDogaQogICAgICAgIH07CiAgICAgIH0pLmZpbHRlcigoYSkgPT4gISFhKS5tYXAoKGEpID0+IGEpLnNvcnQoKGFhLCBiYikgPT4gYWEuZGlmZmVyZW5jZSAtIGJiLmRpZmZlcmVuY2UpWzBdKSA9PSBudWxsID8gdm9pZCAwIDogX2EuaW5kZXg7CiAgICAgIGlmIChyZXN1bHRDb2xvcklkeCA9PT0gdm9pZCAwKQogICAgICAgIHRocm93IG5ldyBFcnJvcihgQ29sb3Igbm90IGZvdW5kICR7cn0sICR7Z30sICR7Yn0gZnJvbSAke0pTT04uc3RyaW5naWZ5KGdhbWVQYWxldHRlKX1gKTsKICAgICAgcmV0dXJuIHJlc3VsdENvbG9ySWR4OwogICAgfSwKICAgIGdldEFjdHVhbENvbG9yRnJvbVBhbGV0dGUoZ2FtZVBhbGV0dGUsIGNvbG9yKSB7CiAgICAgIGNvbnN0IGNvbG9yRGF0YSA9IGdhbWVQYWxldHRlW2NvbG9yXTsKICAgICAgaWYgKCFjb2xvckRhdGEpCiAgICAgICAgcmV0dXJuIG51bGw7CiAgICAgIHJldHVybiBbY29sb3JEYXRhWzBdLCBjb2xvckRhdGFbMV0sIGNvbG9yRGF0YVsyXV07CiAgICB9LAogICAgYXJlQ29sb3JzRXF1YWwoZ2FtZVBhbGV0dGUsIGMxLCBjMikgewogICAgICBpZiAoYzEgPT09IGMyKSB7CiAgICAgICAgcmV0dXJuIHRydWU7CiAgICAgIH0KICAgICAgY29uc3QgY29sb3IxID0gZ2FtZVBhbGV0dGVbYzFdOwogICAgICBjb25zdCBjb2xvcjIgPSBnYW1lUGFsZXR0ZVtjMl07CiAgICAgIGlmICghY29sb3IxIHx8ICFjb2xvcjIpCiAgICAgICAgcmV0dXJuIGMxID09PSBjMjsKICAgICAgbGV0IGFyZUVxdWFsID0gdHJ1ZTsKICAgICAgYXJlRXF1YWwgPSBhcmVFcXVhbCAmJiBjb2xvcjFbMF0gPT09IGNvbG9yMlswXTsKICAgICAgYXJlRXF1YWwgPSBhcmVFcXVhbCAmJiBjb2xvcjFbMV0gPT09IGNvbG9yMlsxXTsKICAgICAgYXJlRXF1YWwgPSBhcmVFcXVhbCAmJiBjb2xvcjFbMl0gPT09IGNvbG9yMlsyXTsKICAgICAgcmV0dXJuIGFyZUVxdWFsOwogICAgfSwKICAgIHBhcnNlQ29sb3IoY29sb3JTdHIpIHsKICAgICAgY29uc3QgciA9IHBhcnNlSW50KGNvbG9yU3RyLnN1YnN0cigxLCAyKSwgMTYpOwogICAgICBjb25zdCBnID0gcGFyc2VJbnQoY29sb3JTdHIuc3Vic3RyKDMsIDIpLCAxNik7CiAgICAgIGNvbnN0IGIgPSBwYXJzZUludChjb2xvclN0ci5zdWJzdHIoNSwgMiksIDE2KTsKICAgICAgcmV0dXJuIFtyLCBnLCBiXTsKICAgIH0KICB9OwogIGNvbnN0IHBpY3R1cmVDb252ZXJ0ZXIgPSB7CiAgICBhc3luYyBpc0ltYWdlVmFsaWRDb3JzKHVybCkgewogICAgICB0cnkgewogICAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2godXJsKTsKICAgICAgfSBjYXRjaCAoZXJyb3IpIHsKICAgICAgICByZXR1cm4gZmFsc2U7CiAgICAgIH0KICAgICAgcmV0dXJuIHRydWU7CiAgICB9LAogICAgYXN5bmMgYXBwbHlNb2RpZmljYXRpb25zVG9JbWFnZURhdGEoY29sb3JQYWxldHRlLCBpbWFnZURhdGEsIG1vZGlmaWVyQ29udmVydENvbG9ycywgYnJpZ2h0ZW5CeSwgbW9kaWZpZXJTbW9sUGl4ZWxzKSB7CiAgICAgIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSkgPT4gewogICAgICAgIHZhciBfYSwgX2IsIF9jLCBfZCwgX2UsIF9mLCBfZywgX2g7CiAgICAgICAgY29uc3Qgb3V0SW1hZ2VEYXRhID0gbmV3IEltYWdlRGF0YShpbWFnZURhdGEud2lkdGgsIGltYWdlRGF0YS5oZWlnaHQpOwogICAgICAgIG91dEltYWdlRGF0YS5kYXRhLnNldChpbWFnZURhdGEuZGF0YSk7CiAgICAgICAgaWYgKG1vZGlmaWVyQ29udmVydENvbG9ycykgewogICAgICAgICAgZm9yIChsZXQgeSA9IDA7IHkgPCBvdXRJbWFnZURhdGEuaGVpZ2h0OyB5KyspIHsKICAgICAgICAgICAgZm9yIChsZXQgeCA9IDA7IHggPCBvdXRJbWFnZURhdGEud2lkdGg7IHgrKykgewogICAgICAgICAgICAgIGNvbnN0IGlkeCA9IG91dEltYWdlRGF0YS53aWR0aCAqIHkgKyB4IDw8IDI7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxSID0gKF9hID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgMF0pICE9IG51bGwgPyBfYSA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxHID0gKF9iID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgMV0pICE9IG51bGwgPyBfYiA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxCID0gKF9jID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgMl0pICE9IG51bGwgPyBfYyA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxBID0gKF9kID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgM10pICE9IG51bGwgPyBfZCA6IDA7CiAgICAgICAgICAgICAgY29uc3QgciA9IE1hdGgubWluKG9yaWdpbmFsUiArIGJyaWdodGVuQnksIDI1NSk7CiAgICAgICAgICAgICAgY29uc3QgZyA9IE1hdGgubWluKG9yaWdpbmFsRyArIGJyaWdodGVuQnksIDI1NSk7CiAgICAgICAgICAgICAgY29uc3QgYiA9IE1hdGgubWluKG9yaWdpbmFsQiArIGJyaWdodGVuQnksIDI1NSk7CiAgICAgICAgICAgICAgY29uc3QgcmVzdWx0QXJyID0gY29sb3JDb252ZXJ0ZXIuZ2V0Q2xvc2VzdENvbG9yRnJvbVBhbGV0dGUoY29sb3JQYWxldHRlLCAwLCByLCBnLCBiKTsKICAgICAgICAgICAgICBpZiAoIXJlc3VsdEFycikKICAgICAgICAgICAgICAgIDsKICAgICAgICAgICAgICBlbHNlIHsKICAgICAgICAgICAgICAgIGNvbnN0IFtjb252ZXJ0ZWRSLCBjb252ZXJ0ZWRHLCBjb252ZXJ0ZWRCXSA9IHJlc3VsdEFycjsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDBdID0gY29udmVydGVkUjsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDFdID0gY29udmVydGVkRzsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDJdID0gY29udmVydGVkQjsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDNdID0gb3JpZ2luYWxBID4gMzAgPyAyNTUgOiAwOwogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICBpZiAobW9kaWZpZXJTbW9sUGl4ZWxzKSB7CiAgICAgICAgICBjb25zdCBzbW9sUGl4ZWxzTXVsdGlwbGllciA9IDM7CiAgICAgICAgICBjb25zdCBzbW9sUGl4ZWxzSW1hZ2VEYXRhID0gbmV3IEltYWdlRGF0YShvdXRJbWFnZURhdGEud2lkdGggKiBzbW9sUGl4ZWxzTXVsdGlwbGllciwgb3V0SW1hZ2VEYXRhLmhlaWdodCAqIHNtb2xQaXhlbHNNdWx0aXBsaWVyKTsKICAgICAgICAgIGZvciAobGV0IG91dFkgPSAwOyBvdXRZIDwgb3V0SW1hZ2VEYXRhLmhlaWdodDsgb3V0WSsrKSB7CiAgICAgICAgICAgIGZvciAobGV0IG91dFggPSAwOyBvdXRYIDwgb3V0SW1hZ2VEYXRhLndpZHRoOyBvdXRYKyspIHsKICAgICAgICAgICAgICBjb25zdCBvdXRJZHggPSBvdXRJbWFnZURhdGEud2lkdGggKiBvdXRZICsgb3V0WCA8PCAyOwogICAgICAgICAgICAgIGNvbnN0IG91dFIgPSAoX2UgPSBvdXRJbWFnZURhdGEuZGF0YVtvdXRJZHggKyAwXSkgIT0gbnVsbCA/IF9lIDogMDsKICAgICAgICAgICAgICBjb25zdCBvdXRHID0gKF9mID0gb3V0SW1hZ2VEYXRhLmRhdGFbb3V0SWR4ICsgMV0pICE9IG51bGwgPyBfZiA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3V0QiA9IChfZyA9IG91dEltYWdlRGF0YS5kYXRhW291dElkeCArIDJdKSAhPSBudWxsID8gX2cgOiAwOwogICAgICAgICAgICAgIGNvbnN0IG91dEEgPSAoX2ggPSBvdXRJbWFnZURhdGEuZGF0YVtvdXRJZHggKyAzXSkgIT0gbnVsbCA/IF9oIDogMDsKICAgICAgICAgICAgICBjb25zdCBzbW9sWCA9IG91dFggKiBzbW9sUGl4ZWxzTXVsdGlwbGllciArIE1hdGguZmxvb3Ioc21vbFBpeGVsc011bHRpcGxpZXIgLyAyKTsKICAgICAgICAgICAgICBjb25zdCBzbW9sWSA9IG91dFkgKiBzbW9sUGl4ZWxzTXVsdGlwbGllciArIE1hdGguZmxvb3Ioc21vbFBpeGVsc011bHRpcGxpZXIgLyAyKTsKICAgICAgICAgICAgICBjb25zdCBzbW9sSWR4ID0gc21vbFkgKiBzbW9sUGl4ZWxzSW1hZ2VEYXRhLndpZHRoICsgc21vbFggPDwgMjsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDBdID0gb3V0UjsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDFdID0gb3V0RzsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDJdID0gb3V0QjsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDNdID0gb3V0QTsKICAgICAgICAgICAgfQogICAgICAgICAgfQogICAgICAgICAgcmVzb2x2ZShzbW9sUGl4ZWxzSW1hZ2VEYXRhKTsKICAgICAgICAgIHJldHVybjsKICAgICAgICB9CiAgICAgICAgcmVzb2x2ZShvdXRJbWFnZURhdGEpOwogICAgICB9KTsKICAgIH0KICB9OwogIGV4cG9zZShwaWN0dXJlQ29udmVydGVyKTsKfSkoKTsK";
-const blob = typeof window !== "undefined" && window.Blob && new Blob([atob(encodedJs)], { type: "text/javascript;charset=utf-8" });
-function WorkerWrapper() {
-  const objURL = blob && (window.URL || window.webkitURL).createObjectURL(blob);
-  try {
-    return objURL ? new Worker(objURL, {}) : new Worker("data:application/javascript;base64," + encodedJs, { type: "module" });
-  } finally {
-    objURL && (window.URL || window.webkitURL).revokeObjectURL(objURL);
-  }
-}
-const worker = new WorkerWrapper();
-const pictureConverterApi = wrap(worker);
-async function tryReadingImageData(url, abortSignal) {
-  try {
-    return await loadImageDrawOnCanvasGetData(url, abortSignal);
-  } catch (error) {
-    logger.logError(`Error loading image: url: ${url} ${error}`);
-    return void 0;
-  }
-}
-async function loadImageDrawOnCanvasGetData(url, abortSignal) {
-  const img = new Image();
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx)
-    throw new Error("Can't get context");
-  const clearCallbacks = () => {
-    img.onload = null;
-    img.onerror = null;
-    img.src = "";
-    abortSignal.onabort = null;
-  };
-  const imageData = await new Promise((resolve, reject) => {
-    img.onerror = () => {
-      reject(new Error("Image load error"));
-      clearCallbacks();
-    };
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      try {
-        resolve(ctx.getImageData(0, 0, img.width, img.height));
-      } catch (error) {
-        if (!window.location.protocol.startsWith("http"))
-          reject(error);
-        fetch(url, {
-          signal: abortSignal
-        }).then((response) => response.blob()).then((blob2) => new File([blob2], "image.png", {
-          type: "image/png"
-        })).then((file) => loadImageDrawOnCanvasGetData(URL.createObjectURL(file), abortSignal).finally(() => URL.revokeObjectURL(url))).then(resolve);
-      }
-    };
-    abortSignal.onabort = () => {
-      reject(new Error("Aborted"));
-      clearCallbacks();
-    };
-    img.src = url;
-  });
-  clearCallbacks();
-  return imageData;
-}
-function delay(timeout) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, timeout);
-  });
-}
-const setInputImageAction = createAsyncThunk("imageProcessing/setInputImage", async (input, {
-  dispatch,
-  getState
-}) => {
-  await dispatch(clearInputImageAction());
-  const file = typeof input !== "string" ? input : void 0;
-  const url = typeof input === "string" ? input : void 0;
-  const fileId = typeof input === "number" ? input : void 0;
-  delay(0).then(() => dispatch(startNewImageReadingProcess()));
-  return {
-    file,
-    url,
-    fileId
-  };
-});
-const clearInputImageAction = createAsyncThunk("imageProcessing/clearInputImage", async (_2, {
-  dispatch,
-  getState
-}) => {
-  dispatch(clearOutputImageAction());
-});
-const clearOutputImageAction = createAsyncThunk("imageProcessing/clearOutputImage", async (_2, {
-  getState
-}) => {
-  var _a;
-  (_a = getState().overlay.overlayImage.outputImage.abortController) == null ? void 0 : _a.abort();
-});
-const startNewImageReadingProcess = createAsyncThunk("imageProcessing/startNewImageReadingProcess", async (_2, {
-  dispatch,
-  getState
-}) => {
-  const url = selectInputUrl(getState());
-  const file = selectInputFile(getState());
-  const abortController = new AbortController();
-  if (url)
-    return tryReadingImageData(url, abortController.signal);
-  if (file != null) {
-    const fileUrl = URL.createObjectURL(file);
-    delay(0).then(() => URL.revokeObjectURL(fileUrl));
-    return tryReadingImageData(fileUrl, abortController.signal);
-  }
-  return void 0;
-});
-const startProcessingOutputImage = createAsyncThunk("imageProcessing/startProcessingOutputImage", async (_2, {
-  getState
-}) => {
-  const palette2 = selectCanvasUserPalette(getState());
-  const modifierShouldConvertColors = selectModifierShouldConvertColors(getState());
-  const modifierImageBrightness = selectModifierImageBrightness(getState());
-  const modifierSmolPixels = selectModifierSmolPixels(getState());
-  const inputImageData = selectInputImageData(getState());
-  if (inputImageData == null)
-    throw new Error("Can't process output image without input image data");
-  const abortController = new AbortController();
-  const outImageData = await new Promise((resolve, reject) => {
-    abortController.signal.onabort = () => reject(new Error("aborted"));
-    pictureConverterApi.applyModificationsToImageData(palette2, inputImageData, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels).then((imageData) => {
-      resolve(imageData);
-    }).catch((error) => {
-      reject(error);
-    });
-  });
-  return {
-    outImageData,
-    abortController
-  };
-});
-const loadSavedConfigurations = createAsyncThunk("imageProcessing/loadSavedConfigurations", async (_2, {
-  dispatch,
-  getState
-}) => {
-  return JSON.parse(localStorage.getItem("OverlaySavedConfigurationsv2") || "[]");
-});
-const initialState$4 = {
-  savedConfigs: [],
-  overlayEnabled: true,
-  overlayImage: {
-    inputImage: {
-      loadedImage: {
-        status: "none"
-      }
-    },
-    outputImage: {
-      isProcessing: false
-    }
-  },
-  placementConfiguration: {
-    yOffset: 0,
-    xOffset: 0,
-    transparency: 92,
-    isFollowMouseActive: false,
-    autoSelectColor: false
-  },
-  modifications: {
-    imageBrightness: 0,
-    shouldConvertColors: false,
-    smolPixels: false
-  },
-  isBotModalVisible: false,
-  browserWindow: {
-    innerWidth: 100,
-    innerHeight: 100
-  }
-};
-const overlaySlice = createSlice({
-  initialState: initialState$4,
-  name: "overlay",
-  reducers: {
-    setPlacementXOffset: (state, action) => {
-      state.placementConfiguration.xOffset = action.payload;
-    },
-    setPlacementYOffset: (state, action) => {
-      state.placementConfiguration.yOffset = action.payload;
-    },
-    setPlacementTransparency: (state, action) => {
-      state.placementConfiguration.transparency = action.payload;
-    },
-    togglePlacementFollowMouse: (state) => {
-      state.placementConfiguration.isFollowMouseActive = !state.placementConfiguration.isFollowMouseActive;
-    },
-    setPlacementIsFollowMouseActive: (state, action) => {
-      state.placementConfiguration.isFollowMouseActive = action.payload;
-    },
-    setPlacementAutoSelectColor: (state, action) => {
-      state.placementConfiguration.autoSelectColor = action.payload;
-    },
-    setModifierImageBrightness: (state, action) => {
-      state.modifications.imageBrightness = action.payload;
-    },
-    setModifierShouldConvertColors: (state, action) => {
-      state.modifications.shouldConvertColors = action.payload;
-    },
-    setModifierSmolPixels: (state, action) => {
-      state.modifications.smolPixels = action.payload;
-    },
-    setOverlayEnabled: (state, action) => {
-      state.overlayEnabled = action.payload;
-    },
-    setWindowSize: (state, action) => {
-      state.browserWindow = action.payload;
-    },
-    saveConfiguration: (state, action) => {
-      const savedConfigurations = state.savedConfigs;
-      const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload.imageUrl);
-      if (existingConfiguration != null) {
-        existingConfiguration.modifiers = action.payload.modifiers;
-        existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
-      } else {
-        savedConfigurations.push(action.payload);
-      }
-    },
-    removeSavedConfig: (state, action) => {
-      const savedConfigurations = state.savedConfigs;
-      const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload);
-      if (existingConfiguration) {
-        savedConfigurations.splice(savedConfigurations.indexOf(existingConfiguration), 1);
-      }
-    }
-  },
-  extraReducers: (builder) => {
-    builder.addCase(setInputImageAction.fulfilled, (state, action) => {
-      state.overlayImage.inputImage.fileId = action.payload.fileId;
-      state.overlayImage.inputImage.url = action.payload.url;
-      state.overlayImage.inputImage.file = action.payload.file;
-    });
-    builder.addCase(startNewImageReadingProcess.pending, (state) => {
-      state.overlayImage.inputImage.loadedImage.status = "loading";
-      state.overlayImage.inputImage.loadedImage.error = void 0;
-    });
-    builder.addCase(startNewImageReadingProcess.fulfilled, (state, action) => {
-      state.overlayImage.inputImage.loadedImage.status = "loaded";
-      state.overlayImage.inputImage.loadedImage.imageData = action.payload;
-    });
-    builder.addCase(startNewImageReadingProcess.rejected, (state, action) => {
-      state.overlayImage.inputImage.loadedImage.status = "error";
-      state.overlayImage.inputImage.loadedImage.error = action.error.message;
-    });
-    builder.addCase(clearInputImageAction.fulfilled, (state) => {
-      state.overlayImage.inputImage.file = void 0;
-      state.overlayImage.inputImage.url = void 0;
-      state.overlayImage.inputImage.fileId = void 0;
-      state.overlayImage.inputImage.loadedImage.status = "none";
-      state.overlayImage.inputImage.loadedImage.error = void 0;
-      state.overlayImage.inputImage.loadedImage.imageData = void 0;
-    });
-    builder.addCase(startProcessingOutputImage.pending, (state) => {
-      state.overlayImage.outputImage.isProcessing = true;
-    });
-    builder.addCase(startProcessingOutputImage.fulfilled, (state, action) => {
-      state.overlayImage.outputImage.isProcessing = false;
-      state.overlayImage.outputImage.imageData = action.payload.outImageData;
-      state.overlayImage.outputImage.abortController = action.payload.abortController;
-    });
-    builder.addCase(clearOutputImageAction.fulfilled, (state) => {
-      state.overlayImage.outputImage.imageData = void 0;
-      state.overlayImage.outputImage.abortController = void 0;
-      state.overlayImage.outputImage.isProcessing = false;
-    });
-    builder.addCase(loadSavedConfigurations.fulfilled, (state, action) => {
-      state.savedConfigs = action.payload;
-    });
-  }
-});
-const selectInputUrl = createSelector((state) => state.overlay.overlayImage.inputImage.url, (url) => url);
-const selectInputImageData = createSelector((state) => state.overlay.overlayImage.inputImage.loadedImage.imageData, (imageData) => imageData);
-const selectIsModificationsAvailable = createSelector(selectInputImageData, (inputImageData) => {
-  return !!inputImageData;
-});
-const selectInputFile = createSelector((state) => state.overlay.overlayImage.inputImage.file, (file) => file);
-const selectFileName = createSelector(selectInputFile, selectInputUrl, (file, url) => {
-  var _a;
-  const fileName = (_a = file == null ? void 0 : file.name) != null ? _a : url == null ? void 0 : url.split("/").pop();
-  if (fileName) {
-    return {
-      fileName,
-      fileExtension: fileName.split(".").pop(),
-      fileNameWithoutExtension: fileName.split(".").slice(0, -1).join(".")
-    };
-  }
-  return void 0;
-});
-const selectShouldShowPlacementConfiguration = createSelector(selectInputFile, selectInputUrl, (file, url) => file || url);
-const selectPlacementXOffset = createSelector((state) => state.overlay.placementConfiguration.xOffset, (xOffset) => xOffset);
-const selectPlacementYOffset = createSelector((state) => state.overlay.placementConfiguration.yOffset, (yOffset) => yOffset);
-const selectPlacementTransparency = createSelector((state) => state.overlay.placementConfiguration.transparency, (transparency) => transparency);
-const selectPlacementIsFollowMouseActive = createSelector((state) => state.overlay.placementConfiguration.isFollowMouseActive, (isFollowMouseActive) => isFollowMouseActive);
-const selectPlacementAutoSelectColor = createSelector((state) => state.overlay.placementConfiguration.autoSelectColor, (autoSelectColor) => autoSelectColor);
-const selectModifierImageBrightness = createSelector((state) => state.overlay.modifications.imageBrightness, (imageBrightness) => imageBrightness);
-const selectModifierShouldConvertColors = createSelector((state) => state.overlay.modifications.shouldConvertColors, (shouldConvertColors) => shouldConvertColors);
-const selectModifierSmolPixels = createSelector((state) => state.overlay.modifications.smolPixels, (smolPixels) => smolPixels);
-const selectIsOverlayEnabled = createSelector((state) => state.overlay.overlayEnabled, (overlayEnabled) => overlayEnabled);
-const selectInputImageLoadingStatus = createSelector((state) => state.overlay.overlayImage.inputImage.loadedImage.status, (status) => status);
-const selectIsOutputImageProcessing = createSelector((state) => state.overlay.overlayImage.outputImage.isProcessing, (isProcessing) => isProcessing);
-const selectOutputImageData = createSelector((state) => state.overlay.overlayImage.outputImage.isProcessing, (state) => state.overlay.overlayImage.outputImage.imageData, (state) => state.overlay.overlayImage.outputImage.abortController, (isProcessing, imageData, abortController) => {
-  if (!isProcessing && imageData) {
-    return imageData;
-  }
-  return void 0;
-});
-const selectRenderImageData = createSelector(selectOutputImageData, selectInputImageData, (outputImageData, inputImageData) => {
-  return outputImageData || inputImageData;
-});
-const selectShouldShowImageFromData = createSelector(selectRenderImageData, (imageData) => !!imageData);
-const selectInputFileId = createSelector((state) => state.overlay.overlayImage.inputImage.fileId, (fileId) => fileId);
-const selectShouldShowImageFromUrl = createSelector(selectShouldShowImageFromData, selectInputFile, selectInputFileId, selectInputUrl, (shouldShowImageFromData, file, fileId, url) => {
-  if (shouldShowImageFromData)
-    return false;
-  if (file || fileId || url)
-    return true;
-  return false;
-});
-createSelector(selectInputUrl, selectOutputImageData, (url, imageData) => {
-  return imageData || url;
-});
-const selectWindowSize = createSelector((state) => state.overlay.browserWindow.innerHeight, (state) => state.overlay.browserWindow.innerWidth, (innerHeight, innerWidth) => {
-  return {
-    innerHeight,
-    innerWidth
-  };
-});
-const selectOverlayOffsetCoordsOnScreen = createSelector(selectWindowSize, selectGameViewCenter, selectPlacementXOffset, selectPlacementYOffset, selectGameViewScale, (windowSize, gameViewCenter, xOffset, yOffset, viewScale) => {
-  const leftOffset = windowSize.innerWidth / 2 - (gameViewCenter.x - xOffset) * viewScale;
-  const topOffset = windowSize.innerHeight / 2 - (gameViewCenter.y - yOffset) * viewScale;
-  return {
-    leftOffset,
-    topOffset
-  };
-});
-const selectCurrentHoverPixelOnOutputImageColorIndexInPalette = createSelector(selectPlacementAutoSelectColor, selectModifierSmolPixels, selectHoverPixel, selectPlacementXOffset, selectPlacementYOffset, selectRenderImageData, selectCanvasPalette, selectCanvasReservedColorCount, (autoSelectColor, modifierSmolPixels, hoverPixel, placementXOffset, placementYOffset, renderImageData, palette2, reservedColorCount) => {
-  if (!autoSelectColor)
-    return void 0;
-  if (!renderImageData)
-    return void 0;
-  const smolPixelsCanvasSizeModifier = modifierSmolPixels ? 3 : 1;
-  const smolPixelsCanvasExtraOffsetToMiddle = Math.floor(smolPixelsCanvasSizeModifier / 2);
-  const offsetXInImage = (hoverPixel.x - placementXOffset) * smolPixelsCanvasSizeModifier + smolPixelsCanvasExtraOffsetToMiddle;
-  const offsetYInImage = (hoverPixel.y - placementYOffset) * smolPixelsCanvasSizeModifier + smolPixelsCanvasExtraOffsetToMiddle;
-  if (offsetXInImage < 0 || offsetXInImage >= renderImageData.width || offsetYInImage < 0 || offsetYInImage >= renderImageData.height)
-    return void 0;
-  const idx = renderImageData.width * offsetYInImage + offsetXInImage << 2;
-  const r2 = renderImageData.data[idx + 0];
-  const g2 = renderImageData.data[idx + 1];
-  const b2 = renderImageData.data[idx + 2];
-  const a2 = renderImageData.data[idx + 3];
-  if (r2 == null || g2 == null || b2 == null || a2 == null)
-    return void 0;
-  if (a2 < 30)
-    return void 0;
-  const colorIndex = colorConverter.convertActualColorFromPalette(palette2, reservedColorCount, r2, g2, b2);
-  return colorIndex;
-});
-const selectSavedConfigurations = createSelector((state) => state.overlay.savedConfigs, (savedConfigurations) => savedConfigurations);
-const selectCurrentStateAsConfiguration = createSelector(selectInputUrl, selectPlacementXOffset, selectPlacementYOffset, selectPlacementTransparency, selectPlacementAutoSelectColor, selectModifierImageBrightness, selectModifierShouldConvertColors, (inputUrl, xOffset, yOffset, transparency, autoSelectColor, imageBrightness, shouldConvertColors) => {
-  if (!inputUrl)
-    return void 0;
-  return {
-    imageUrl: inputUrl,
-    modifiers: {
-      autoSelectColor,
-      imageBrightness,
-      shouldConvertColors
-    },
-    placementConfiguration: {
-      xOffset,
-      yOffset,
-      transparency
-    }
-  };
-});
-const initialState$3 = {
-  chunks: []
-};
-const chunkDataSlice = createSlice({
-  initialState: initialState$3,
-  name: "chunkData",
-  reducers: {
-    addChunk: (state, action) => {
-      state.chunks.push(action.payload);
-    },
-    setPixel: (state, action) => {
-      const {
-        chunkX,
-        chunkY,
-        pixels
-      } = action.payload;
-      const chunk = state.chunks.find((x2) => x2.chunkX === chunkX && x2.chunkY === chunkY);
-      if (!chunk || chunk.fetching)
-        return;
-      pixels.forEach((p2) => {
-        chunk.chunkData.set([p2.color], p2.offsetInChunk);
-      });
-    }
-  },
-  extraReducers: (builder) => {
-    builder.addCase(fetchChunkDataAction.pending, (state, action) => {
-      const foundChunk = state.chunks.some((x2) => x2.chunkX === action.meta.arg.chunkX && x2.chunkY === action.meta.arg.chunkY);
-      if (!foundChunk) {
-        state.chunks.push({
-          chunkX: action.meta.arg.chunkX,
-          chunkY: action.meta.arg.chunkY,
-          fetching: true
-        });
-        return;
-      }
-      state.chunks = state.chunks.map((c2) => {
-        if (c2.chunkX === action.meta.arg.chunkX && c2.chunkY === action.meta.arg.chunkY) {
-          return {
-            chunkX: action.meta.arg.chunkX,
-            chunkY: action.meta.arg.chunkY,
-            fetching: true
-          };
-        }
-        return c2;
-      });
-    });
-    builder.addCase(fetchChunkDataAction.fulfilled, (state, action) => {
-      const foundChunk = state.chunks.some((x2) => x2.chunkX === action.meta.arg.chunkX && x2.chunkY === action.meta.arg.chunkY);
-      if (!foundChunk) {
-        state.chunks.push({
-          chunkX: action.meta.arg.chunkX,
-          chunkY: action.meta.arg.chunkY,
-          chunkData: action.payload,
-          fetching: false
-        });
-        return;
-      }
-      state.chunks = state.chunks.map((chunk) => {
-        if (chunk.chunkX === action.meta.arg.chunkX && chunk.chunkY === action.meta.arg.chunkY) {
-          return {
-            chunkX: action.meta.arg.chunkX,
-            chunkY: action.meta.arg.chunkY,
-            fetching: false,
-            chunkData: action.payload
-          };
-        }
-        return chunk;
-      });
-    });
-    builder.addCase(fetchChunkDataAction.rejected, (state, action) => {
-      state.chunks = state.chunks.filter((x2) => x2.chunkX !== action.meta.arg.chunkX && x2.chunkY !== action.meta.arg.chunkY);
-    });
-  }
-});
-const fetchChunkDataAction = createAsyncThunk("chunkData/fetchChunkData", async (chunkCoords, {
-  getState
-}) => {
-  const canvasId = selectCanvasId(getState());
-  const chunkData = await fetch(`/chunks/${canvasId}/${chunkCoords.chunkX}/${chunkCoords.chunkY}.bmp`).then((x2) => x2.arrayBuffer()).then((x2) => new Uint8Array(x2));
-  return chunkData;
-});
-function isStringOrNumber(value) {
-  return typeof value === "string" || typeof value === "number";
-}
-var FlatObjectCache = /* @__PURE__ */ function() {
-  function FlatObjectCache2() {
-    this._cache = {};
-  }
-  var _proto = FlatObjectCache2.prototype;
-  _proto.set = function set(key, selectorFn) {
-    this._cache[key] = selectorFn;
-  };
-  _proto.get = function get(key) {
-    return this._cache[key];
-  };
-  _proto.remove = function remove(key) {
-    delete this._cache[key];
-  };
-  _proto.clear = function clear() {
-    this._cache = {};
-  };
-  _proto.isValidCacheKey = function isValidCacheKey(cacheKey) {
-    return isStringOrNumber(cacheKey);
-  };
-  return FlatObjectCache2;
-}();
-var defaultCacheCreator = FlatObjectCache;
-var defaultCacheKeyValidator = function defaultCacheKeyValidator2() {
-  return true;
-};
-function createCachedSelector() {
-  for (var _len = arguments.length, funcs = new Array(_len), _key = 0; _key < _len; _key++) {
-    funcs[_key] = arguments[_key];
-  }
-  return function(polymorphicOptions, legacyOptions) {
-    if (legacyOptions) {
-      throw new Error('[re-reselect] "options" as second argument is not supported anymore. Please provide an option object as single argument.');
-    }
-    var options = typeof polymorphicOptions === "function" ? {
-      keySelector: polymorphicOptions
-    } : Object.assign({}, polymorphicOptions);
-    var recomputations = 0;
-    var resultFunc = funcs.pop();
-    var dependencies = Array.isArray(funcs[0]) ? funcs[0] : [].concat(funcs);
-    var resultFuncWithRecomputations = function resultFuncWithRecomputations2() {
-      recomputations++;
-      return resultFunc.apply(void 0, arguments);
-    };
-    funcs.push(resultFuncWithRecomputations);
-    var cache2 = options.cacheObject || new defaultCacheCreator();
-    var selectorCreator = options.selectorCreator || createSelector;
-    var isValidCacheKey = cache2.isValidCacheKey || defaultCacheKeyValidator;
-    if (options.keySelectorCreator) {
-      options.keySelector = options.keySelectorCreator({
-        keySelector: options.keySelector,
-        inputSelectors: dependencies,
-        resultFunc
-      });
-    }
-    var selector = function selector2() {
-      var cacheKey = options.keySelector.apply(options, arguments);
-      if (isValidCacheKey(cacheKey)) {
-        var cacheResponse = cache2.get(cacheKey);
-        if (cacheResponse === void 0) {
-          cacheResponse = selectorCreator.apply(void 0, funcs);
-          cache2.set(cacheKey, cacheResponse);
-        }
-        return cacheResponse.apply(void 0, arguments);
-      }
-      console.warn('[re-reselect] Invalid cache key "' + cacheKey + '" has been returned by keySelector function.');
-      return void 0;
-    };
-    selector.getMatchingSelector = function() {
-      var cacheKey = options.keySelector.apply(options, arguments);
-      return cache2.get(cacheKey);
-    };
-    selector.removeMatchingSelector = function() {
-      var cacheKey = options.keySelector.apply(options, arguments);
-      cache2.remove(cacheKey);
-    };
-    selector.clearCache = function() {
-      cache2.clear();
-    };
-    selector.resultFunc = resultFunc;
-    selector.dependencies = dependencies;
-    selector.cache = cache2;
-    selector.recomputations = function() {
-      return recomputations;
-    };
-    selector.resetRecomputations = function() {
-      return recomputations = 0;
-    };
-    selector.keySelector = options.keySelector;
-    return selector;
-  };
-}
-function gameCoordsToScreen(gameCoords, windowSize, viewCenter, viewScale) {
-  const gameCoordsOffsetX = gameCoords.x - viewCenter.x;
-  const gameCoordsOffsetY = gameCoords.y - viewCenter.y;
-  const screenCoordsX = windowSize.width / 2 + gameCoordsOffsetX * viewScale;
-  const screenCoordsY = windowSize.height / 2 + gameCoordsOffsetY * viewScale;
-  return {
-    clientX: Math.floor(screenCoordsX),
-    clientY: Math.floor(screenCoordsY)
-  };
-}
-const initialState$2 = {
-  pixelsToPlaceQueue: {},
-  pixelPlaceQueueEnabled: false
-};
-const pixelPlacementSlice = createSlice({
-  initialState: initialState$2,
-  name: "pixelPlacement",
-  reducers: {
-    addPixelsToPlaceQueue: (state, action) => {
-      action.payload.pixels.forEach(({
-        coord,
-        color: color2
-      }) => {
-        const pixelId = coord.x + action.payload.canvasSize / 2 + (coord.y + action.payload.canvasSize / 2) * action.payload.canvasSize;
-        state.pixelsToPlaceQueue[pixelId] = {
-          coord,
-          color: color2
-        };
-      });
-    },
-    removePixelsFromPlaceQueue: (state, action) => {
-      action.payload.pixels.forEach(({
-        coord
-      }) => {
-        const pixelId = coord.x + action.payload.canvasSize / 2 + (coord.y + action.payload.canvasSize / 2) * action.payload.canvasSize;
-        delete state.pixelsToPlaceQueue[pixelId];
-      });
-    },
-    setPixelPlaceQueueEnabled: (state, action) => {
-      state.pixelPlaceQueueEnabled = action.payload;
-    }
-  }
-});
-const selectPixelPlaceQueueEnabled = createSelector((state) => state.pixelPlacement.pixelPlaceQueueEnabled, (pixelPlaceQueueEnabled) => pixelPlaceQueueEnabled);
-const selectPixelsToPlaceQueue = createSelector((state) => state.pixelPlacement.pixelsToPlaceQueue, (pixelsToPlaceQueue) => pixelsToPlaceQueue);
-const selectPixelsToPlaceIds = createSelector((state) => state.pixelPlacement.pixelsToPlaceQueue, (pixelsToPlaceQueue) => Object.keys(pixelsToPlaceQueue).map((key) => parseInt(key, 10)));
-createSelector(selectPixelsToPlaceIds, selectPixelsToPlaceQueue, (pixelsToPlaceIds, pixelsToPlaceQueue) => {
-  const first = pixelsToPlaceIds[0];
-  if (!first)
-    return void 0;
-  return pixelsToPlaceQueue[first];
-});
-const splitRenderCanvasSize$1 = 1024;
-const selectRenderCanvasCoords = createCachedSelector(selectCanvasSize, (_2, renderCanvasId) => renderCanvasId, (canvasSize, renderCanvasId) => {
-  const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize$1);
-  const renderCanvasXCorner = Math.floor(renderCanvasId % splitCanvasesWidth) * splitRenderCanvasSize$1 - canvasSize / 2;
-  const renderCanvasYCorner = Math.floor(renderCanvasId / splitCanvasesWidth) * splitRenderCanvasSize$1 - canvasSize / 2;
-  return {
-    renderCanvasXCorner,
-    renderCanvasYCorner
-  };
-})((_2, renderCanvasId) => renderCanvasId);
-const selectPixelIdsToPlaceByRenderCanvasId = createSelector(selectPixelsToPlaceIds, selectCanvasSize, (pixelsToPlaceIds, canvasSize) => {
-  const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize$1);
-  const dict = pixelsToPlaceIds.reduce((acc, pixelId) => {
-    const x2 = pixelId % canvasSize;
-    const y2 = Math.floor(pixelId / canvasSize);
-    const splitRenderCanvasX = Math.floor(x2 / splitRenderCanvasSize$1);
-    const splitRenderCanvasY = Math.floor(y2 / splitRenderCanvasSize$1);
-    const splitRenderCanvasId = splitRenderCanvasX + splitRenderCanvasY * splitCanvasesWidth;
-    const foundAccumulator = acc[splitRenderCanvasId];
-    if (!foundAccumulator) {
-      acc[splitRenderCanvasId] = [pixelId];
-      return acc;
-    }
-    foundAccumulator.push(pixelId);
-    return acc;
-  }, {});
-  return dict;
-});
-const selectMainCanvasTopLeftScreenCoords = createSelector(selectCanvasSize, selectWindowSize, selectGameViewCenter, selectGameViewScale, (canvasSize, windowSize, gameViewCenter, gameViewScale) => {
-  return gameCoordsToScreen({
-    x: -canvasSize / 2,
-    y: -canvasSize / 2
-  }, {
-    height: windowSize.innerHeight,
-    width: windowSize.innerWidth
-  }, gameViewCenter, gameViewScale);
-});
-const selectPixelsToPlaceRenderCanvasIds = createSelector(selectPixelIdsToPlaceByRenderCanvasId, (pixelIdsToPlaceByRenderCanvasId) => Object.keys(pixelIdsToPlaceByRenderCanvasId).map((key) => parseInt(key, 10)));
-const selectPixelsToPlaceBySplitRenderCanvasId = createCachedSelector(selectPixelIdsToPlaceByRenderCanvasId, selectPixelsToPlaceQueue, selectCanvasSize, (_2, renderCanvasId) => renderCanvasId, (pixelIdsToPlaceByRenderCanvasId, pixelsToPlaceQueue, canvasSize, renderCanvasId) => {
-  const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize$1);
-  const splitRenderCanvasX = Math.floor(renderCanvasId % splitCanvasesWidth);
-  const splitRenderCanvasY = Math.floor(renderCanvasId / splitCanvasesWidth);
-  const splitRenderCanvasId = splitRenderCanvasX + splitRenderCanvasY * splitCanvasesWidth;
-  const pixelIdsToPlace = pixelIdsToPlaceByRenderCanvasId[splitRenderCanvasId];
-  if (!pixelIdsToPlace)
-    return [];
-  return pixelIdsToPlace.map((pixelId) => pixelsToPlaceQueue[pixelId]).filter((pixel) => !!pixel).map((pixel) => pixel);
-})((_2, renderCanvasId) => renderCanvasId);
-const listenerMiddleware = createListenerMiddleware();
-const startAppListening = listenerMiddleware.startListening;
-function configureAppStore() {
-  return configureStore({
-    reducer: {
-      overlay: overlaySlice.reducer,
-      game: gameSlice.reducer,
-      chunkData: chunkDataSlice.reducer,
-      pixelPlacement: pixelPlacementSlice.reducer
-    },
-    devTools: false,
-    middleware(getDefaultMiddleware2) {
-      return getDefaultMiddleware2().concat([listenerMiddleware.middleware]);
-    }
-  });
-}
-const store = configureAppStore();
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 function getAugmentedNamespace(n2) {
   if (n2.__esModule)
@@ -3180,6 +2223,9 @@ function getAugmentedNamespace(n2) {
     });
   });
   return a2;
+}
+function commonjsRequire(path) {
+  throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
 }
 var react = { exports: {} };
 var react_production_min = {};
@@ -3473,188 +2519,118 @@ var React$2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ _mergeNamespaces({
   [Symbol.toStringTag]: "Module",
   "default": React$1
 }, [react.exports]));
-function isStoreFromRedux(store2) {
-  if (typeof store2 !== "object")
-    return false;
-  if (!store2.dispatch)
-    return false;
-  if (!store2.getState)
-    return false;
-  if (!store2.subscribe)
-    return false;
-  return true;
+var shim = { exports: {} };
+var useSyncExternalStoreShim_production_min = {};
+/**
+ * @license React
+ * use-sync-external-store-shim.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var e$3 = react.exports;
+function h$4(a2, b2) {
+  return a2 === b2 && (a2 !== 0 || 1 / a2 === 1 / b2) || a2 !== a2 && b2 !== b2;
 }
-function getStoreFromReactInternalEl(el2) {
-  var _a, _b, _c;
-  if (el2.tag !== 0 || !el2.child)
-    return void 0;
-  if (el2.child.tag !== 10)
-    return void 0;
-  if (!el2.child.memoizedProps)
-    return void 0;
-  const childStore = (_b = (_a = el2.child.memoizedProps) == null ? void 0 : _a.value) == null ? void 0 : _b.store;
-  if (!isStoreFromRedux(childStore))
-    return void 0;
-  const parentStore = (_c = el2.memoizedProps) == null ? void 0 : _c.store;
-  if (!isStoreFromRedux(parentStore))
-    return void 0;
-  if (childStore !== parentStore)
-    return void 0;
-  return parentStore;
-}
-function findReactRootContainerEl() {
-  return document.getElementById("app");
-}
-function findStoreInRoot(el2) {
-  const reactContainerName = Object.keys(el2).filter((k2) => k2.startsWith("__reactContainer"))[0];
-  if (!reactContainerName)
-    throw new Error("couldn't find internal react root");
-  const root = el2[reactContainerName];
-  let checkedReactInternalElement = root;
-  while (checkedReactInternalElement.child) {
-    const store2 = getStoreFromReactInternalEl(checkedReactInternalElement);
-    if (store2)
-      return store2;
-    checkedReactInternalElement = checkedReactInternalElement.child;
-  }
-  return void 0;
-}
-function findPageReduxStore() {
-  const reactRootEl = findReactRootContainerEl();
-  if (!reactRootEl)
-    throw new Error("Couldn't find React root container");
-  const store2 = findStoreInRoot(reactRootEl);
-  if (!store2)
-    throw new Error("Couldn't find Redux store");
-  return store2;
-}
-const usePageReduxStoreSelector = (selector) => {
-  const store2 = usePageReduxStore();
-  const [selectedResult, setSelectedResult] = react.exports.useState();
-  react.exports.useEffect(() => {
-    if (!store2)
-      return void 0;
-    setSelectedResult(selector(store2.getState()));
-    const unsubscribe = store2.subscribe(() => {
-      setSelectedResult(selector(store2.getState()));
+var k$4 = typeof Object.is === "function" ? Object.is : h$4, l$4 = e$3.useState, m$5 = e$3.useEffect, n$5 = e$3.useLayoutEffect, p$6 = e$3.useDebugValue;
+function q$6(a2, b2) {
+  var d2 = b2(), f2 = l$4({ inst: { value: d2, getSnapshot: b2 } }), c2 = f2[0].inst, g2 = f2[1];
+  n$5(function() {
+    c2.value = d2;
+    c2.getSnapshot = b2;
+    r$3(c2) && g2({ inst: c2 });
+  }, [a2, d2, b2]);
+  m$5(function() {
+    r$3(c2) && g2({ inst: c2 });
+    return a2(function() {
+      r$3(c2) && g2({ inst: c2 });
     });
-    return () => unsubscribe();
-  }, [store2, selector]);
-  return selectedResult;
-};
-const usePageReduxStoreDispatch = () => {
-  const store2 = usePageReduxStore();
-  if (!store2)
-    return void 0;
-  return store2.dispatch;
-};
-function pageReduxStoreSelectColorAction(colorIndex) {
-  return {
-    type: "SELECT_COLOR",
-    color: colorIndex
-  };
+  }, [a2]);
+  p$6(d2);
+  return d2;
 }
-function setViewCoordinates(view) {
-  return {
-    type: "SET_VIEW_COORDINATES",
-    view
-  };
+function r$3(a2) {
+  var b2 = a2.getSnapshot;
+  a2 = a2.value;
+  try {
+    var d2 = b2();
+    return !k$4(a2, d2);
+  } catch (f2) {
+    return true;
+  }
 }
-function usePageReduxStore() {
-  const [pageReduxStore, setPageReduxStore] = react.exports.useState();
-  react.exports.useEffect(() => {
-    setPageReduxStore(findPageReduxStore());
-  }, [setPageReduxStore]);
-  return pageReduxStore;
+function t$3(a2, b2) {
+  return b2();
 }
-const selectPageStatePixelWaitDate = createSelector((state) => state.user.wait, (pixelWaitDate) => pixelWaitDate);
-const selectPageStateCurrentSelectedColor = createSelector((state) => state.canvas.selectedColor, (currentSelectedColor) => currentSelectedColor);
-const selectPageStateHoverPixel = createSelector((state) => {
-  var _a;
-  return (_a = state.gui.hover) == null ? void 0 : _a[0];
-}, (state) => {
-  var _a;
-  return (_a = state.gui.hover) == null ? void 0 : _a[1];
-}, (hoverPixelX, hoverPixelY) => {
-  if (hoverPixelX == null || hoverPixelY == null)
-    return void 0;
-  return {
-    x: hoverPixelX,
-    y: hoverPixelY
-  };
-});
-const selectPageStateViewScale = createSelector((state) => state.canvas.viewscale, (viewScale) => viewScale);
-const selectPageStateCanvasViewCenter = createSelector((state) => state.canvas.view[0], (state) => state.canvas.view[1], (viewX, viewY) => {
-  if (viewX == null || viewY == null)
-    return void 0;
-  return {
-    x: viewX,
-    y: viewY
-  };
-});
-const selectPageStateRoundedCanvasViewCenter = createSelector(selectPageStateCanvasViewCenter, (view) => view ? {
-  x: Math.round(view.x),
-  y: Math.round(view.y)
-} : void 0);
-const selectPageStateCanvasPalette = createSelector((state) => state.canvas.palette.abgr, (paletteAbgr) => {
-  return Array.from(new Uint32Array(paletteAbgr)).map((abgr) => {
-    const b2 = (abgr & 16711680) >>> 16;
-    const g2 = (abgr & 65280) >>> 8;
-    const r2 = abgr & 255;
-    return [r2, g2, b2];
-  });
-});
-const selectPageStateCanvasReservedColors = createSelector((state) => state.canvas.clrIgnore, (reservedColors) => reservedColors);
-const selectPageStateCanvasId = createSelector((state) => state.canvas.canvasId, (canvasId) => canvasId);
-const selectPageStateCanvasSize = createSelector((state) => state.canvas.canvasSize, (size) => size);
-const selectPageStateCanvasMaxTimeoutMs = createSelector((state) => {
-  var _a;
-  return (_a = state.canvas.canvases[state.canvas.canvasId]) == null ? void 0 : _a.cds;
-}, (canvasMaxTimeout) => canvasMaxTimeout);
-const selectPageStateCanvasTimeoutOnBaseMs = createSelector((state) => {
-  var _a;
-  return (_a = state.canvas.canvases[state.canvas.canvasId]) == null ? void 0 : _a.bcd;
-}, (canvasTimeoutOnBase) => canvasTimeoutOnBase);
-const selectPaseStateCanvasTimeoutOnPlacedMs = createSelector((state) => {
-  var _a;
-  return (_a = state.canvas.canvases[state.canvas.canvasId]) == null ? void 0 : _a.pcd;
-}, (canvasTimeoutOnPlaced) => canvasTimeoutOnPlaced);
-function executeAllHooks() {
-  hookForAutoSelectColor();
-  hookForHoverPixel();
+var u$3 = typeof window === "undefined" || typeof window.document === "undefined" || typeof window.document.createElement === "undefined" ? t$3 : q$6;
+useSyncExternalStoreShim_production_min.useSyncExternalStore = e$3.useSyncExternalStore !== void 0 ? e$3.useSyncExternalStore : u$3;
+{
+  shim.exports = useSyncExternalStoreShim_production_min;
 }
-function hookForAutoSelectColor() {
-  const pageStore = findPageReduxStore();
-  const pageDispatch = pageStore.dispatch;
-  let lastColorIndex;
-  store.subscribe(() => {
-    const colorIndex = selectCurrentHoverPixelOnOutputImageColorIndexInPalette(store.getState());
-    if (colorIndex !== void 0 && colorIndex !== lastColorIndex) {
-      lastColorIndex = colorIndex;
-      pageDispatch(pageReduxStoreSelectColorAction(colorIndex));
-    }
-  });
+var withSelector = { exports: {} };
+var withSelector_production_min = {};
+/**
+ * @license React
+ * use-sync-external-store-shim/with-selector.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var h$3 = react.exports, n$4 = shim.exports;
+function p$5(a2, b2) {
+  return a2 === b2 && (a2 !== 0 || 1 / a2 === 1 / b2) || a2 !== a2 && b2 !== b2;
 }
-function hookForHoverPixel() {
-  const pageStore = findPageReduxStore();
-  let lastHoverPixel;
-  pageStore.subscribe(() => {
-    let hoverPixel = selectPageStateHoverPixel(pageStore.getState());
-    if (hoverPixel) {
-      if (hoverPixel !== lastHoverPixel) {
-        lastHoverPixel = hoverPixel;
-        store.dispatch(gameSlice.actions.setHoverPixel(hoverPixel));
+var q$5 = typeof Object.is === "function" ? Object.is : p$5, r$2 = n$4.useSyncExternalStore, t$2 = h$3.useRef, u$2 = h$3.useEffect, v$3 = h$3.useMemo, w$2 = h$3.useDebugValue;
+withSelector_production_min.useSyncExternalStoreWithSelector = function(a2, b2, e2, l2, g2) {
+  var c2 = t$2(null);
+  if (c2.current === null) {
+    var f2 = { hasValue: false, value: null };
+    c2.current = f2;
+  } else
+    f2 = c2.current;
+  c2 = v$3(function() {
+    function a3(a4) {
+      if (!c3) {
+        c3 = true;
+        d3 = a4;
+        a4 = l2(a4);
+        if (g2 !== void 0 && f2.hasValue) {
+          var b3 = f2.value;
+          if (g2(b3, a4))
+            return k2 = b3;
+        }
+        return k2 = a4;
       }
-      return;
+      b3 = k2;
+      if (q$5(d3, a4))
+        return b3;
+      var e3 = l2(a4);
+      if (g2 !== void 0 && g2(b3, e3))
+        return b3;
+      d3 = a4;
+      return k2 = e3;
     }
-    hoverPixel = selectPageStateRoundedCanvasViewCenter(pageStore.getState());
-    if (hoverPixel) {
-      if (hoverPixel !== lastHoverPixel) {
-        lastHoverPixel = hoverPixel;
-        store.dispatch(gameSlice.actions.setHoverPixel(hoverPixel));
-      }
-    }
-  });
+    var c3 = false, d3, k2, m2 = e2 === void 0 ? null : e2;
+    return [function() {
+      return a3(b2());
+    }, m2 === null ? void 0 : function() {
+      return a3(m2());
+    }];
+  }, [b2, e2, l2, g2]);
+  var d2 = r$2(a2, c2[0], c2[1]);
+  u$2(function() {
+    f2.hasValue = true;
+    f2.value = d2;
+  }, [d2]);
+  w$2(d2);
+  return d2;
+};
+{
+  withSelector.exports = withSelector_production_min;
 }
 var reactDom = { exports: {} };
 var reactDom_production_min = {};
@@ -3929,7 +2905,7 @@ var scheduler_production_min = {};
  * LICENSE file in the root directory of this source tree.
  */
 var aa = react.exports, ba = scheduler.exports;
-function p$6(a2) {
+function p$4(a2) {
   for (var b2 = "https://reactjs.org/docs/error-decoder.html?invariant=" + a2, c2 = 1; c2 < arguments.length; c2++)
     b2 += "&args[]=" + encodeURIComponent(arguments[c2]);
   return "Minified React error #" + a2 + "; visit " + b2 + " for the full message or use the non-minified dev environment for full errors and additional helpful warnings.";
@@ -3991,7 +2967,7 @@ function oa(a2, b2, c2, d2) {
     }
   return false;
 }
-function q$6(a2, b2, c2, d2, e2, f2, g2) {
+function q$4(a2, b2, c2, d2, e2, f2, g2) {
   this.acceptsBooleans = b2 === 2 || b2 === 3 || b2 === 4;
   this.attributeName = d2;
   this.attributeNamespace = e2;
@@ -4003,32 +2979,32 @@ function q$6(a2, b2, c2, d2, e2, f2, g2) {
 }
 var z$2 = {};
 "children dangerouslySetInnerHTML defaultValue defaultChecked innerHTML suppressContentEditableWarning suppressHydrationWarning style".split(" ").forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 0, false, a2, null, false, false);
+  z$2[a2] = new q$4(a2, 0, false, a2, null, false, false);
 });
 [["acceptCharset", "accept-charset"], ["className", "class"], ["htmlFor", "for"], ["httpEquiv", "http-equiv"]].forEach(function(a2) {
   var b2 = a2[0];
-  z$2[b2] = new q$6(b2, 1, false, a2[1], null, false, false);
+  z$2[b2] = new q$4(b2, 1, false, a2[1], null, false, false);
 });
 ["contentEditable", "draggable", "spellCheck", "value"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 2, false, a2.toLowerCase(), null, false, false);
+  z$2[a2] = new q$4(a2, 2, false, a2.toLowerCase(), null, false, false);
 });
 ["autoReverse", "externalResourcesRequired", "focusable", "preserveAlpha"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 2, false, a2, null, false, false);
+  z$2[a2] = new q$4(a2, 2, false, a2, null, false, false);
 });
 "allowFullScreen async autoFocus autoPlay controls default defer disabled disablePictureInPicture disableRemotePlayback formNoValidate hidden loop noModule noValidate open playsInline readOnly required reversed scoped seamless itemScope".split(" ").forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 3, false, a2.toLowerCase(), null, false, false);
+  z$2[a2] = new q$4(a2, 3, false, a2.toLowerCase(), null, false, false);
 });
 ["checked", "multiple", "muted", "selected"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 3, true, a2, null, false, false);
+  z$2[a2] = new q$4(a2, 3, true, a2, null, false, false);
 });
 ["capture", "download"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 4, false, a2, null, false, false);
+  z$2[a2] = new q$4(a2, 4, false, a2, null, false, false);
 });
 ["cols", "rows", "size", "span"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 6, false, a2, null, false, false);
+  z$2[a2] = new q$4(a2, 6, false, a2, null, false, false);
 });
 ["rowSpan", "start"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 5, false, a2.toLowerCase(), null, false, false);
+  z$2[a2] = new q$4(a2, 5, false, a2.toLowerCase(), null, false, false);
 });
 var pa = /[\-:]([a-z])/g;
 function qa(a2) {
@@ -4036,22 +3012,22 @@ function qa(a2) {
 }
 "accent-height alignment-baseline arabic-form baseline-shift cap-height clip-path clip-rule color-interpolation color-interpolation-filters color-profile color-rendering dominant-baseline enable-background fill-opacity fill-rule flood-color flood-opacity font-family font-size font-size-adjust font-stretch font-style font-variant font-weight glyph-name glyph-orientation-horizontal glyph-orientation-vertical horiz-adv-x horiz-origin-x image-rendering letter-spacing lighting-color marker-end marker-mid marker-start overline-position overline-thickness paint-order panose-1 pointer-events rendering-intent shape-rendering stop-color stop-opacity strikethrough-position strikethrough-thickness stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width text-anchor text-decoration text-rendering underline-position underline-thickness unicode-bidi unicode-range units-per-em v-alphabetic v-hanging v-ideographic v-mathematical vector-effect vert-adv-y vert-origin-x vert-origin-y word-spacing writing-mode xmlns:xlink x-height".split(" ").forEach(function(a2) {
   var b2 = a2.replace(pa, qa);
-  z$2[b2] = new q$6(b2, 1, false, a2, null, false, false);
+  z$2[b2] = new q$4(b2, 1, false, a2, null, false, false);
 });
 "xlink:actuate xlink:arcrole xlink:role xlink:show xlink:title xlink:type".split(" ").forEach(function(a2) {
   var b2 = a2.replace(pa, qa);
-  z$2[b2] = new q$6(b2, 1, false, a2, "http://www.w3.org/1999/xlink", false, false);
+  z$2[b2] = new q$4(b2, 1, false, a2, "http://www.w3.org/1999/xlink", false, false);
 });
 ["xml:base", "xml:lang", "xml:space"].forEach(function(a2) {
   var b2 = a2.replace(pa, qa);
-  z$2[b2] = new q$6(b2, 1, false, a2, "http://www.w3.org/XML/1998/namespace", false, false);
+  z$2[b2] = new q$4(b2, 1, false, a2, "http://www.w3.org/XML/1998/namespace", false, false);
 });
 ["tabIndex", "crossOrigin"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 1, false, a2.toLowerCase(), null, false, false);
+  z$2[a2] = new q$4(a2, 1, false, a2.toLowerCase(), null, false, false);
 });
-z$2.xlinkHref = new q$6("xlinkHref", 1, false, "xlink:href", "http://www.w3.org/1999/xlink", true, false);
+z$2.xlinkHref = new q$4("xlinkHref", 1, false, "xlink:href", "http://www.w3.org/1999/xlink", true, false);
 ["src", "href", "action", "formAction"].forEach(function(a2) {
-  z$2[a2] = new q$6(a2, 1, false, a2.toLowerCase(), null, true, true);
+  z$2[a2] = new q$4(a2, 1, false, a2.toLowerCase(), null, true, true);
 });
 function ra(a2, b2, c2, d2) {
   var e2 = z$2.hasOwnProperty(b2) ? z$2[b2] : null;
@@ -4390,7 +3366,7 @@ function cb(a2, b2, c2, d2) {
 }
 function db(a2, b2) {
   if (b2.dangerouslySetInnerHTML != null)
-    throw Error(p$6(91));
+    throw Error(p$4(91));
   return A$2({}, b2, { value: void 0, defaultValue: void 0, children: "" + a2._wrapperState.initialValue });
 }
 function eb(a2, b2) {
@@ -4400,10 +3376,10 @@ function eb(a2, b2) {
     b2 = b2.defaultValue;
     if (c2 != null) {
       if (b2 != null)
-        throw Error(p$6(92));
+        throw Error(p$4(92));
       if (bb(c2)) {
         if (1 < c2.length)
-          throw Error(p$6(93));
+          throw Error(p$4(93));
         c2 = c2[0];
       }
       b2 = c2;
@@ -4530,15 +3506,15 @@ var qb = A$2({ menuitem: true }, { area: true, base: true, br: true, col: true, 
 function rb(a2, b2) {
   if (b2) {
     if (qb[a2] && (b2.children != null || b2.dangerouslySetInnerHTML != null))
-      throw Error(p$6(137, a2));
+      throw Error(p$4(137, a2));
     if (b2.dangerouslySetInnerHTML != null) {
       if (b2.children != null)
-        throw Error(p$6(60));
+        throw Error(p$4(60));
       if (typeof b2.dangerouslySetInnerHTML !== "object" || !("__html" in b2.dangerouslySetInnerHTML))
-        throw Error(p$6(61));
+        throw Error(p$4(61));
     }
     if (b2.style != null && typeof b2.style !== "object")
-      throw Error(p$6(62));
+      throw Error(p$4(62));
   }
 }
 function sb(a2, b2) {
@@ -4568,7 +3544,7 @@ var vb = null, wb = null, xb = null;
 function yb(a2) {
   if (a2 = zb(a2)) {
     if (typeof vb !== "function")
-      throw Error(p$6(280));
+      throw Error(p$4(280));
     var b2 = a2.stateNode;
     b2 && (b2 = Ab(b2), vb(a2.stateNode, a2.type, b2));
   }
@@ -4633,7 +3609,7 @@ function Hb(a2, b2) {
   if (a2)
     return null;
   if (c2 && typeof c2 !== "function")
-    throw Error(p$6(231, b2, typeof c2));
+    throw Error(p$4(231, b2, typeof c2));
   return c2;
 }
 var Ib = false;
@@ -4673,7 +3649,7 @@ function Rb(a2, b2, c2, d2, e2, f2, g2, h2, k2) {
       Lb = false;
       Mb = null;
     } else
-      throw Error(p$6(198));
+      throw Error(p$4(198));
     Nb || (Nb = true, Ob = l2);
   }
 }
@@ -4701,14 +3677,14 @@ function Tb(a2) {
 }
 function Ub(a2) {
   if (Sb(a2) !== a2)
-    throw Error(p$6(188));
+    throw Error(p$4(188));
 }
 function Vb(a2) {
   var b2 = a2.alternate;
   if (!b2) {
     b2 = Sb(a2);
     if (b2 === null)
-      throw Error(p$6(188));
+      throw Error(p$4(188));
     return b2 !== a2 ? null : a2;
   }
   for (var c2 = a2, d2 = b2; ; ) {
@@ -4732,7 +3708,7 @@ function Vb(a2) {
           return Ub(e2), b2;
         f2 = f2.sibling;
       }
-      throw Error(p$6(188));
+      throw Error(p$4(188));
     }
     if (c2.return !== d2.return)
       c2 = e2, d2 = f2;
@@ -4769,14 +3745,14 @@ function Vb(a2) {
           h2 = h2.sibling;
         }
         if (!g2)
-          throw Error(p$6(189));
+          throw Error(p$4(189));
       }
     }
     if (c2.alternate !== d2)
-      throw Error(p$6(190));
+      throw Error(p$4(190));
   }
   if (c2.tag !== 3)
-    throw Error(p$6(188));
+    throw Error(p$4(188));
   return c2.stateNode.current === c2 ? a2 : b2;
 }
 function Wb(a2) {
@@ -6031,7 +5007,7 @@ function uf(a2) {
 function vf(a2, b2, c2) {
   b2 = uf(b2);
   if (uf(a2) !== b2 && c2)
-    throw Error(p$6(425));
+    throw Error(p$4(425));
 }
 function wf() {
 }
@@ -6125,7 +5101,7 @@ function zb(a2) {
 function pe(a2) {
   if (a2.tag === 5 || a2.tag === 6)
     return a2.stateNode;
-  throw Error(p$6(33));
+  throw Error(p$4(33));
 }
 function Ab(a2) {
   return a2[Jf] || null;
@@ -6166,7 +5142,7 @@ function Uf() {
 }
 function Vf(a2, b2, c2) {
   if (I$1.current !== Pf)
-    throw Error(p$6(168));
+    throw Error(p$4(168));
   H$1(I$1, b2);
   H$1(Qf, c2);
 }
@@ -6178,7 +5154,7 @@ function Wf(a2, b2, c2) {
   d2 = d2.getChildContext();
   for (var e2 in d2)
     if (!(e2 in b2))
-      throw Error(p$6(108, Pa(a2) || "Unknown", e2));
+      throw Error(p$4(108, Pa(a2) || "Unknown", e2));
   return A$2({}, c2, d2);
 }
 function Xf(a2) {
@@ -6191,7 +5167,7 @@ function Xf(a2) {
 function Yf(a2, b2, c2) {
   var d2 = a2.stateNode;
   if (!d2)
-    throw Error(p$6(169));
+    throw Error(p$4(169));
   c2 ? (a2 = Wf(a2, b2, Rf), d2.__reactInternalMemoizedMergedChildContext = a2, G$1(Qf), G$1(I$1), H$1(I$1, a2)) : G$1(Qf);
   H$1(Qf, c2);
 }
@@ -6265,7 +5241,7 @@ function pg(a2) {
   if (jg !== a2)
     if (a2 = { context: a2, memoizedValue: b2, next: null }, ig === null) {
       if (hg === null)
-        throw Error(p$6(308));
+        throw Error(p$4(308));
       ig = a2;
       hg.dependencies = { lanes: 0, firstContext: a2 };
     } else
@@ -6411,7 +5387,7 @@ function Ag(a2, b2, c2) {
         d2.callback = null;
         d2 = c2;
         if (typeof e2 !== "function")
-          throw Error(p$6(191, e2));
+          throw Error(p$4(191, e2));
         e2.call(d2);
       }
     }
@@ -6558,14 +5534,14 @@ function dh(a2) {
       var c2 = b2;
       if (!bh(a2, b2)) {
         if (ch(a2))
-          throw Error(p$6(418));
+          throw Error(p$4(418));
         b2 = Ff(c2.nextSibling);
         var d2 = Xg;
         b2 && bh(a2, b2) ? $g(d2, c2) : (a2.flags = a2.flags & -4097 | 2, N = false, Xg = a2);
       }
     } else {
       if (ch(a2))
-        throw Error(p$6(418));
+        throw Error(p$4(418));
       a2.flags = a2.flags & -4097 | 2;
       N = false;
       Xg = a2;
@@ -6588,7 +5564,7 @@ function fh(a2) {
     if (ch(a2)) {
       for (a2 = Yg; a2; )
         a2 = Ff(a2.nextSibling);
-      throw Error(p$6(418));
+      throw Error(p$4(418));
     }
     for (; b2; )
       $g(a2, b2), b2 = Ff(b2.nextSibling);
@@ -6598,7 +5574,7 @@ function fh(a2) {
     a2 = a2.memoizedState;
     a2 = a2 !== null ? a2.dehydrated : null;
     if (!a2)
-      throw Error(p$6(317));
+      throw Error(p$4(317));
     a: {
       a2 = a2.nextSibling;
       for (b2 = 0; a2; ) {
@@ -6635,11 +5611,11 @@ function ih(a2, b2, c2) {
       c2 = c2._owner;
       if (c2) {
         if (c2.tag !== 1)
-          throw Error(p$6(309));
+          throw Error(p$4(309));
         var d2 = c2.stateNode;
       }
       if (!d2)
-        throw Error(p$6(147, a2));
+        throw Error(p$4(147, a2));
       var e2 = d2, f2 = "" + a2;
       if (b2 !== null && b2.ref !== null && typeof b2.ref === "function" && b2.ref._stringRef === f2)
         return b2.ref;
@@ -6652,15 +5628,15 @@ function ih(a2, b2, c2) {
       return b2;
     }
     if (typeof a2 !== "string")
-      throw Error(p$6(284));
+      throw Error(p$4(284));
     if (!c2._owner)
-      throw Error(p$6(290, a2));
+      throw Error(p$4(290, a2));
   }
   return a2;
 }
 function jh(a2, b2) {
   a2 = Object.prototype.toString.call(b2);
-  throw Error(p$6(31, a2 === "[object Object]" ? "object with keys {" + Object.keys(b2).join(", ") + "}" : a2));
+  throw Error(p$4(31, a2 === "[object Object]" ? "object with keys {" + Object.keys(b2).join(", ") + "}" : a2));
 }
 function kh(a2) {
   var b2 = a2._init;
@@ -6827,10 +5803,10 @@ function lh(a2) {
   function v2(e3, g3, h3, k3) {
     var l3 = Ia(h3);
     if (typeof l3 !== "function")
-      throw Error(p$6(150));
+      throw Error(p$4(150));
     h3 = l3.call(h3);
     if (h3 == null)
-      throw Error(p$6(151));
+      throw Error(p$4(151));
     for (var m3 = l3 = null, n3 = g3, r2 = g3 = 0, x2 = null, t2 = h3.next(); n3 !== null && !t2.done; r2++, t2 = h3.next()) {
       n3.index > r2 ? (x2 = n3, n3 = null) : x2 = n3.sibling;
       var v3 = u2(e3, n3, t2.value, k3);
@@ -6933,7 +5909,7 @@ function lh(a2) {
 var rh = lh(true), sh = lh(false), th = {}, uh = Of(th), vh = Of(th), wh = Of(th);
 function xh(a2) {
   if (a2 === th)
-    throw Error(p$6(174));
+    throw Error(p$4(174));
   return a2;
 }
 function yh(a2, b2) {
@@ -7001,7 +5977,7 @@ function Eh() {
 }
 var Fh = sa.ReactCurrentDispatcher, Gh = sa.ReactCurrentBatchConfig, Hh = 0, Q = null, R = null, S = null, Ih = false, Jh = false, Kh = 0, Lh = 0;
 function U() {
-  throw Error(p$6(321));
+  throw Error(p$4(321));
 }
 function Mh(a2, b2) {
   if (b2 === null)
@@ -7025,7 +6001,7 @@ function Nh(a2, b2, c2, d2, e2, f2) {
       Jh = false;
       Kh = 0;
       if (25 <= f2)
-        throw Error(p$6(301));
+        throw Error(p$4(301));
       f2 += 1;
       S = R = null;
       b2.updateQueue = null;
@@ -7039,7 +6015,7 @@ function Nh(a2, b2, c2, d2, e2, f2) {
   S = R = Q = null;
   Ih = false;
   if (b2)
-    throw Error(p$6(300));
+    throw Error(p$4(300));
   return a2;
 }
 function Sh() {
@@ -7063,7 +6039,7 @@ function Uh() {
     S = b2, R = a2;
   else {
     if (a2 === null)
-      throw Error(p$6(310));
+      throw Error(p$4(310));
     R = a2;
     a2 = { memoizedState: R.memoizedState, baseState: R.baseState, baseQueue: R.baseQueue, queue: R.queue, next: null };
     S === null ? Q.memoizedState = S = a2 : S = S.next = a2;
@@ -7076,7 +6052,7 @@ function Vh(a2, b2) {
 function Wh(a2) {
   var b2 = Uh(), c2 = b2.queue;
   if (c2 === null)
-    throw Error(p$6(311));
+    throw Error(p$4(311));
   c2.lastRenderedReducer = a2;
   var d2 = R, e2 = d2.baseQueue, f2 = c2.pending;
   if (f2 !== null) {
@@ -7130,7 +6106,7 @@ function Wh(a2) {
 function Xh(a2) {
   var b2 = Uh(), c2 = b2.queue;
   if (c2 === null)
-    throw Error(p$6(311));
+    throw Error(p$4(311));
   c2.lastRenderedReducer = a2;
   var d2 = c2.dispatch, e2 = c2.pending, f2 = b2.memoizedState;
   if (e2 !== null) {
@@ -7157,7 +6133,7 @@ function Zh(a2, b2) {
     c2.flags |= 2048;
     bi(9, ci.bind(null, c2, d2, e2, b2), void 0, null);
     if (J === null)
-      throw Error(p$6(349));
+      throw Error(p$4(349));
     (Hh & 30) !== 0 || di(c2, b2, e2);
   }
   return e2;
@@ -7387,12 +6363,12 @@ var Rh = { readContext: pg, useCallback: U, useContext: U, useEffect: U, useImpe
   var d2 = Q, e2 = Th();
   if (N) {
     if (c2 === void 0)
-      throw Error(p$6(407));
+      throw Error(p$4(407));
     c2 = c2();
   } else {
     c2 = b2();
     if (J === null)
-      throw Error(p$6(349));
+      throw Error(p$4(349));
     (Hh & 30) !== 0 || di(d2, b2, c2);
   }
   e2.memoizedState = c2;
@@ -7720,7 +6696,7 @@ function Qi(a2, b2, c2) {
       else {
         if (!d2) {
           if (b2.stateNode === null)
-            throw Error(p$6(166));
+            throw Error(p$4(166));
           V(b2);
           return null;
         }
@@ -7911,7 +6887,7 @@ function Qi(a2, b2, c2) {
         Oi(a2, b2, a2.memoizedProps, d2);
       else {
         if (typeof d2 !== "string" && b2.stateNode === null)
-          throw Error(p$6(166));
+          throw Error(p$4(166));
         c2 = xh(wh.current);
         xh(uh.current);
         if (fh(b2)) {
@@ -7948,11 +6924,11 @@ function Qi(a2, b2, c2) {
         d2 = fh(b2);
         if (a2 === null) {
           if (!d2)
-            throw Error(p$6(318));
+            throw Error(p$4(318));
           d2 = b2.memoizedState;
           d2 = d2 !== null ? d2.dehydrated : null;
           if (!d2)
-            throw Error(p$6(317));
+            throw Error(p$4(317));
           d2[If] = b2;
         } else
           gh(), (b2.flags & 128) === 0 && (b2.memoizedState = null), b2.flags |= 4;
@@ -8026,7 +7002,7 @@ function Qi(a2, b2, c2) {
     case 25:
       return null;
   }
-  throw Error(p$6(156, b2.tag));
+  throw Error(p$4(156, b2.tag));
 }
 var Wi = sa.ReactCurrentOwner, og = false;
 function Xi(a2, b2, c2, d2) {
@@ -8205,7 +7181,7 @@ function mj(a2, b2, c2) {
     if (h2 !== null) {
       if (g2) {
         if (b2.flags & 256)
-          return b2.flags &= -257, pj(a2, b2, c2, Error(p$6(422)));
+          return b2.flags &= -257, pj(a2, b2, c2, Error(p$4(422)));
         if (b2.memoizedState !== null)
           return b2.child = a2.child, b2.flags |= 128, null;
         f2 = d2.fallback;
@@ -8225,7 +7201,7 @@ function mj(a2, b2, c2) {
       if ((b2.mode & 1) === 0)
         b2 = pj(a2, b2, c2, null);
       else if (h2.data === "$!")
-        b2 = pj(a2, b2, c2, Error(p$6(419)));
+        b2 = pj(a2, b2, c2, Error(p$4(419)));
       else if (d2 = (c2 & a2.childLanes) !== 0, og || d2) {
         d2 = J;
         if (d2 !== null) {
@@ -8269,7 +7245,7 @@ function mj(a2, b2, c2) {
           d2 !== 0 && d2 !== e2.retryLane && (e2.retryLane = d2, Eg(a2, d2, -1));
         }
         Si();
-        b2 = pj(a2, b2, c2, Error(p$6(421)));
+        b2 = pj(a2, b2, c2, Error(p$4(421)));
       } else
         h2.data === "$?" ? (b2.flags |= 128, b2.child = a2.child, b2 = qj.bind(null, a2), h2._reactRetry = b2, b2 = null) : (c2 = e2.treeContext, Yg = Ff(h2.nextSibling), Xg = b2, N = true, Zg = null, c2 !== null && (Og[Pg++] = Rg, Og[Pg++] = Sg, Og[Pg++] = Qg, Rg = c2.id, Sg = c2.overflow, Qg = b2), b2 = oj(b2, b2.pendingProps.children), b2.flags |= 4096);
       return b2;
@@ -8405,7 +7381,7 @@ function Zi(a2, b2, c2) {
   if ((c2 & b2.childLanes) === 0)
     return null;
   if (a2 !== null && b2.child !== a2.child)
-    throw Error(p$6(153));
+    throw Error(p$4(153));
   if (b2.child !== null) {
     a2 = b2.child;
     c2 = mh(a2, a2.pendingProps);
@@ -8483,7 +7459,7 @@ function xj(a2, b2) {
       a2 = b2.memoizedState;
       if (a2 !== null && a2.dehydrated !== null) {
         if (b2.alternate === null)
-          throw Error(p$6(340));
+          throw Error(p$4(340));
         gh();
       }
       a2 = b2.flags;
@@ -8610,7 +7586,7 @@ function Fj(a2, b2) {
               case 17:
                 break;
               default:
-                throw Error(p$6(163));
+                throw Error(p$4(163));
             }
         } catch (O2) {
           Cj(b2, b2.return, O2);
@@ -8756,7 +7732,7 @@ function Oj(a2) {
         break a;
       b2 = b2.return;
     }
-    throw Error(p$6(160));
+    throw Error(p$4(160));
   }
   var c2 = b2;
   switch (c2.tag) {
@@ -8773,7 +7749,7 @@ function Oj(a2) {
       Qj(a2, c2, b2);
       break;
     default:
-      throw Error(p$6(161));
+      throw Error(p$4(161));
   }
 }
 function Qj(a2, b2, c2) {
@@ -8799,7 +7775,7 @@ function Kj(a2, b2, c2) {
       a:
         for (; ; ) {
           if (e2 === null)
-            throw Error(p$6(160));
+            throw Error(p$4(160));
           f2 = e2.stateNode;
           switch (e2.tag) {
             case 5:
@@ -8905,7 +7881,7 @@ function Rj(a2, b2) {
       return;
     case 6:
       if (b2.stateNode === null)
-        throw Error(p$6(162));
+        throw Error(p$4(162));
       b2.stateNode.nodeValue = b2.memoizedProps;
       return;
     case 3:
@@ -8922,7 +7898,7 @@ function Rj(a2, b2) {
     case 17:
       return;
   }
-  throw Error(p$6(163));
+  throw Error(p$4(163));
 }
 function Sj(a2) {
   var b2 = a2.updateQueue;
@@ -9199,7 +8175,7 @@ function ak(a2) {
             case 23:
               break;
             default:
-              throw Error(p$6(163));
+              throw Error(p$4(163));
           }
         zj || b2.flags & 512 && Ij(b2);
       } catch (u2) {
@@ -9311,7 +8287,7 @@ function Dg(a2) {
 }
 function Eg(a2, b2, c2) {
   if (50 < nk)
-    throw nk = 0, ok = null, Error(p$6(185));
+    throw nk = 0, ok = null, Error(p$4(185));
   var d2 = rk(a2, b2);
   if (d2 === null)
     return null;
@@ -9368,7 +8344,7 @@ function wk(a2, b2) {
   pk = -1;
   qk = 0;
   if ((K & 6) !== 0)
-    throw Error(p$6(327));
+    throw Error(p$4(327));
   var c2 = a2.callbackNode;
   if (xk() && a2.callbackNode !== c2)
     return null;
@@ -9412,7 +8388,7 @@ function wk(a2, b2) {
       switch (b2) {
         case 0:
         case 1:
-          throw Error(p$6(345));
+          throw Error(p$4(345));
         case 2:
           Fk(a2, jk);
           break;
@@ -9457,7 +8433,7 @@ function wk(a2, b2) {
           Fk(a2, jk);
           break;
         default:
-          throw Error(p$6(329));
+          throw Error(p$4(329));
       }
     }
   }
@@ -9520,7 +8496,7 @@ function sk(a2, b2) {
 }
 function uk(a2) {
   if ((K & 6) !== 0)
-    throw Error(p$6(327));
+    throw Error(p$4(327));
   xk();
   var b2 = rc(a2, 0);
   if ((b2 & 1) === 0)
@@ -9533,7 +8509,7 @@ function uk(a2) {
   if (c2 === 1)
     throw c2 = fk, Ak(a2, 0), sk(a2, b2), tk(a2, D$1()), c2;
   if (c2 === 6)
-    throw Error(p$6(345));
+    throw Error(p$4(345));
   a2.finishedWork = a2.current.alternate;
   a2.finishedLanes = b2;
   Fk(a2, jk);
@@ -9685,7 +8661,7 @@ function Ck(a2, b2) {
               Si();
               break a;
             }
-            k2 = Error(p$6(426));
+            k2 = Error(p$4(426));
           }
         } else if (N && h2.mode & 1) {
           var C2 = Ji(g2);
@@ -9761,7 +8737,7 @@ function yk(a2, b2) {
   K = c2;
   ck.current = d2;
   if (Y !== null)
-    throw Error(p$6(261));
+    throw Error(p$4(261));
   J = null;
   Z = 0;
   return W;
@@ -9828,14 +8804,14 @@ function Mk(a2, b2, c2) {
     xk();
   while (lk !== null);
   if ((K & 6) !== 0)
-    throw Error(p$6(327));
+    throw Error(p$4(327));
   var d2 = a2.finishedWork, e2 = a2.finishedLanes;
   if (d2 === null)
     return null;
   a2.finishedWork = null;
   a2.finishedLanes = 0;
   if (d2 === a2.current)
-    throw Error(p$6(177));
+    throw Error(p$4(177));
   a2.callbackNode = null;
   a2.callbackPriority = 0;
   var f2 = d2.lanes | d2.childLanes;
@@ -9895,7 +8871,7 @@ function xk() {
         lk = null;
         mk = 0;
         if ((K & 6) !== 0)
-          throw Error(p$6(331));
+          throw Error(p$4(331));
         var e2 = K;
         K |= 4;
         for (X = a2.current; X !== null; ) {
@@ -10083,7 +9059,7 @@ function Tj(a2, b2) {
       d2 = a2.stateNode;
       break;
     default:
-      throw Error(p$6(314));
+      throw Error(p$4(314));
   }
   d2 !== null && d2.delete(b2);
   Ok(a2, c2);
@@ -10137,7 +9113,7 @@ Lk = function(a2, b2, c2) {
             b2 = $i(null, b2, d2, fg(d2.type, a2), c2);
             break a;
         }
-        throw Error(p$6(306, d2, ""));
+        throw Error(p$4(306, d2, ""));
       }
       return b2;
     case 0:
@@ -10148,7 +9124,7 @@ Lk = function(a2, b2, c2) {
       a: {
         ij(b2);
         if (a2 === null)
-          throw Error(p$6(387));
+          throw Error(p$4(387));
         d2 = b2.pendingProps;
         f2 = b2.memoizedState;
         e2 = f2.element;
@@ -10163,11 +9139,11 @@ Lk = function(a2, b2, c2) {
             cache: g2.cache,
             transitions: g2.transitions
           }, b2.updateQueue.baseState = f2, b2.memoizedState = f2, b2.flags & 256) {
-            e2 = Error(p$6(423));
+            e2 = Error(p$4(423));
             b2 = jj(a2, b2, d2, c2, e2);
             break a;
           } else if (d2 !== e2) {
-            e2 = Error(p$6(424));
+            e2 = Error(p$4(424));
             b2 = jj(a2, b2, d2, c2, e2);
             break a;
           } else
@@ -10246,7 +9222,7 @@ Lk = function(a2, b2, c2) {
               else if (f2.tag === 18) {
                 g2 = f2.return;
                 if (g2 === null)
-                  throw Error(p$6(341));
+                  throw Error(p$4(341));
                 g2.lanes |= c2;
                 h2 = g2.alternate;
                 h2 !== null && (h2.lanes |= c2);
@@ -10289,7 +9265,7 @@ Lk = function(a2, b2, c2) {
     case 22:
       return dj(a2, b2, c2);
   }
-  throw Error(p$6(156, b2.tag));
+  throw Error(p$4(156, b2.tag));
 };
 function vk(a2, b2) {
   return Yb(a2, b2);
@@ -10388,7 +9364,7 @@ function oh(a2, b2, c2, d2, e2, f2) {
                 d2 = null;
                 break a;
             }
-          throw Error(p$6(130, a2 == null ? a2 : typeof a2, ""));
+          throw Error(p$4(130, a2 == null ? a2 : typeof a2, ""));
       }
   b2 = ah(g2, c2, b2, e2);
   b2.elementType = a2;
@@ -10454,7 +9430,7 @@ function Uk(a2) {
   a2 = a2._reactInternals;
   a: {
     if (Sb(a2) !== a2 || a2.tag !== 1)
-      throw Error(p$6(170));
+      throw Error(p$4(170));
     var b2 = a2;
     do {
       switch (b2.tag) {
@@ -10469,7 +9445,7 @@ function Uk(a2) {
       }
       b2 = b2.return;
     } while (b2 !== null);
-    throw Error(p$6(171));
+    throw Error(p$4(171));
   }
   if (a2.tag === 1) {
     var c2 = a2.type;
@@ -10539,7 +9515,7 @@ function bl(a2) {
 cl.prototype.render = bl.prototype.render = function(a2) {
   var b2 = this._internalRoot;
   if (b2 === null)
-    throw Error(p$6(409));
+    throw Error(p$4(409));
   Wk(a2, b2, null, null);
 };
 cl.prototype.unmount = bl.prototype.unmount = function() {
@@ -10680,7 +9656,7 @@ vb = function(a2, b2, c2) {
           if (d2 !== a2 && d2.form === a2.form) {
             var e2 = Ab(d2);
             if (!e2)
-              throw Error(p$6(90));
+              throw Error(p$4(90));
             Ua(d2);
             Za(d2, e2);
           }
@@ -10713,12 +9689,12 @@ reactDom_production_min.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = il;
 reactDom_production_min.createPortal = function(a2, b2) {
   var c2 = 2 < arguments.length && arguments[2] !== void 0 ? arguments[2] : null;
   if (!dl(b2))
-    throw Error(p$6(200));
+    throw Error(p$4(200));
   return Tk(a2, b2, null, c2);
 };
 reactDom_production_min.createRoot = function(a2, b2) {
   if (!dl(a2))
-    throw Error(p$6(299));
+    throw Error(p$4(299));
   var c2 = false, d2 = "", e2 = al;
   b2 !== null && b2 !== void 0 && (b2.unstable_strictMode === true && (c2 = true), b2.identifierPrefix !== void 0 && (d2 = b2.identifierPrefix), b2.onRecoverableError !== void 0 && (e2 = b2.onRecoverableError));
   b2 = Sk(a2, 1, false, null, null, c2, false, d2, e2);
@@ -10734,9 +9710,9 @@ reactDom_production_min.findDOMNode = function(a2) {
   var b2 = a2._reactInternals;
   if (b2 === void 0) {
     if (typeof a2.render === "function")
-      throw Error(p$6(188));
+      throw Error(p$4(188));
     a2 = Object.keys(a2).join(",");
-    throw Error(p$6(268, a2));
+    throw Error(p$4(268, a2));
   }
   a2 = Wb(b2);
   a2 = a2 === null ? null : a2.stateNode;
@@ -10747,12 +9723,12 @@ reactDom_production_min.flushSync = function(a2) {
 };
 reactDom_production_min.hydrate = function(a2, b2, c2) {
   if (!el(b2))
-    throw Error(p$6(200));
+    throw Error(p$4(200));
   return hl(null, a2, b2, true, c2);
 };
 reactDom_production_min.hydrateRoot = function(a2, b2, c2) {
   if (!dl(a2))
-    throw Error(p$6(405));
+    throw Error(p$4(405));
   var d2 = c2 != null && c2.hydratedSources || null, e2 = false, f2 = "", g2 = al;
   c2 !== null && c2 !== void 0 && (c2.unstable_strictMode === true && (e2 = true), c2.identifierPrefix !== void 0 && (f2 = c2.identifierPrefix), c2.onRecoverableError !== void 0 && (g2 = c2.onRecoverableError));
   b2 = Vk(b2, null, a2, 1, c2 != null ? c2 : null, e2, false, f2, g2);
@@ -10765,12 +9741,12 @@ reactDom_production_min.hydrateRoot = function(a2, b2, c2) {
 };
 reactDom_production_min.render = function(a2, b2, c2) {
   if (!el(b2))
-    throw Error(p$6(200));
+    throw Error(p$4(200));
   return hl(null, a2, b2, false, c2);
 };
 reactDom_production_min.unmountComponentAtNode = function(a2) {
   if (!el(a2))
-    throw Error(p$6(40));
+    throw Error(p$4(40));
   return a2._reactRootContainer ? (Hk(function() {
     hl(null, null, a2, false, function() {
       a2._reactRootContainer = null;
@@ -10781,9 +9757,9 @@ reactDom_production_min.unmountComponentAtNode = function(a2) {
 reactDom_production_min.unstable_batchedUpdates = Gk;
 reactDom_production_min.unstable_renderSubtreeIntoContainer = function(a2, b2, c2, d2) {
   if (!el(c2))
-    throw Error(p$6(200));
+    throw Error(p$4(200));
   if (a2 == null || a2._reactInternals === void 0)
-    throw Error(p$6(38));
+    throw Error(p$4(38));
   return hl(a2, b2, c2, false, d2);
 };
 reactDom_production_min.version = "18.0.0-fc46dba67-20220329";
@@ -10802,213 +9778,6 @@ function checkDCE() {
   reactDom.exports = reactDom_production_min;
 }
 var ReactDOM = reactDom.exports;
-var createRoot;
-var m$5 = reactDom.exports;
-{
-  createRoot = m$5.createRoot;
-}
-function _setPrototypeOf(o2, p2) {
-  _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf2(o3, p3) {
-    o3.__proto__ = p3;
-    return o3;
-  };
-  return _setPrototypeOf(o2, p2);
-}
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-  _setPrototypeOf(subClass, superClass);
-}
-var changedArray = function changedArray2(a2, b2) {
-  if (a2 === void 0) {
-    a2 = [];
-  }
-  if (b2 === void 0) {
-    b2 = [];
-  }
-  return a2.length !== b2.length || a2.some(function(item, index) {
-    return !Object.is(item, b2[index]);
-  });
-};
-var initialState$1 = {
-  error: null
-};
-var ErrorBoundary = /* @__PURE__ */ function(_React$Component) {
-  _inheritsLoose(ErrorBoundary2, _React$Component);
-  function ErrorBoundary2() {
-    var _this;
-    for (var _len = arguments.length, _args = new Array(_len), _key = 0; _key < _len; _key++) {
-      _args[_key] = arguments[_key];
-    }
-    _this = _React$Component.call.apply(_React$Component, [this].concat(_args)) || this;
-    _this.state = initialState$1;
-    _this.resetErrorBoundary = function() {
-      var _this$props;
-      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        args[_key2] = arguments[_key2];
-      }
-      _this.props.onReset == null ? void 0 : (_this$props = _this.props).onReset.apply(_this$props, args);
-      _this.reset();
-    };
-    return _this;
-  }
-  ErrorBoundary2.getDerivedStateFromError = function getDerivedStateFromError(error) {
-    return {
-      error
-    };
-  };
-  var _proto = ErrorBoundary2.prototype;
-  _proto.reset = function reset() {
-    this.setState(initialState$1);
-  };
-  _proto.componentDidCatch = function componentDidCatch(error, info) {
-    var _this$props$onError, _this$props2;
-    (_this$props$onError = (_this$props2 = this.props).onError) == null ? void 0 : _this$props$onError.call(_this$props2, error, info);
-  };
-  _proto.componentDidUpdate = function componentDidUpdate(prevProps, prevState) {
-    var error = this.state.error;
-    var resetKeys = this.props.resetKeys;
-    if (error !== null && prevState.error !== null && changedArray(prevProps.resetKeys, resetKeys)) {
-      var _this$props$onResetKe, _this$props3;
-      (_this$props$onResetKe = (_this$props3 = this.props).onResetKeysChange) == null ? void 0 : _this$props$onResetKe.call(_this$props3, prevProps.resetKeys, resetKeys);
-      this.reset();
-    }
-  };
-  _proto.render = function render() {
-    var error = this.state.error;
-    var _this$props4 = this.props, fallbackRender = _this$props4.fallbackRender, FallbackComponent = _this$props4.FallbackComponent, fallback = _this$props4.fallback;
-    if (error !== null) {
-      var _props = {
-        error,
-        resetErrorBoundary: this.resetErrorBoundary
-      };
-      if (/* @__PURE__ */ react.exports.isValidElement(fallback)) {
-        return fallback;
-      } else if (typeof fallbackRender === "function") {
-        return fallbackRender(_props);
-      } else if (FallbackComponent) {
-        return /* @__PURE__ */ react.exports.createElement(FallbackComponent, _props);
-      } else {
-        throw new Error("react-error-boundary requires either a fallback, fallbackRender, or FallbackComponent prop");
-      }
-    }
-    return this.props.children;
-  };
-  return ErrorBoundary2;
-}(react.exports.Component);
-var shim = { exports: {} };
-var useSyncExternalStoreShim_production_min = {};
-/**
- * @license React
- * use-sync-external-store-shim.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var e$3 = react.exports;
-function h$4(a2, b2) {
-  return a2 === b2 && (a2 !== 0 || 1 / a2 === 1 / b2) || a2 !== a2 && b2 !== b2;
-}
-var k$4 = typeof Object.is === "function" ? Object.is : h$4, l$4 = e$3.useState, m$4 = e$3.useEffect, n$5 = e$3.useLayoutEffect, p$5 = e$3.useDebugValue;
-function q$5(a2, b2) {
-  var d2 = b2(), f2 = l$4({ inst: { value: d2, getSnapshot: b2 } }), c2 = f2[0].inst, g2 = f2[1];
-  n$5(function() {
-    c2.value = d2;
-    c2.getSnapshot = b2;
-    r$3(c2) && g2({ inst: c2 });
-  }, [a2, d2, b2]);
-  m$4(function() {
-    r$3(c2) && g2({ inst: c2 });
-    return a2(function() {
-      r$3(c2) && g2({ inst: c2 });
-    });
-  }, [a2]);
-  p$5(d2);
-  return d2;
-}
-function r$3(a2) {
-  var b2 = a2.getSnapshot;
-  a2 = a2.value;
-  try {
-    var d2 = b2();
-    return !k$4(a2, d2);
-  } catch (f2) {
-    return true;
-  }
-}
-function t$3(a2, b2) {
-  return b2();
-}
-var u$3 = typeof window === "undefined" || typeof window.document === "undefined" || typeof window.document.createElement === "undefined" ? t$3 : q$5;
-useSyncExternalStoreShim_production_min.useSyncExternalStore = e$3.useSyncExternalStore !== void 0 ? e$3.useSyncExternalStore : u$3;
-{
-  shim.exports = useSyncExternalStoreShim_production_min;
-}
-var withSelector = { exports: {} };
-var withSelector_production_min = {};
-/**
- * @license React
- * use-sync-external-store-shim/with-selector.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var h$3 = react.exports, n$4 = shim.exports;
-function p$4(a2, b2) {
-  return a2 === b2 && (a2 !== 0 || 1 / a2 === 1 / b2) || a2 !== a2 && b2 !== b2;
-}
-var q$4 = typeof Object.is === "function" ? Object.is : p$4, r$2 = n$4.useSyncExternalStore, t$2 = h$3.useRef, u$2 = h$3.useEffect, v$3 = h$3.useMemo, w$2 = h$3.useDebugValue;
-withSelector_production_min.useSyncExternalStoreWithSelector = function(a2, b2, e2, l2, g2) {
-  var c2 = t$2(null);
-  if (c2.current === null) {
-    var f2 = { hasValue: false, value: null };
-    c2.current = f2;
-  } else
-    f2 = c2.current;
-  c2 = v$3(function() {
-    function a3(a4) {
-      if (!c3) {
-        c3 = true;
-        d3 = a4;
-        a4 = l2(a4);
-        if (g2 !== void 0 && f2.hasValue) {
-          var b3 = f2.value;
-          if (g2(b3, a4))
-            return k2 = b3;
-        }
-        return k2 = a4;
-      }
-      b3 = k2;
-      if (q$4(d3, a4))
-        return b3;
-      var e3 = l2(a4);
-      if (g2 !== void 0 && g2(b3, e3))
-        return b3;
-      d3 = a4;
-      return k2 = e3;
-    }
-    var c3 = false, d3, k2, m2 = e2 === void 0 ? null : e2;
-    return [function() {
-      return a3(b2());
-    }, m2 === null ? void 0 : function() {
-      return a3(m2());
-    }];
-  }, [b2, e2, l2, g2]);
-  var d2 = r$2(a2, c2[0], c2[1]);
-  u$2(function() {
-    f2.hasValue = true;
-    f2.value = d2;
-  }, [d2]);
-  w$2(d2);
-  return d2;
-};
-{
-  withSelector.exports = withSelector_production_min;
-}
 function defaultNoopBatch(callback) {
   callback();
 }
@@ -11056,7 +9825,7 @@ function _extends() {
   };
   return _extends.apply(this, arguments);
 }
-function _objectWithoutPropertiesLoose$1(source, excluded) {
+function _objectWithoutPropertiesLoose$2(source, excluded) {
   if (source == null)
     return {};
   var target = {};
@@ -11080,7 +9849,7 @@ var reactIs_production_min$2 = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var b$2 = typeof Symbol === "function" && Symbol.for, c$2 = b$2 ? Symbol.for("react.element") : 60103, d$2 = b$2 ? Symbol.for("react.portal") : 60106, e$2 = b$2 ? Symbol.for("react.fragment") : 60107, f$3 = b$2 ? Symbol.for("react.strict_mode") : 60108, g$2 = b$2 ? Symbol.for("react.profiler") : 60114, h$2 = b$2 ? Symbol.for("react.provider") : 60109, k$3 = b$2 ? Symbol.for("react.context") : 60110, l$3 = b$2 ? Symbol.for("react.async_mode") : 60111, m$3 = b$2 ? Symbol.for("react.concurrent_mode") : 60111, n$3 = b$2 ? Symbol.for("react.forward_ref") : 60112, p$3 = b$2 ? Symbol.for("react.suspense") : 60113, q$3 = b$2 ? Symbol.for("react.suspense_list") : 60120, r$1 = b$2 ? Symbol.for("react.memo") : 60115, t$1 = b$2 ? Symbol.for("react.lazy") : 60116, v$2 = b$2 ? Symbol.for("react.block") : 60121, w$1 = b$2 ? Symbol.for("react.fundamental") : 60117, x$1 = b$2 ? Symbol.for("react.responder") : 60118, y$1 = b$2 ? Symbol.for("react.scope") : 60119;
+var b$2 = typeof Symbol === "function" && Symbol.for, c$2 = b$2 ? Symbol.for("react.element") : 60103, d$2 = b$2 ? Symbol.for("react.portal") : 60106, e$2 = b$2 ? Symbol.for("react.fragment") : 60107, f$3 = b$2 ? Symbol.for("react.strict_mode") : 60108, g$2 = b$2 ? Symbol.for("react.profiler") : 60114, h$2 = b$2 ? Symbol.for("react.provider") : 60109, k$3 = b$2 ? Symbol.for("react.context") : 60110, l$3 = b$2 ? Symbol.for("react.async_mode") : 60111, m$4 = b$2 ? Symbol.for("react.concurrent_mode") : 60111, n$3 = b$2 ? Symbol.for("react.forward_ref") : 60112, p$3 = b$2 ? Symbol.for("react.suspense") : 60113, q$3 = b$2 ? Symbol.for("react.suspense_list") : 60120, r$1 = b$2 ? Symbol.for("react.memo") : 60115, t$1 = b$2 ? Symbol.for("react.lazy") : 60116, v$2 = b$2 ? Symbol.for("react.block") : 60121, w$1 = b$2 ? Symbol.for("react.fundamental") : 60117, x$1 = b$2 ? Symbol.for("react.responder") : 60118, y$1 = b$2 ? Symbol.for("react.scope") : 60119;
 function z$1(a2) {
   if (typeof a2 === "object" && a2 !== null) {
     var u2 = a2.$$typeof;
@@ -11088,7 +9857,7 @@ function z$1(a2) {
       case c$2:
         switch (a2 = a2.type, a2) {
           case l$3:
-          case m$3:
+          case m$4:
           case e$2:
           case g$2:
           case f$3:
@@ -11112,10 +9881,10 @@ function z$1(a2) {
   }
 }
 function A$1(a2) {
-  return z$1(a2) === m$3;
+  return z$1(a2) === m$4;
 }
 reactIs_production_min$2.AsyncMode = l$3;
-reactIs_production_min$2.ConcurrentMode = m$3;
+reactIs_production_min$2.ConcurrentMode = m$4;
 reactIs_production_min$2.ContextConsumer = k$3;
 reactIs_production_min$2.ContextProvider = h$2;
 reactIs_production_min$2.Element = c$2;
@@ -11165,7 +9934,7 @@ reactIs_production_min$2.isSuspense = function(a2) {
   return z$1(a2) === p$3;
 };
 reactIs_production_min$2.isValidElementType = function(a2) {
-  return typeof a2 === "string" || typeof a2 === "function" || a2 === e$2 || a2 === m$3 || a2 === g$2 || a2 === f$3 || a2 === p$3 || a2 === q$3 || typeof a2 === "object" && a2 !== null && (a2.$$typeof === t$1 || a2.$$typeof === r$1 || a2.$$typeof === h$2 || a2.$$typeof === k$3 || a2.$$typeof === n$3 || a2.$$typeof === w$1 || a2.$$typeof === x$1 || a2.$$typeof === y$1 || a2.$$typeof === v$2);
+  return typeof a2 === "string" || typeof a2 === "function" || a2 === e$2 || a2 === m$4 || a2 === g$2 || a2 === f$3 || a2 === p$3 || a2 === q$3 || typeof a2 === "object" && a2 !== null && (a2.$$typeof === t$1 || a2.$$typeof === r$1 || a2.$$typeof === h$2 || a2.$$typeof === k$3 || a2.$$typeof === n$3 || a2.$$typeof === w$1 || a2.$$typeof === x$1 || a2.$$typeof === y$1 || a2.$$typeof === v$2);
 };
 reactIs_production_min$2.typeOf = z$1;
 {
@@ -11262,7 +10031,7 @@ var reactIs_production_min$1 = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var b$1 = Symbol.for("react.element"), c$1 = Symbol.for("react.portal"), d$1 = Symbol.for("react.fragment"), e$1 = Symbol.for("react.strict_mode"), f$2 = Symbol.for("react.profiler"), g$1 = Symbol.for("react.provider"), h$1 = Symbol.for("react.context"), k$2 = Symbol.for("react.server_context"), l$2 = Symbol.for("react.forward_ref"), m$2 = Symbol.for("react.suspense"), n$2 = Symbol.for("react.suspense_list"), p$2 = Symbol.for("react.memo"), q$2 = Symbol.for("react.lazy"), t = Symbol.for("react.offscreen"), u$1 = Symbol.for("react.module.reference");
+var b$1 = Symbol.for("react.element"), c$1 = Symbol.for("react.portal"), d$1 = Symbol.for("react.fragment"), e$1 = Symbol.for("react.strict_mode"), f$2 = Symbol.for("react.profiler"), g$1 = Symbol.for("react.provider"), h$1 = Symbol.for("react.context"), k$2 = Symbol.for("react.server_context"), l$2 = Symbol.for("react.forward_ref"), m$3 = Symbol.for("react.suspense"), n$2 = Symbol.for("react.suspense_list"), p$2 = Symbol.for("react.memo"), q$2 = Symbol.for("react.lazy"), t = Symbol.for("react.offscreen"), u$1 = Symbol.for("react.module.reference");
 function v$1(a2) {
   if (typeof a2 === "object" && a2 !== null) {
     var r2 = a2.$$typeof;
@@ -11272,7 +10041,7 @@ function v$1(a2) {
           case d$1:
           case f$2:
           case e$1:
-          case m$2:
+          case m$3:
           case n$2:
             return a2;
           default:
@@ -11303,7 +10072,7 @@ reactIs_production_min$1.Memo = p$2;
 reactIs_production_min$1.Portal = c$1;
 reactIs_production_min$1.Profiler = f$2;
 reactIs_production_min$1.StrictMode = e$1;
-reactIs_production_min$1.Suspense = m$2;
+reactIs_production_min$1.Suspense = m$3;
 reactIs_production_min$1.SuspenseList = n$2;
 reactIs_production_min$1.isAsyncMode = function() {
   return false;
@@ -11342,13 +10111,13 @@ reactIs_production_min$1.isStrictMode = function(a2) {
   return v$1(a2) === e$1;
 };
 reactIs_production_min$1.isSuspense = function(a2) {
-  return v$1(a2) === m$2;
+  return v$1(a2) === m$3;
 };
 reactIs_production_min$1.isSuspenseList = function(a2) {
   return v$1(a2) === n$2;
 };
 reactIs_production_min$1.isValidElementType = function(a2) {
-  return typeof a2 === "string" || typeof a2 === "function" || a2 === d$1 || a2 === f$2 || a2 === e$1 || a2 === m$2 || a2 === n$2 || a2 === t || typeof a2 === "object" && a2 !== null && (a2.$$typeof === q$2 || a2.$$typeof === p$2 || a2.$$typeof === g$1 || a2.$$typeof === h$1 || a2.$$typeof === l$2 || a2.$$typeof === u$1 || a2.getModuleId !== void 0) ? true : false;
+  return typeof a2 === "string" || typeof a2 === "function" || a2 === d$1 || a2 === f$2 || a2 === e$1 || a2 === m$3 || a2 === n$2 || a2 === t || typeof a2 === "object" && a2 !== null && (a2.$$typeof === q$2 || a2.$$typeof === p$2 || a2.$$typeof === g$1 || a2.$$typeof === h$1 || a2.$$typeof === l$2 || a2.$$typeof === u$1 || a2.getModuleId !== void 0) ? true : false;
 };
 reactIs_production_min$1.typeOf = v$1;
 function createListenerCollection() {
@@ -11469,14 +10238,14 @@ var reactJsxRuntime_production_min = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var f$1 = react.exports, k$1 = Symbol.for("react.element"), l$1 = Symbol.for("react.fragment"), m$1 = Object.prototype.hasOwnProperty, n$1 = f$1.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner, p$1 = { key: true, ref: true, __self: true, __source: true };
+var f$1 = react.exports, k$1 = Symbol.for("react.element"), l$1 = Symbol.for("react.fragment"), m$2 = Object.prototype.hasOwnProperty, n$1 = f$1.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner, p$1 = { key: true, ref: true, __self: true, __source: true };
 function q$1(c2, a2, g2) {
   var b2, d2 = {}, e2 = null, h2 = null;
   g2 !== void 0 && (e2 = "" + g2);
   a2.key !== void 0 && (e2 = "" + a2.key);
   a2.ref !== void 0 && (h2 = a2.ref);
   for (b2 in a2)
-    m$1.call(a2, b2) && !p$1.hasOwnProperty(b2) && (d2[b2] = a2[b2]);
+    m$2.call(a2, b2) && !p$1.hasOwnProperty(b2) && (d2[b2] = a2[b2]);
   if (c2 && c2.defaultProps)
     for (b2 in a2 = c2.defaultProps, a2)
       d2[b2] === void 0 && (d2[b2] = a2[b2]);
@@ -11553,6 +10322,4058 @@ function createDispatchHook(context = ReactReduxContext) {
 const useDispatch = /* @__PURE__ */ createDispatchHook();
 initializeUseSelector(withSelector.exports.useSyncExternalStoreWithSelector);
 setBatch(reactDom.exports.unstable_batchedUpdates);
+const useAppDispatch = () => useDispatch();
+const useAppSelector = useSelector;
+const proxyMarker = Symbol("Comlink.proxy");
+const createEndpoint = Symbol("Comlink.endpoint");
+const releaseProxy = Symbol("Comlink.releaseProxy");
+const throwMarker = Symbol("Comlink.thrown");
+const isObject$1 = (val) => typeof val === "object" && val !== null || typeof val === "function";
+const proxyTransferHandler = {
+  canHandle: (val) => isObject$1(val) && val[proxyMarker],
+  serialize(obj) {
+    const { port1, port2 } = new MessageChannel();
+    expose(obj, port1);
+    return [port2, [port2]];
+  },
+  deserialize(port) {
+    port.start();
+    return wrap(port);
+  }
+};
+const throwTransferHandler = {
+  canHandle: (value) => isObject$1(value) && throwMarker in value,
+  serialize({ value }) {
+    let serialized;
+    if (value instanceof Error) {
+      serialized = {
+        isError: true,
+        value: {
+          message: value.message,
+          name: value.name,
+          stack: value.stack
+        }
+      };
+    } else {
+      serialized = { isError: false, value };
+    }
+    return [serialized, []];
+  },
+  deserialize(serialized) {
+    if (serialized.isError) {
+      throw Object.assign(new Error(serialized.value.message), serialized.value);
+    }
+    throw serialized.value;
+  }
+};
+const transferHandlers = /* @__PURE__ */ new Map([
+  ["proxy", proxyTransferHandler],
+  ["throw", throwTransferHandler]
+]);
+function expose(obj, ep = self) {
+  ep.addEventListener("message", function callback(ev) {
+    if (!ev || !ev.data) {
+      return;
+    }
+    const { id: id2, type, path } = Object.assign({ path: [] }, ev.data);
+    const argumentList = (ev.data.argumentList || []).map(fromWireValue);
+    let returnValue;
+    try {
+      const parent = path.slice(0, -1).reduce((obj2, prop) => obj2[prop], obj);
+      const rawValue = path.reduce((obj2, prop) => obj2[prop], obj);
+      switch (type) {
+        case "GET":
+          {
+            returnValue = rawValue;
+          }
+          break;
+        case "SET":
+          {
+            parent[path.slice(-1)[0]] = fromWireValue(ev.data.value);
+            returnValue = true;
+          }
+          break;
+        case "APPLY":
+          {
+            returnValue = rawValue.apply(parent, argumentList);
+          }
+          break;
+        case "CONSTRUCT":
+          {
+            const value = new rawValue(...argumentList);
+            returnValue = proxy(value);
+          }
+          break;
+        case "ENDPOINT":
+          {
+            const { port1, port2 } = new MessageChannel();
+            expose(obj, port2);
+            returnValue = transfer(port1, [port1]);
+          }
+          break;
+        case "RELEASE":
+          {
+            returnValue = void 0;
+          }
+          break;
+        default:
+          return;
+      }
+    } catch (value) {
+      returnValue = { value, [throwMarker]: 0 };
+    }
+    Promise.resolve(returnValue).catch((value) => {
+      return { value, [throwMarker]: 0 };
+    }).then((returnValue2) => {
+      const [wireValue, transferables] = toWireValue(returnValue2);
+      ep.postMessage(Object.assign(Object.assign({}, wireValue), { id: id2 }), transferables);
+      if (type === "RELEASE") {
+        ep.removeEventListener("message", callback);
+        closeEndPoint(ep);
+      }
+    });
+  });
+  if (ep.start) {
+    ep.start();
+  }
+}
+function isMessagePort(endpoint) {
+  return endpoint.constructor.name === "MessagePort";
+}
+function closeEndPoint(endpoint) {
+  if (isMessagePort(endpoint))
+    endpoint.close();
+}
+function wrap(ep, target) {
+  return createProxy(ep, [], target);
+}
+function throwIfProxyReleased(isReleased) {
+  if (isReleased) {
+    throw new Error("Proxy has been released and is not useable");
+  }
+}
+function createProxy(ep, path = [], target = function() {
+}) {
+  let isProxyReleased = false;
+  const proxy2 = new Proxy(target, {
+    get(_target, prop) {
+      throwIfProxyReleased(isProxyReleased);
+      if (prop === releaseProxy) {
+        return () => {
+          return requestResponseMessage(ep, {
+            type: "RELEASE",
+            path: path.map((p2) => p2.toString())
+          }).then(() => {
+            closeEndPoint(ep);
+            isProxyReleased = true;
+          });
+        };
+      }
+      if (prop === "then") {
+        if (path.length === 0) {
+          return { then: () => proxy2 };
+        }
+        const r2 = requestResponseMessage(ep, {
+          type: "GET",
+          path: path.map((p2) => p2.toString())
+        }).then(fromWireValue);
+        return r2.then.bind(r2);
+      }
+      return createProxy(ep, [...path, prop]);
+    },
+    set(_target, prop, rawValue) {
+      throwIfProxyReleased(isProxyReleased);
+      const [value, transferables] = toWireValue(rawValue);
+      return requestResponseMessage(ep, {
+        type: "SET",
+        path: [...path, prop].map((p2) => p2.toString()),
+        value
+      }, transferables).then(fromWireValue);
+    },
+    apply(_target, _thisArg, rawArgumentList) {
+      throwIfProxyReleased(isProxyReleased);
+      const last = path[path.length - 1];
+      if (last === createEndpoint) {
+        return requestResponseMessage(ep, {
+          type: "ENDPOINT"
+        }).then(fromWireValue);
+      }
+      if (last === "bind") {
+        return createProxy(ep, path.slice(0, -1));
+      }
+      const [argumentList, transferables] = processArguments(rawArgumentList);
+      return requestResponseMessage(ep, {
+        type: "APPLY",
+        path: path.map((p2) => p2.toString()),
+        argumentList
+      }, transferables).then(fromWireValue);
+    },
+    construct(_target, rawArgumentList) {
+      throwIfProxyReleased(isProxyReleased);
+      const [argumentList, transferables] = processArguments(rawArgumentList);
+      return requestResponseMessage(ep, {
+        type: "CONSTRUCT",
+        path: path.map((p2) => p2.toString()),
+        argumentList
+      }, transferables).then(fromWireValue);
+    }
+  });
+  return proxy2;
+}
+function myFlat(arr) {
+  return Array.prototype.concat.apply([], arr);
+}
+function processArguments(argumentList) {
+  const processed = argumentList.map(toWireValue);
+  return [processed.map((v2) => v2[0]), myFlat(processed.map((v2) => v2[1]))];
+}
+const transferCache = /* @__PURE__ */ new WeakMap();
+function transfer(obj, transfers) {
+  transferCache.set(obj, transfers);
+  return obj;
+}
+function proxy(obj) {
+  return Object.assign(obj, { [proxyMarker]: true });
+}
+function toWireValue(value) {
+  for (const [name2, handler] of transferHandlers) {
+    if (handler.canHandle(value)) {
+      const [serializedValue, transferables] = handler.serialize(value);
+      return [
+        {
+          type: "HANDLER",
+          name: name2,
+          value: serializedValue
+        },
+        transferables
+      ];
+    }
+  }
+  return [
+    {
+      type: "RAW",
+      value
+    },
+    transferCache.get(value) || []
+  ];
+}
+function fromWireValue(value) {
+  switch (value.type) {
+    case "HANDLER":
+      return transferHandlers.get(value.name).deserialize(value.value);
+    case "RAW":
+      return value.value;
+  }
+}
+function requestResponseMessage(ep, msg, transfers) {
+  return new Promise((resolve) => {
+    const id2 = generateUUID();
+    ep.addEventListener("message", function l2(ev) {
+      if (!ev.data || !ev.data.id || ev.data.id !== id2) {
+        return;
+      }
+      ep.removeEventListener("message", l2);
+      resolve(ev.data);
+    });
+    if (ep.start) {
+      ep.start();
+    }
+    ep.postMessage(Object.assign({ id: id2 }, msg), transfers);
+  });
+}
+function generateUUID() {
+  return new Array(4).fill(0).map(() => Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(16)).join("-");
+}
+const window$1 = typeof globalThis.window !== "undefined" ? globalThis.window : void 0;
+class Logger {
+  isLogLevelEnabled(level) {
+    if (typeof window$1 === "undefined")
+      return true;
+    if (typeof window$1.logLevel === "number") {
+      return window$1.logLevel >= level;
+    }
+    window$1.logLevel = 0;
+    return level <= 0;
+  }
+  log(a2, ...args) {
+    if (this.isLogLevelEnabled(2)) {
+      console.log(a2, ...args);
+    }
+  }
+  logWarn(a2, ...args) {
+    if (this.isLogLevelEnabled(1)) {
+      console.warn(a2, ...args);
+    }
+  }
+  logError(a2, ...args) {
+    if (this.isLogLevelEnabled(0)) {
+      console.error(a2, ...args);
+    }
+  }
+}
+var logger = new Logger();
+const encodedJs = "KGZ1bmN0aW9uKCkgewogICJ1c2Ugc3RyaWN0IjsKICBjb25zdCBwcm94eU1hcmtlciA9IFN5bWJvbCgiQ29tbGluay5wcm94eSIpOwogIGNvbnN0IGNyZWF0ZUVuZHBvaW50ID0gU3ltYm9sKCJDb21saW5rLmVuZHBvaW50Iik7CiAgY29uc3QgcmVsZWFzZVByb3h5ID0gU3ltYm9sKCJDb21saW5rLnJlbGVhc2VQcm94eSIpOwogIGNvbnN0IHRocm93TWFya2VyID0gU3ltYm9sKCJDb21saW5rLnRocm93biIpOwogIGNvbnN0IGlzT2JqZWN0ID0gKHZhbCkgPT4gdHlwZW9mIHZhbCA9PT0gIm9iamVjdCIgJiYgdmFsICE9PSBudWxsIHx8IHR5cGVvZiB2YWwgPT09ICJmdW5jdGlvbiI7CiAgY29uc3QgcHJveHlUcmFuc2ZlckhhbmRsZXIgPSB7CiAgICBjYW5IYW5kbGU6ICh2YWwpID0+IGlzT2JqZWN0KHZhbCkgJiYgdmFsW3Byb3h5TWFya2VyXSwKICAgIHNlcmlhbGl6ZShvYmopIHsKICAgICAgY29uc3QgeyBwb3J0MSwgcG9ydDIgfSA9IG5ldyBNZXNzYWdlQ2hhbm5lbCgpOwogICAgICBleHBvc2Uob2JqLCBwb3J0MSk7CiAgICAgIHJldHVybiBbcG9ydDIsIFtwb3J0Ml1dOwogICAgfSwKICAgIGRlc2VyaWFsaXplKHBvcnQpIHsKICAgICAgcG9ydC5zdGFydCgpOwogICAgICByZXR1cm4gd3JhcChwb3J0KTsKICAgIH0KICB9OwogIGNvbnN0IHRocm93VHJhbnNmZXJIYW5kbGVyID0gewogICAgY2FuSGFuZGxlOiAodmFsdWUpID0+IGlzT2JqZWN0KHZhbHVlKSAmJiB0aHJvd01hcmtlciBpbiB2YWx1ZSwKICAgIHNlcmlhbGl6ZSh7IHZhbHVlIH0pIHsKICAgICAgbGV0IHNlcmlhbGl6ZWQ7CiAgICAgIGlmICh2YWx1ZSBpbnN0YW5jZW9mIEVycm9yKSB7CiAgICAgICAgc2VyaWFsaXplZCA9IHsKICAgICAgICAgIGlzRXJyb3I6IHRydWUsCiAgICAgICAgICB2YWx1ZTogewogICAgICAgICAgICBtZXNzYWdlOiB2YWx1ZS5tZXNzYWdlLAogICAgICAgICAgICBuYW1lOiB2YWx1ZS5uYW1lLAogICAgICAgICAgICBzdGFjazogdmFsdWUuc3RhY2sKICAgICAgICAgIH0KICAgICAgICB9OwogICAgICB9IGVsc2UgewogICAgICAgIHNlcmlhbGl6ZWQgPSB7IGlzRXJyb3I6IGZhbHNlLCB2YWx1ZSB9OwogICAgICB9CiAgICAgIHJldHVybiBbc2VyaWFsaXplZCwgW11dOwogICAgfSwKICAgIGRlc2VyaWFsaXplKHNlcmlhbGl6ZWQpIHsKICAgICAgaWYgKHNlcmlhbGl6ZWQuaXNFcnJvcikgewogICAgICAgIHRocm93IE9iamVjdC5hc3NpZ24obmV3IEVycm9yKHNlcmlhbGl6ZWQudmFsdWUubWVzc2FnZSksIHNlcmlhbGl6ZWQudmFsdWUpOwogICAgICB9CiAgICAgIHRocm93IHNlcmlhbGl6ZWQudmFsdWU7CiAgICB9CiAgfTsKICBjb25zdCB0cmFuc2ZlckhhbmRsZXJzID0gLyogQF9fUFVSRV9fICovIG5ldyBNYXAoWwogICAgWyJwcm94eSIsIHByb3h5VHJhbnNmZXJIYW5kbGVyXSwKICAgIFsidGhyb3ciLCB0aHJvd1RyYW5zZmVySGFuZGxlcl0KICBdKTsKICBmdW5jdGlvbiBleHBvc2Uob2JqLCBlcCA9IHNlbGYpIHsKICAgIGVwLmFkZEV2ZW50TGlzdGVuZXIoIm1lc3NhZ2UiLCBmdW5jdGlvbiBjYWxsYmFjayhldikgewogICAgICBpZiAoIWV2IHx8ICFldi5kYXRhKSB7CiAgICAgICAgcmV0dXJuOwogICAgICB9CiAgICAgIGNvbnN0IHsgaWQsIHR5cGUsIHBhdGggfSA9IE9iamVjdC5hc3NpZ24oeyBwYXRoOiBbXSB9LCBldi5kYXRhKTsKICAgICAgY29uc3QgYXJndW1lbnRMaXN0ID0gKGV2LmRhdGEuYXJndW1lbnRMaXN0IHx8IFtdKS5tYXAoZnJvbVdpcmVWYWx1ZSk7CiAgICAgIGxldCByZXR1cm5WYWx1ZTsKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCBwYXJlbnQgPSBwYXRoLnNsaWNlKDAsIC0xKS5yZWR1Y2UoKG9iajIsIHByb3ApID0+IG9iajJbcHJvcF0sIG9iaik7CiAgICAgICAgY29uc3QgcmF3VmFsdWUgPSBwYXRoLnJlZHVjZSgob2JqMiwgcHJvcCkgPT4gb2JqMltwcm9wXSwgb2JqKTsKICAgICAgICBzd2l0Y2ggKHR5cGUpIHsKICAgICAgICAgIGNhc2UgIkdFVCI6CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICByZXR1cm5WYWx1ZSA9IHJhd1ZhbHVlOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgY2FzZSAiU0VUIjoKICAgICAgICAgICAgewogICAgICAgICAgICAgIHBhcmVudFtwYXRoLnNsaWNlKC0xKVswXV0gPSBmcm9tV2lyZVZhbHVlKGV2LmRhdGEudmFsdWUpOwogICAgICAgICAgICAgIHJldHVyblZhbHVlID0gdHJ1ZTsKICAgICAgICAgICAgfQogICAgICAgICAgICBicmVhazsKICAgICAgICAgIGNhc2UgIkFQUExZIjoKICAgICAgICAgICAgewogICAgICAgICAgICAgIHJldHVyblZhbHVlID0gcmF3VmFsdWUuYXBwbHkocGFyZW50LCBhcmd1bWVudExpc3QpOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgY2FzZSAiQ09OU1RSVUNUIjoKICAgICAgICAgICAgewogICAgICAgICAgICAgIGNvbnN0IHZhbHVlID0gbmV3IHJhd1ZhbHVlKC4uLmFyZ3VtZW50TGlzdCk7CiAgICAgICAgICAgICAgcmV0dXJuVmFsdWUgPSBwcm94eSh2YWx1ZSk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgYnJlYWs7CiAgICAgICAgICBjYXNlICJFTkRQT0lOVCI6CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICBjb25zdCB7IHBvcnQxLCBwb3J0MiB9ID0gbmV3IE1lc3NhZ2VDaGFubmVsKCk7CiAgICAgICAgICAgICAgZXhwb3NlKG9iaiwgcG9ydDIpOwogICAgICAgICAgICAgIHJldHVyblZhbHVlID0gdHJhbnNmZXIocG9ydDEsIFtwb3J0MV0pOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgY2FzZSAiUkVMRUFTRSI6CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICByZXR1cm5WYWx1ZSA9IHZvaWQgMDsKICAgICAgICAgICAgfQogICAgICAgICAgICBicmVhazsKICAgICAgICAgIGRlZmF1bHQ6CiAgICAgICAgICAgIHJldHVybjsKICAgICAgICB9CiAgICAgIH0gY2F0Y2ggKHZhbHVlKSB7CiAgICAgICAgcmV0dXJuVmFsdWUgPSB7IHZhbHVlLCBbdGhyb3dNYXJrZXJdOiAwIH07CiAgICAgIH0KICAgICAgUHJvbWlzZS5yZXNvbHZlKHJldHVyblZhbHVlKS5jYXRjaCgodmFsdWUpID0+IHsKICAgICAgICByZXR1cm4geyB2YWx1ZSwgW3Rocm93TWFya2VyXTogMCB9OwogICAgICB9KS50aGVuKChyZXR1cm5WYWx1ZTIpID0+IHsKICAgICAgICBjb25zdCBbd2lyZVZhbHVlLCB0cmFuc2ZlcmFibGVzXSA9IHRvV2lyZVZhbHVlKHJldHVyblZhbHVlMik7CiAgICAgICAgZXAucG9zdE1lc3NhZ2UoT2JqZWN0LmFzc2lnbihPYmplY3QuYXNzaWduKHt9LCB3aXJlVmFsdWUpLCB7IGlkIH0pLCB0cmFuc2ZlcmFibGVzKTsKICAgICAgICBpZiAodHlwZSA9PT0gIlJFTEVBU0UiKSB7CiAgICAgICAgICBlcC5yZW1vdmVFdmVudExpc3RlbmVyKCJtZXNzYWdlIiwgY2FsbGJhY2spOwogICAgICAgICAgY2xvc2VFbmRQb2ludChlcCk7CiAgICAgICAgfQogICAgICB9KTsKICAgIH0pOwogICAgaWYgKGVwLnN0YXJ0KSB7CiAgICAgIGVwLnN0YXJ0KCk7CiAgICB9CiAgfQogIGZ1bmN0aW9uIGlzTWVzc2FnZVBvcnQoZW5kcG9pbnQpIHsKICAgIHJldHVybiBlbmRwb2ludC5jb25zdHJ1Y3Rvci5uYW1lID09PSAiTWVzc2FnZVBvcnQiOwogIH0KICBmdW5jdGlvbiBjbG9zZUVuZFBvaW50KGVuZHBvaW50KSB7CiAgICBpZiAoaXNNZXNzYWdlUG9ydChlbmRwb2ludCkpCiAgICAgIGVuZHBvaW50LmNsb3NlKCk7CiAgfQogIGZ1bmN0aW9uIHdyYXAoZXAsIHRhcmdldCkgewogICAgcmV0dXJuIGNyZWF0ZVByb3h5KGVwLCBbXSwgdGFyZ2V0KTsKICB9CiAgZnVuY3Rpb24gdGhyb3dJZlByb3h5UmVsZWFzZWQoaXNSZWxlYXNlZCkgewogICAgaWYgKGlzUmVsZWFzZWQpIHsKICAgICAgdGhyb3cgbmV3IEVycm9yKCJQcm94eSBoYXMgYmVlbiByZWxlYXNlZCBhbmQgaXMgbm90IHVzZWFibGUiKTsKICAgIH0KICB9CiAgZnVuY3Rpb24gY3JlYXRlUHJveHkoZXAsIHBhdGggPSBbXSwgdGFyZ2V0ID0gZnVuY3Rpb24oKSB7CiAgfSkgewogICAgbGV0IGlzUHJveHlSZWxlYXNlZCA9IGZhbHNlOwogICAgY29uc3QgcHJveHkyID0gbmV3IFByb3h5KHRhcmdldCwgewogICAgICBnZXQoX3RhcmdldCwgcHJvcCkgewogICAgICAgIHRocm93SWZQcm94eVJlbGVhc2VkKGlzUHJveHlSZWxlYXNlZCk7CiAgICAgICAgaWYgKHByb3AgPT09IHJlbGVhc2VQcm94eSkgewogICAgICAgICAgcmV0dXJuICgpID0+IHsKICAgICAgICAgICAgcmV0dXJuIHJlcXVlc3RSZXNwb25zZU1lc3NhZ2UoZXAsIHsKICAgICAgICAgICAgICB0eXBlOiAiUkVMRUFTRSIsCiAgICAgICAgICAgICAgcGF0aDogcGF0aC5tYXAoKHApID0+IHAudG9TdHJpbmcoKSkKICAgICAgICAgICAgfSkudGhlbigoKSA9PiB7CiAgICAgICAgICAgICAgY2xvc2VFbmRQb2ludChlcCk7CiAgICAgICAgICAgICAgaXNQcm94eVJlbGVhc2VkID0gdHJ1ZTsKICAgICAgICAgICAgfSk7CiAgICAgICAgICB9OwogICAgICAgIH0KICAgICAgICBpZiAocHJvcCA9PT0gInRoZW4iKSB7CiAgICAgICAgICBpZiAocGF0aC5sZW5ndGggPT09IDApIHsKICAgICAgICAgICAgcmV0dXJuIHsgdGhlbjogKCkgPT4gcHJveHkyIH07CiAgICAgICAgICB9CiAgICAgICAgICBjb25zdCByID0gcmVxdWVzdFJlc3BvbnNlTWVzc2FnZShlcCwgewogICAgICAgICAgICB0eXBlOiAiR0VUIiwKICAgICAgICAgICAgcGF0aDogcGF0aC5tYXAoKHApID0+IHAudG9TdHJpbmcoKSkKICAgICAgICAgIH0pLnRoZW4oZnJvbVdpcmVWYWx1ZSk7CiAgICAgICAgICByZXR1cm4gci50aGVuLmJpbmQocik7CiAgICAgICAgfQogICAgICAgIHJldHVybiBjcmVhdGVQcm94eShlcCwgWy4uLnBhdGgsIHByb3BdKTsKICAgICAgfSwKICAgICAgc2V0KF90YXJnZXQsIHByb3AsIHJhd1ZhbHVlKSB7CiAgICAgICAgdGhyb3dJZlByb3h5UmVsZWFzZWQoaXNQcm94eVJlbGVhc2VkKTsKICAgICAgICBjb25zdCBbdmFsdWUsIHRyYW5zZmVyYWJsZXNdID0gdG9XaXJlVmFsdWUocmF3VmFsdWUpOwogICAgICAgIHJldHVybiByZXF1ZXN0UmVzcG9uc2VNZXNzYWdlKGVwLCB7CiAgICAgICAgICB0eXBlOiAiU0VUIiwKICAgICAgICAgIHBhdGg6IFsuLi5wYXRoLCBwcm9wXS5tYXAoKHApID0+IHAudG9TdHJpbmcoKSksCiAgICAgICAgICB2YWx1ZQogICAgICAgIH0sIHRyYW5zZmVyYWJsZXMpLnRoZW4oZnJvbVdpcmVWYWx1ZSk7CiAgICAgIH0sCiAgICAgIGFwcGx5KF90YXJnZXQsIF90aGlzQXJnLCByYXdBcmd1bWVudExpc3QpIHsKICAgICAgICB0aHJvd0lmUHJveHlSZWxlYXNlZChpc1Byb3h5UmVsZWFzZWQpOwogICAgICAgIGNvbnN0IGxhc3QgPSBwYXRoW3BhdGgubGVuZ3RoIC0gMV07CiAgICAgICAgaWYgKGxhc3QgPT09IGNyZWF0ZUVuZHBvaW50KSB7CiAgICAgICAgICByZXR1cm4gcmVxdWVzdFJlc3BvbnNlTWVzc2FnZShlcCwgewogICAgICAgICAgICB0eXBlOiAiRU5EUE9JTlQiCiAgICAgICAgICB9KS50aGVuKGZyb21XaXJlVmFsdWUpOwogICAgICAgIH0KICAgICAgICBpZiAobGFzdCA9PT0gImJpbmQiKSB7CiAgICAgICAgICByZXR1cm4gY3JlYXRlUHJveHkoZXAsIHBhdGguc2xpY2UoMCwgLTEpKTsKICAgICAgICB9CiAgICAgICAgY29uc3QgW2FyZ3VtZW50TGlzdCwgdHJhbnNmZXJhYmxlc10gPSBwcm9jZXNzQXJndW1lbnRzKHJhd0FyZ3VtZW50TGlzdCk7CiAgICAgICAgcmV0dXJuIHJlcXVlc3RSZXNwb25zZU1lc3NhZ2UoZXAsIHsKICAgICAgICAgIHR5cGU6ICJBUFBMWSIsCiAgICAgICAgICBwYXRoOiBwYXRoLm1hcCgocCkgPT4gcC50b1N0cmluZygpKSwKICAgICAgICAgIGFyZ3VtZW50TGlzdAogICAgICAgIH0sIHRyYW5zZmVyYWJsZXMpLnRoZW4oZnJvbVdpcmVWYWx1ZSk7CiAgICAgIH0sCiAgICAgIGNvbnN0cnVjdChfdGFyZ2V0LCByYXdBcmd1bWVudExpc3QpIHsKICAgICAgICB0aHJvd0lmUHJveHlSZWxlYXNlZChpc1Byb3h5UmVsZWFzZWQpOwogICAgICAgIGNvbnN0IFthcmd1bWVudExpc3QsIHRyYW5zZmVyYWJsZXNdID0gcHJvY2Vzc0FyZ3VtZW50cyhyYXdBcmd1bWVudExpc3QpOwogICAgICAgIHJldHVybiByZXF1ZXN0UmVzcG9uc2VNZXNzYWdlKGVwLCB7CiAgICAgICAgICB0eXBlOiAiQ09OU1RSVUNUIiwKICAgICAgICAgIHBhdGg6IHBhdGgubWFwKChwKSA9PiBwLnRvU3RyaW5nKCkpLAogICAgICAgICAgYXJndW1lbnRMaXN0CiAgICAgICAgfSwgdHJhbnNmZXJhYmxlcykudGhlbihmcm9tV2lyZVZhbHVlKTsKICAgICAgfQogICAgfSk7CiAgICByZXR1cm4gcHJveHkyOwogIH0KICBmdW5jdGlvbiBteUZsYXQoYXJyKSB7CiAgICByZXR1cm4gQXJyYXkucHJvdG90eXBlLmNvbmNhdC5hcHBseShbXSwgYXJyKTsKICB9CiAgZnVuY3Rpb24gcHJvY2Vzc0FyZ3VtZW50cyhhcmd1bWVudExpc3QpIHsKICAgIGNvbnN0IHByb2Nlc3NlZCA9IGFyZ3VtZW50TGlzdC5tYXAodG9XaXJlVmFsdWUpOwogICAgcmV0dXJuIFtwcm9jZXNzZWQubWFwKCh2KSA9PiB2WzBdKSwgbXlGbGF0KHByb2Nlc3NlZC5tYXAoKHYpID0+IHZbMV0pKV07CiAgfQogIGNvbnN0IHRyYW5zZmVyQ2FjaGUgPSAvKiBAX19QVVJFX18gKi8gbmV3IFdlYWtNYXAoKTsKICBmdW5jdGlvbiB0cmFuc2ZlcihvYmosIHRyYW5zZmVycykgewogICAgdHJhbnNmZXJDYWNoZS5zZXQob2JqLCB0cmFuc2ZlcnMpOwogICAgcmV0dXJuIG9iajsKICB9CiAgZnVuY3Rpb24gcHJveHkob2JqKSB7CiAgICByZXR1cm4gT2JqZWN0LmFzc2lnbihvYmosIHsgW3Byb3h5TWFya2VyXTogdHJ1ZSB9KTsKICB9CiAgZnVuY3Rpb24gdG9XaXJlVmFsdWUodmFsdWUpIHsKICAgIGZvciAoY29uc3QgW25hbWUsIGhhbmRsZXJdIG9mIHRyYW5zZmVySGFuZGxlcnMpIHsKICAgICAgaWYgKGhhbmRsZXIuY2FuSGFuZGxlKHZhbHVlKSkgewogICAgICAgIGNvbnN0IFtzZXJpYWxpemVkVmFsdWUsIHRyYW5zZmVyYWJsZXNdID0gaGFuZGxlci5zZXJpYWxpemUodmFsdWUpOwogICAgICAgIHJldHVybiBbCiAgICAgICAgICB7CiAgICAgICAgICAgIHR5cGU6ICJIQU5ETEVSIiwKICAgICAgICAgICAgbmFtZSwKICAgICAgICAgICAgdmFsdWU6IHNlcmlhbGl6ZWRWYWx1ZQogICAgICAgICAgfSwKICAgICAgICAgIHRyYW5zZmVyYWJsZXMKICAgICAgICBdOwogICAgICB9CiAgICB9CiAgICByZXR1cm4gWwogICAgICB7CiAgICAgICAgdHlwZTogIlJBVyIsCiAgICAgICAgdmFsdWUKICAgICAgfSwKICAgICAgdHJhbnNmZXJDYWNoZS5nZXQodmFsdWUpIHx8IFtdCiAgICBdOwogIH0KICBmdW5jdGlvbiBmcm9tV2lyZVZhbHVlKHZhbHVlKSB7CiAgICBzd2l0Y2ggKHZhbHVlLnR5cGUpIHsKICAgICAgY2FzZSAiSEFORExFUiI6CiAgICAgICAgcmV0dXJuIHRyYW5zZmVySGFuZGxlcnMuZ2V0KHZhbHVlLm5hbWUpLmRlc2VyaWFsaXplKHZhbHVlLnZhbHVlKTsKICAgICAgY2FzZSAiUkFXIjoKICAgICAgICByZXR1cm4gdmFsdWUudmFsdWU7CiAgICB9CiAgfQogIGZ1bmN0aW9uIHJlcXVlc3RSZXNwb25zZU1lc3NhZ2UoZXAsIG1zZywgdHJhbnNmZXJzKSB7CiAgICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUpID0+IHsKICAgICAgY29uc3QgaWQgPSBnZW5lcmF0ZVVVSUQoKTsKICAgICAgZXAuYWRkRXZlbnRMaXN0ZW5lcigibWVzc2FnZSIsIGZ1bmN0aW9uIGwoZXYpIHsKICAgICAgICBpZiAoIWV2LmRhdGEgfHwgIWV2LmRhdGEuaWQgfHwgZXYuZGF0YS5pZCAhPT0gaWQpIHsKICAgICAgICAgIHJldHVybjsKICAgICAgICB9CiAgICAgICAgZXAucmVtb3ZlRXZlbnRMaXN0ZW5lcigibWVzc2FnZSIsIGwpOwogICAgICAgIHJlc29sdmUoZXYuZGF0YSk7CiAgICAgIH0pOwogICAgICBpZiAoZXAuc3RhcnQpIHsKICAgICAgICBlcC5zdGFydCgpOwogICAgICB9CiAgICAgIGVwLnBvc3RNZXNzYWdlKE9iamVjdC5hc3NpZ24oeyBpZCB9LCBtc2cpLCB0cmFuc2ZlcnMpOwogICAgfSk7CiAgfQogIGZ1bmN0aW9uIGdlbmVyYXRlVVVJRCgpIHsKICAgIHJldHVybiBuZXcgQXJyYXkoNCkuZmlsbCgwKS5tYXAoKCkgPT4gTWF0aC5mbG9vcihNYXRoLnJhbmRvbSgpICogTnVtYmVyLk1BWF9TQUZFX0lOVEVHRVIpLnRvU3RyaW5nKDE2KSkuam9pbigiLSIpOwogIH0KICBjb25zdCBjb2xvckNvbnZlcnRlciA9IHsKICAgIGdldENsb3Nlc3RDb2xvckZyb21QYWxldHRlKGdhbWVQYWxldHRlLCByZXNlcnZlZE9mZnNldCwgciwgZywgYikgewogICAgICBjb25zdCBpZHggPSB0aGlzLmNvbnZlcnRBY3R1YWxDb2xvckZyb21QYWxldHRlKGdhbWVQYWxldHRlLCByZXNlcnZlZE9mZnNldCwgciwgZywgYik7CiAgICAgIHJldHVybiB0aGlzLmdldEFjdHVhbENvbG9yRnJvbVBhbGV0dGUoZ2FtZVBhbGV0dGUsIGlkeCk7CiAgICB9LAogICAgY29udmVydEFjdHVhbENvbG9yRnJvbVBhbGV0dGUoZ2FtZVBhbGV0dGUsIHJlc2VydmVkT2Zmc2V0LCByLCBnLCBiKSB7CiAgICAgIHZhciBfYTsKICAgICAgY29uc3QgcmVzdWx0Q29sb3JJZHggPSAoX2EgPSBnYW1lUGFsZXR0ZS5tYXAoKGNvbG9yLCBpKSA9PiB7CiAgICAgICAgaWYgKGkgPCByZXNlcnZlZE9mZnNldCkKICAgICAgICAgIHJldHVybiB2b2lkIDA7CiAgICAgICAgY29uc3QgZGlmZmVyZW5jZSA9IE1hdGguc3FydCgociAtIGNvbG9yWzBdKSAqKiAyICsgKGcgLSBjb2xvclsxXSkgKiogMiArIChiIC0gY29sb3JbMl0pICoqIDIpOwogICAgICAgIHJldHVybiB7CiAgICAgICAgICBkaWZmZXJlbmNlLAogICAgICAgICAgY29sb3IsCiAgICAgICAgICBpbmRleDogaQogICAgICAgIH07CiAgICAgIH0pLmZpbHRlcigoYSkgPT4gISFhKS5tYXAoKGEpID0+IGEpLnNvcnQoKGFhLCBiYikgPT4gYWEuZGlmZmVyZW5jZSAtIGJiLmRpZmZlcmVuY2UpWzBdKSA9PSBudWxsID8gdm9pZCAwIDogX2EuaW5kZXg7CiAgICAgIGlmIChyZXN1bHRDb2xvcklkeCA9PT0gdm9pZCAwKQogICAgICAgIHRocm93IG5ldyBFcnJvcihgQ29sb3Igbm90IGZvdW5kICR7cn0sICR7Z30sICR7Yn0gZnJvbSAke0pTT04uc3RyaW5naWZ5KGdhbWVQYWxldHRlKX1gKTsKICAgICAgcmV0dXJuIHJlc3VsdENvbG9ySWR4OwogICAgfSwKICAgIGdldEFjdHVhbENvbG9yRnJvbVBhbGV0dGUoZ2FtZVBhbGV0dGUsIGNvbG9yKSB7CiAgICAgIGNvbnN0IGNvbG9yRGF0YSA9IGdhbWVQYWxldHRlW2NvbG9yXTsKICAgICAgaWYgKCFjb2xvckRhdGEpCiAgICAgICAgcmV0dXJuIG51bGw7CiAgICAgIHJldHVybiBbY29sb3JEYXRhWzBdLCBjb2xvckRhdGFbMV0sIGNvbG9yRGF0YVsyXV07CiAgICB9LAogICAgYXJlQ29sb3JzRXF1YWwoZ2FtZVBhbGV0dGUsIGMxLCBjMikgewogICAgICBpZiAoYzEgPT09IGMyKSB7CiAgICAgICAgcmV0dXJuIHRydWU7CiAgICAgIH0KICAgICAgY29uc3QgY29sb3IxID0gZ2FtZVBhbGV0dGVbYzFdOwogICAgICBjb25zdCBjb2xvcjIgPSBnYW1lUGFsZXR0ZVtjMl07CiAgICAgIGlmICghY29sb3IxIHx8ICFjb2xvcjIpCiAgICAgICAgcmV0dXJuIGMxID09PSBjMjsKICAgICAgbGV0IGFyZUVxdWFsID0gdHJ1ZTsKICAgICAgYXJlRXF1YWwgPSBhcmVFcXVhbCAmJiBjb2xvcjFbMF0gPT09IGNvbG9yMlswXTsKICAgICAgYXJlRXF1YWwgPSBhcmVFcXVhbCAmJiBjb2xvcjFbMV0gPT09IGNvbG9yMlsxXTsKICAgICAgYXJlRXF1YWwgPSBhcmVFcXVhbCAmJiBjb2xvcjFbMl0gPT09IGNvbG9yMlsyXTsKICAgICAgcmV0dXJuIGFyZUVxdWFsOwogICAgfSwKICAgIHBhcnNlQ29sb3IoY29sb3JTdHIpIHsKICAgICAgY29uc3QgciA9IHBhcnNlSW50KGNvbG9yU3RyLnN1YnN0cigxLCAyKSwgMTYpOwogICAgICBjb25zdCBnID0gcGFyc2VJbnQoY29sb3JTdHIuc3Vic3RyKDMsIDIpLCAxNik7CiAgICAgIGNvbnN0IGIgPSBwYXJzZUludChjb2xvclN0ci5zdWJzdHIoNSwgMiksIDE2KTsKICAgICAgcmV0dXJuIFtyLCBnLCBiXTsKICAgIH0KICB9OwogIGNvbnN0IHBpY3R1cmVDb252ZXJ0ZXIgPSB7CiAgICBhc3luYyBpc0ltYWdlVmFsaWRDb3JzKHVybCkgewogICAgICB0cnkgewogICAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2godXJsKTsKICAgICAgfSBjYXRjaCAoZXJyb3IpIHsKICAgICAgICByZXR1cm4gZmFsc2U7CiAgICAgIH0KICAgICAgcmV0dXJuIHRydWU7CiAgICB9LAogICAgYXN5bmMgYXBwbHlNb2RpZmljYXRpb25zVG9JbWFnZURhdGEoY29sb3JQYWxldHRlLCBpbWFnZURhdGEsIG1vZGlmaWVyQ29udmVydENvbG9ycywgYnJpZ2h0ZW5CeSwgbW9kaWZpZXJTbW9sUGl4ZWxzKSB7CiAgICAgIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSkgPT4gewogICAgICAgIHZhciBfYSwgX2IsIF9jLCBfZCwgX2UsIF9mLCBfZywgX2g7CiAgICAgICAgY29uc3Qgb3V0SW1hZ2VEYXRhID0gbmV3IEltYWdlRGF0YShpbWFnZURhdGEud2lkdGgsIGltYWdlRGF0YS5oZWlnaHQpOwogICAgICAgIG91dEltYWdlRGF0YS5kYXRhLnNldChpbWFnZURhdGEuZGF0YSk7CiAgICAgICAgaWYgKG1vZGlmaWVyQ29udmVydENvbG9ycykgewogICAgICAgICAgZm9yIChsZXQgeSA9IDA7IHkgPCBvdXRJbWFnZURhdGEuaGVpZ2h0OyB5KyspIHsKICAgICAgICAgICAgZm9yIChsZXQgeCA9IDA7IHggPCBvdXRJbWFnZURhdGEud2lkdGg7IHgrKykgewogICAgICAgICAgICAgIGNvbnN0IGlkeCA9IG91dEltYWdlRGF0YS53aWR0aCAqIHkgKyB4IDw8IDI7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxSID0gKF9hID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgMF0pICE9IG51bGwgPyBfYSA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxHID0gKF9iID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgMV0pICE9IG51bGwgPyBfYiA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxCID0gKF9jID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgMl0pICE9IG51bGwgPyBfYyA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3JpZ2luYWxBID0gKF9kID0gaW1hZ2VEYXRhLmRhdGFbaWR4ICsgM10pICE9IG51bGwgPyBfZCA6IDA7CiAgICAgICAgICAgICAgY29uc3QgciA9IE1hdGgubWluKG9yaWdpbmFsUiArIGJyaWdodGVuQnksIDI1NSk7CiAgICAgICAgICAgICAgY29uc3QgZyA9IE1hdGgubWluKG9yaWdpbmFsRyArIGJyaWdodGVuQnksIDI1NSk7CiAgICAgICAgICAgICAgY29uc3QgYiA9IE1hdGgubWluKG9yaWdpbmFsQiArIGJyaWdodGVuQnksIDI1NSk7CiAgICAgICAgICAgICAgY29uc3QgcmVzdWx0QXJyID0gY29sb3JDb252ZXJ0ZXIuZ2V0Q2xvc2VzdENvbG9yRnJvbVBhbGV0dGUoY29sb3JQYWxldHRlLCAwLCByLCBnLCBiKTsKICAgICAgICAgICAgICBpZiAoIXJlc3VsdEFycikKICAgICAgICAgICAgICAgIDsKICAgICAgICAgICAgICBlbHNlIHsKICAgICAgICAgICAgICAgIGNvbnN0IFtjb252ZXJ0ZWRSLCBjb252ZXJ0ZWRHLCBjb252ZXJ0ZWRCXSA9IHJlc3VsdEFycjsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDBdID0gY29udmVydGVkUjsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDFdID0gY29udmVydGVkRzsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDJdID0gY29udmVydGVkQjsKICAgICAgICAgICAgICAgIG91dEltYWdlRGF0YS5kYXRhW2lkeCArIDNdID0gb3JpZ2luYWxBID4gMzAgPyAyNTUgOiAwOwogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICBpZiAobW9kaWZpZXJTbW9sUGl4ZWxzKSB7CiAgICAgICAgICBjb25zdCBzbW9sUGl4ZWxzTXVsdGlwbGllciA9IDM7CiAgICAgICAgICBjb25zdCBzbW9sUGl4ZWxzSW1hZ2VEYXRhID0gbmV3IEltYWdlRGF0YShvdXRJbWFnZURhdGEud2lkdGggKiBzbW9sUGl4ZWxzTXVsdGlwbGllciwgb3V0SW1hZ2VEYXRhLmhlaWdodCAqIHNtb2xQaXhlbHNNdWx0aXBsaWVyKTsKICAgICAgICAgIGZvciAobGV0IG91dFkgPSAwOyBvdXRZIDwgb3V0SW1hZ2VEYXRhLmhlaWdodDsgb3V0WSsrKSB7CiAgICAgICAgICAgIGZvciAobGV0IG91dFggPSAwOyBvdXRYIDwgb3V0SW1hZ2VEYXRhLndpZHRoOyBvdXRYKyspIHsKICAgICAgICAgICAgICBjb25zdCBvdXRJZHggPSBvdXRJbWFnZURhdGEud2lkdGggKiBvdXRZICsgb3V0WCA8PCAyOwogICAgICAgICAgICAgIGNvbnN0IG91dFIgPSAoX2UgPSBvdXRJbWFnZURhdGEuZGF0YVtvdXRJZHggKyAwXSkgIT0gbnVsbCA/IF9lIDogMDsKICAgICAgICAgICAgICBjb25zdCBvdXRHID0gKF9mID0gb3V0SW1hZ2VEYXRhLmRhdGFbb3V0SWR4ICsgMV0pICE9IG51bGwgPyBfZiA6IDA7CiAgICAgICAgICAgICAgY29uc3Qgb3V0QiA9IChfZyA9IG91dEltYWdlRGF0YS5kYXRhW291dElkeCArIDJdKSAhPSBudWxsID8gX2cgOiAwOwogICAgICAgICAgICAgIGNvbnN0IG91dEEgPSAoX2ggPSBvdXRJbWFnZURhdGEuZGF0YVtvdXRJZHggKyAzXSkgIT0gbnVsbCA/IF9oIDogMDsKICAgICAgICAgICAgICBjb25zdCBzbW9sWCA9IG91dFggKiBzbW9sUGl4ZWxzTXVsdGlwbGllciArIE1hdGguZmxvb3Ioc21vbFBpeGVsc011bHRpcGxpZXIgLyAyKTsKICAgICAgICAgICAgICBjb25zdCBzbW9sWSA9IG91dFkgKiBzbW9sUGl4ZWxzTXVsdGlwbGllciArIE1hdGguZmxvb3Ioc21vbFBpeGVsc011bHRpcGxpZXIgLyAyKTsKICAgICAgICAgICAgICBjb25zdCBzbW9sSWR4ID0gc21vbFkgKiBzbW9sUGl4ZWxzSW1hZ2VEYXRhLndpZHRoICsgc21vbFggPDwgMjsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDBdID0gb3V0UjsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDFdID0gb3V0RzsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDJdID0gb3V0QjsKICAgICAgICAgICAgICBzbW9sUGl4ZWxzSW1hZ2VEYXRhLmRhdGFbc21vbElkeCArIDNdID0gb3V0QTsKICAgICAgICAgICAgfQogICAgICAgICAgfQogICAgICAgICAgcmVzb2x2ZShzbW9sUGl4ZWxzSW1hZ2VEYXRhKTsKICAgICAgICAgIHJldHVybjsKICAgICAgICB9CiAgICAgICAgcmVzb2x2ZShvdXRJbWFnZURhdGEpOwogICAgICB9KTsKICAgIH0KICB9OwogIGV4cG9zZShwaWN0dXJlQ29udmVydGVyKTsKfSkoKTsK";
+const blob = typeof window !== "undefined" && window.Blob && new Blob([atob(encodedJs)], { type: "text/javascript;charset=utf-8" });
+function WorkerWrapper() {
+  const objURL = blob && (window.URL || window.webkitURL).createObjectURL(blob);
+  try {
+    return objURL ? new Worker(objURL, {}) : new Worker("data:application/javascript;base64," + encodedJs, { type: "module" });
+  } finally {
+    objURL && (window.URL || window.webkitURL).revokeObjectURL(objURL);
+  }
+}
+const worker = new WorkerWrapper();
+const pictureConverterApi = wrap(worker);
+async function tryReadingImageData(url, abortSignal) {
+  try {
+    return await loadImageDrawOnCanvasGetData(url, abortSignal);
+  } catch (error) {
+    logger.logError(`Error loading image: url: ${url} ${error}`);
+    return void 0;
+  }
+}
+async function loadImageDrawOnCanvasGetData(url, abortSignal) {
+  const img = new Image();
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx)
+    throw new Error("Can't get context");
+  const clearCallbacks = () => {
+    img.onload = null;
+    img.onerror = null;
+    img.src = "";
+    abortSignal.onabort = null;
+  };
+  const imageData = await new Promise((resolve, reject) => {
+    img.onerror = () => {
+      reject(new Error("Image load error"));
+      clearCallbacks();
+    };
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      try {
+        resolve(ctx.getImageData(0, 0, img.width, img.height));
+      } catch (error) {
+        if (!window.location.protocol.startsWith("http"))
+          reject(error);
+        fetch(url, {
+          signal: abortSignal
+        }).then((response) => response.blob()).then((blob2) => new File([blob2], "image.png", {
+          type: "image/png"
+        })).then((file) => loadImageDrawOnCanvasGetData(URL.createObjectURL(file), abortSignal).finally(() => URL.revokeObjectURL(url))).then(resolve);
+      }
+    };
+    abortSignal.onabort = () => {
+      reject(new Error("Aborted"));
+      clearCallbacks();
+    };
+    img.src = url;
+  });
+  clearCallbacks();
+  return imageData;
+}
+function delay(timeout) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeout);
+  });
+}
+const setInputImageAction = createAsyncThunk("imageProcessing/setInputImage", async (input, {
+  dispatch,
+  getState
+}) => {
+  await dispatch(clearInputImageAction());
+  const file = typeof input !== "string" ? input : void 0;
+  const url = typeof input === "string" ? input : void 0;
+  return {
+    file,
+    url
+  };
+});
+const clearInputImageAction = createAsyncThunk("imageProcessing/clearInputImage", async (_2, {
+  dispatch,
+  getState
+}) => {
+  dispatch(clearOutputImageAction());
+});
+const clearOutputImageAction = createAsyncThunk("imageProcessing/clearOutputImage", async (_2, {
+  getState
+}) => {
+  var _a;
+  (_a = getState().processedImages.outputImage.abortController) == null ? void 0 : _a.abort();
+});
+function useReadingInputImageProcess() {
+  const inputFile = useAppSelector(selectInputFile);
+  const inputUrl = useAppSelector(selectInputUrl);
+  const dispatch = useAppDispatch();
+  react.exports.useEffect(() => {
+    dispatch(startNewImageReadingProcess());
+  }, [inputFile, inputUrl]);
+}
+const startNewImageReadingProcess = createAsyncThunk("imageProcessing/startNewImageReadingProcess", async (_2, {
+  dispatch,
+  getState
+}) => {
+  const url = selectInputUrl(getState());
+  const file = selectInputFile(getState());
+  const abortController = new AbortController();
+  if (url)
+    return tryReadingImageData(url, abortController.signal);
+  if (file != null) {
+    const fileUrl = URL.createObjectURL(file);
+    delay(0).then(() => URL.revokeObjectURL(fileUrl));
+    return tryReadingImageData(fileUrl, abortController.signal);
+  }
+  return void 0;
+});
+const startProcessingOutputImage = createAsyncThunk("imageProcessing/startProcessingOutputImage", async (_2, {
+  getState
+}) => {
+  const palette2 = selectCanvasUserPalette(getState());
+  const modifierShouldConvertColors = selectModifierShouldConvertColors(getState());
+  const modifierImageBrightness = selectModifierImageBrightness(getState());
+  const modifierSmolPixels = selectModifierSmolPixels(getState());
+  const inputImageData = selectInputImageData(getState());
+  if (inputImageData == null)
+    throw new Error("Can't process output image without input image data");
+  const abortController = new AbortController();
+  const outImageData = await new Promise((resolve, reject) => {
+    abortController.signal.onabort = () => reject(new Error("aborted"));
+    pictureConverterApi.applyModificationsToImageData(palette2, inputImageData, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels).then((imageData) => {
+      resolve(imageData);
+    }).catch((error) => {
+      reject(error);
+    });
+  });
+  return {
+    outImageData,
+    abortController
+  };
+});
+const loadSavedConfigurations = createAsyncThunk("imageProcessing/loadSavedConfigurations", async (_2, {
+  dispatch,
+  getState
+}) => {
+  return JSON.parse(localStorage.getItem("OverlaySavedConfigurationsv2") || "[]");
+});
+const initialState$6 = {
+  savedConfigs: [],
+  overlayEnabled: true,
+  overlayImage: {
+    inputImage: {}
+  },
+  placementConfiguration: {
+    yOffset: 0,
+    xOffset: 0,
+    transparency: 92,
+    isFollowMouseActive: false,
+    autoSelectColor: false
+  },
+  modifications: {
+    imageBrightness: 0,
+    shouldConvertColors: false,
+    smolPixels: false
+  },
+  isBotModalVisible: false,
+  browserWindow: {
+    innerWidth: 100,
+    innerHeight: 100
+  }
+};
+const overlaySlice = createSlice({
+  initialState: initialState$6,
+  name: "overlay",
+  reducers: {
+    setPlacementXOffset: (state, action) => {
+      state.placementConfiguration.xOffset = action.payload;
+    },
+    setPlacementYOffset: (state, action) => {
+      state.placementConfiguration.yOffset = action.payload;
+    },
+    setPlacementTransparency: (state, action) => {
+      state.placementConfiguration.transparency = action.payload;
+    },
+    togglePlacementFollowMouse: (state) => {
+      state.placementConfiguration.isFollowMouseActive = !state.placementConfiguration.isFollowMouseActive;
+    },
+    setPlacementIsFollowMouseActive: (state, action) => {
+      state.placementConfiguration.isFollowMouseActive = action.payload;
+    },
+    setPlacementAutoSelectColor: (state, action) => {
+      state.placementConfiguration.autoSelectColor = action.payload;
+    },
+    setModifierImageBrightness: (state, action) => {
+      state.modifications.imageBrightness = action.payload;
+    },
+    setModifierShouldConvertColors: (state, action) => {
+      state.modifications.shouldConvertColors = action.payload;
+    },
+    setModifierSmolPixels: (state, action) => {
+      state.modifications.smolPixels = action.payload;
+    },
+    setOverlayEnabled: (state, action) => {
+      state.overlayEnabled = action.payload;
+    },
+    setWindowSize: (state, action) => {
+      state.browserWindow = action.payload;
+    },
+    saveConfiguration: (state, action) => {
+      const savedConfigurations = state.savedConfigs;
+      const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload.imageUrl);
+      if (existingConfiguration != null) {
+        existingConfiguration.modifiers = action.payload.modifiers;
+        existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
+      } else {
+        savedConfigurations.push(action.payload);
+      }
+    },
+    removeSavedConfig: (state, action) => {
+      const savedConfigurations = state.savedConfigs;
+      const existingConfiguration = savedConfigurations.find((c2) => c2.imageUrl === action.payload);
+      if (existingConfiguration) {
+        savedConfigurations.splice(savedConfigurations.indexOf(existingConfiguration), 1);
+      }
+    }
+  },
+  extraReducers: (builder) => {
+    builder.addCase(setInputImageAction.fulfilled, (state, action) => {
+      state.overlayImage.inputImage.url = action.payload.url;
+      state.overlayImage.inputImage.file = action.payload.file;
+    });
+    builder.addCase(clearInputImageAction.fulfilled, (state) => {
+      state.overlayImage.inputImage.file = void 0;
+      state.overlayImage.inputImage.url = void 0;
+    });
+    builder.addCase(loadSavedConfigurations.fulfilled, (state, action) => {
+      state.savedConfigs = action.payload;
+    });
+  }
+});
+const selectInputUrl = createSelector((state) => state.overlay.overlayImage.inputImage.url, (url) => url);
+const selectInputImageData = createSelector((state) => state.processedImages.inputImage.loadedImage.imageData, (imageData) => imageData);
+const selectIsModificationsAvailable = createSelector(selectInputImageData, (inputImageData) => {
+  return !!inputImageData;
+});
+const selectInputFile = createSelector((state) => state.overlay.overlayImage.inputImage.file, (file) => file);
+const selectFileName = createSelector(selectInputFile, selectInputUrl, (file, url) => {
+  var _a;
+  const fileName = (_a = file == null ? void 0 : file.name) != null ? _a : url == null ? void 0 : url.split("/").pop();
+  if (fileName) {
+    return {
+      fileName,
+      fileExtension: fileName.split(".").pop(),
+      fileNameWithoutExtension: fileName.split(".").slice(0, -1).join(".")
+    };
+  }
+  return void 0;
+});
+const selectShouldShowPlacementConfiguration = createSelector(selectInputFile, selectInputUrl, (file, url) => file || url);
+const selectPlacementXOffset = createSelector((state) => state.overlay.placementConfiguration.xOffset, (xOffset) => xOffset);
+const selectPlacementYOffset = createSelector((state) => state.overlay.placementConfiguration.yOffset, (yOffset) => yOffset);
+const selectPlacementTransparency = createSelector((state) => state.overlay.placementConfiguration.transparency, (transparency) => transparency);
+const selectPlacementIsFollowMouseActive = createSelector((state) => state.overlay.placementConfiguration.isFollowMouseActive, (isFollowMouseActive) => isFollowMouseActive);
+const selectPlacementAutoSelectColor = createSelector((state) => state.overlay.placementConfiguration.autoSelectColor, (autoSelectColor) => autoSelectColor);
+const selectModifierImageBrightness = createSelector((state) => state.overlay.modifications.imageBrightness, (imageBrightness) => imageBrightness);
+const selectModifierShouldConvertColors = createSelector((state) => state.overlay.modifications.shouldConvertColors, (shouldConvertColors) => shouldConvertColors);
+const selectModifierSmolPixels = createSelector((state) => state.overlay.modifications.smolPixels, (smolPixels) => smolPixels);
+const selectIsOverlayEnabled = createSelector((state) => state.overlay.overlayEnabled, (overlayEnabled) => overlayEnabled);
+const selectInputImageLoadingStatus = createSelector((state) => state.processedImages.inputImage.loadedImage.status, (status) => status);
+const selectIsOutputImageProcessing = createSelector((state) => state.processedImages.outputImage.isProcessing, (isProcessing) => isProcessing);
+const selectOutputImageData = createSelector((state) => state.processedImages.outputImage.isProcessing, (state) => state.processedImages.outputImage.imageData, (state) => state.processedImages.outputImage.abortController, (isProcessing, imageData, abortController) => {
+  if (!isProcessing && imageData) {
+    return imageData;
+  }
+  return void 0;
+});
+const selectRenderImageData = createSelector(selectOutputImageData, selectInputImageData, (outputImageData, inputImageData) => {
+  return outputImageData || inputImageData;
+});
+const selectShouldShowImageFromData = createSelector(selectRenderImageData, (imageData) => !!imageData);
+const selectShouldShowImageFromUrl = createSelector(selectShouldShowImageFromData, selectInputFile, selectInputUrl, (shouldShowImageFromData, file, url) => {
+  if (shouldShowImageFromData)
+    return false;
+  if (file || url)
+    return true;
+  return false;
+});
+createSelector(selectInputUrl, selectOutputImageData, (url, imageData) => {
+  return imageData || url;
+});
+const selectWindowSize = createSelector((state) => state.overlay.browserWindow.innerHeight, (state) => state.overlay.browserWindow.innerWidth, (innerHeight, innerWidth) => {
+  return {
+    innerHeight,
+    innerWidth
+  };
+});
+const selectOverlayOffsetCoordsOnScreen = createSelector(selectWindowSize, selectGameViewCenter, selectPlacementXOffset, selectPlacementYOffset, selectGameViewScale, (windowSize, gameViewCenter, xOffset, yOffset, viewScale) => {
+  const leftOffset = windowSize.innerWidth / 2 - (gameViewCenter.x - xOffset) * viewScale;
+  const topOffset = windowSize.innerHeight / 2 - (gameViewCenter.y - yOffset) * viewScale;
+  return {
+    leftOffset,
+    topOffset
+  };
+});
+const selectCurrentHoverPixelOnOutputImageColorIndexInPalette = createSelector(selectPlacementAutoSelectColor, selectModifierSmolPixels, selectHoverPixel, selectPlacementXOffset, selectPlacementYOffset, selectRenderImageData, selectCanvasPalette, selectCanvasReservedColorCount, (autoSelectColor, modifierSmolPixels, hoverPixel, placementXOffset, placementYOffset, renderImageData, palette2, reservedColorCount) => {
+  if (!autoSelectColor)
+    return void 0;
+  if (!renderImageData)
+    return void 0;
+  const smolPixelsCanvasSizeModifier = modifierSmolPixels ? 3 : 1;
+  const smolPixelsCanvasExtraOffsetToMiddle = Math.floor(smolPixelsCanvasSizeModifier / 2);
+  const offsetXInImage = (hoverPixel.x - placementXOffset) * smolPixelsCanvasSizeModifier + smolPixelsCanvasExtraOffsetToMiddle;
+  const offsetYInImage = (hoverPixel.y - placementYOffset) * smolPixelsCanvasSizeModifier + smolPixelsCanvasExtraOffsetToMiddle;
+  if (offsetXInImage < 0 || offsetXInImage >= renderImageData.width || offsetYInImage < 0 || offsetYInImage >= renderImageData.height)
+    return void 0;
+  const idx = renderImageData.width * offsetYInImage + offsetXInImage << 2;
+  const r2 = renderImageData.data[idx + 0];
+  const g2 = renderImageData.data[idx + 1];
+  const b2 = renderImageData.data[idx + 2];
+  const a2 = renderImageData.data[idx + 3];
+  if (r2 == null || g2 == null || b2 == null || a2 == null)
+    return void 0;
+  if (a2 < 30)
+    return void 0;
+  const colorIndex = colorConverter.convertActualColorFromPalette(palette2, reservedColorCount, r2, g2, b2);
+  return colorIndex;
+});
+const selectSavedConfigurations = createSelector((state) => state.overlay.savedConfigs, (savedConfigurations) => savedConfigurations);
+const selectCurrentStateAsConfiguration = createSelector(selectInputUrl, selectPlacementXOffset, selectPlacementYOffset, selectPlacementTransparency, selectPlacementAutoSelectColor, selectModifierImageBrightness, selectModifierShouldConvertColors, (inputUrl, xOffset, yOffset, transparency, autoSelectColor, imageBrightness, shouldConvertColors) => {
+  if (!inputUrl)
+    return void 0;
+  return {
+    imageUrl: inputUrl,
+    modifiers: {
+      autoSelectColor,
+      imageBrightness,
+      shouldConvertColors
+    },
+    placementConfiguration: {
+      xOffset,
+      yOffset,
+      transparency
+    }
+  };
+});
+var localforage$1 = { exports: {} };
+/*!
+    localForage -- Offline Storage, Improved
+    Version 1.10.0
+    https://localforage.github.io/localForage
+    (c) 2013-2017 Mozilla, Apache License 2.0
+*/
+(function(module, exports) {
+  (function(f2) {
+    {
+      module.exports = f2();
+    }
+  })(function() {
+    return function e2(t2, n2, r2) {
+      function s2(o3, u2) {
+        if (!n2[o3]) {
+          if (!t2[o3]) {
+            var a2 = typeof commonjsRequire == "function" && commonjsRequire;
+            if (!u2 && a2)
+              return a2(o3, true);
+            if (i2)
+              return i2(o3, true);
+            var f2 = new Error("Cannot find module '" + o3 + "'");
+            throw f2.code = "MODULE_NOT_FOUND", f2;
+          }
+          var l2 = n2[o3] = { exports: {} };
+          t2[o3][0].call(l2.exports, function(e3) {
+            var n3 = t2[o3][1][e3];
+            return s2(n3 ? n3 : e3);
+          }, l2, l2.exports, e2, t2, n2, r2);
+        }
+        return n2[o3].exports;
+      }
+      var i2 = typeof commonjsRequire == "function" && commonjsRequire;
+      for (var o2 = 0; o2 < r2.length; o2++)
+        s2(r2[o2]);
+      return s2;
+    }({ 1: [function(_dereq_, module2, exports2) {
+      (function(global2) {
+        var Mutation = global2.MutationObserver || global2.WebKitMutationObserver;
+        var scheduleDrain;
+        {
+          if (Mutation) {
+            var called = 0;
+            var observer = new Mutation(nextTick);
+            var element = global2.document.createTextNode("");
+            observer.observe(element, {
+              characterData: true
+            });
+            scheduleDrain = function() {
+              element.data = called = ++called % 2;
+            };
+          } else if (!global2.setImmediate && typeof global2.MessageChannel !== "undefined") {
+            var channel = new global2.MessageChannel();
+            channel.port1.onmessage = nextTick;
+            scheduleDrain = function() {
+              channel.port2.postMessage(0);
+            };
+          } else if ("document" in global2 && "onreadystatechange" in global2.document.createElement("script")) {
+            scheduleDrain = function() {
+              var scriptEl = global2.document.createElement("script");
+              scriptEl.onreadystatechange = function() {
+                nextTick();
+                scriptEl.onreadystatechange = null;
+                scriptEl.parentNode.removeChild(scriptEl);
+                scriptEl = null;
+              };
+              global2.document.documentElement.appendChild(scriptEl);
+            };
+          } else {
+            scheduleDrain = function() {
+              setTimeout(nextTick, 0);
+            };
+          }
+        }
+        var draining;
+        var queue = [];
+        function nextTick() {
+          draining = true;
+          var i2, oldQueue;
+          var len = queue.length;
+          while (len) {
+            oldQueue = queue;
+            queue = [];
+            i2 = -1;
+            while (++i2 < len) {
+              oldQueue[i2]();
+            }
+            len = queue.length;
+          }
+          draining = false;
+        }
+        module2.exports = immediate;
+        function immediate(task2) {
+          if (queue.push(task2) === 1 && !draining) {
+            scheduleDrain();
+          }
+        }
+      }).call(this, typeof commonjsGlobal !== "undefined" ? commonjsGlobal : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {});
+    }, {}], 2: [function(_dereq_, module2, exports2) {
+      var immediate = _dereq_(1);
+      function INTERNAL() {
+      }
+      var handlers = {};
+      var REJECTED = ["REJECTED"];
+      var FULFILLED = ["FULFILLED"];
+      var PENDING = ["PENDING"];
+      module2.exports = Promise2;
+      function Promise2(resolver) {
+        if (typeof resolver !== "function") {
+          throw new TypeError("resolver must be a function");
+        }
+        this.state = PENDING;
+        this.queue = [];
+        this.outcome = void 0;
+        if (resolver !== INTERNAL) {
+          safelyResolveThenable(this, resolver);
+        }
+      }
+      Promise2.prototype["catch"] = function(onRejected) {
+        return this.then(null, onRejected);
+      };
+      Promise2.prototype.then = function(onFulfilled, onRejected) {
+        if (typeof onFulfilled !== "function" && this.state === FULFILLED || typeof onRejected !== "function" && this.state === REJECTED) {
+          return this;
+        }
+        var promise = new this.constructor(INTERNAL);
+        if (this.state !== PENDING) {
+          var resolver = this.state === FULFILLED ? onFulfilled : onRejected;
+          unwrap(promise, resolver, this.outcome);
+        } else {
+          this.queue.push(new QueueItem(promise, onFulfilled, onRejected));
+        }
+        return promise;
+      };
+      function QueueItem(promise, onFulfilled, onRejected) {
+        this.promise = promise;
+        if (typeof onFulfilled === "function") {
+          this.onFulfilled = onFulfilled;
+          this.callFulfilled = this.otherCallFulfilled;
+        }
+        if (typeof onRejected === "function") {
+          this.onRejected = onRejected;
+          this.callRejected = this.otherCallRejected;
+        }
+      }
+      QueueItem.prototype.callFulfilled = function(value) {
+        handlers.resolve(this.promise, value);
+      };
+      QueueItem.prototype.otherCallFulfilled = function(value) {
+        unwrap(this.promise, this.onFulfilled, value);
+      };
+      QueueItem.prototype.callRejected = function(value) {
+        handlers.reject(this.promise, value);
+      };
+      QueueItem.prototype.otherCallRejected = function(value) {
+        unwrap(this.promise, this.onRejected, value);
+      };
+      function unwrap(promise, func, value) {
+        immediate(function() {
+          var returnValue;
+          try {
+            returnValue = func(value);
+          } catch (e2) {
+            return handlers.reject(promise, e2);
+          }
+          if (returnValue === promise) {
+            handlers.reject(promise, new TypeError("Cannot resolve promise with itself"));
+          } else {
+            handlers.resolve(promise, returnValue);
+          }
+        });
+      }
+      handlers.resolve = function(self2, value) {
+        var result = tryCatch(getThen, value);
+        if (result.status === "error") {
+          return handlers.reject(self2, result.value);
+        }
+        var thenable = result.value;
+        if (thenable) {
+          safelyResolveThenable(self2, thenable);
+        } else {
+          self2.state = FULFILLED;
+          self2.outcome = value;
+          var i2 = -1;
+          var len = self2.queue.length;
+          while (++i2 < len) {
+            self2.queue[i2].callFulfilled(value);
+          }
+        }
+        return self2;
+      };
+      handlers.reject = function(self2, error) {
+        self2.state = REJECTED;
+        self2.outcome = error;
+        var i2 = -1;
+        var len = self2.queue.length;
+        while (++i2 < len) {
+          self2.queue[i2].callRejected(error);
+        }
+        return self2;
+      };
+      function getThen(obj) {
+        var then = obj && obj.then;
+        if (obj && (typeof obj === "object" || typeof obj === "function") && typeof then === "function") {
+          return function appyThen() {
+            then.apply(obj, arguments);
+          };
+        }
+      }
+      function safelyResolveThenable(self2, thenable) {
+        var called = false;
+        function onError(value) {
+          if (called) {
+            return;
+          }
+          called = true;
+          handlers.reject(self2, value);
+        }
+        function onSuccess(value) {
+          if (called) {
+            return;
+          }
+          called = true;
+          handlers.resolve(self2, value);
+        }
+        function tryToUnwrap() {
+          thenable(onSuccess, onError);
+        }
+        var result = tryCatch(tryToUnwrap);
+        if (result.status === "error") {
+          onError(result.value);
+        }
+      }
+      function tryCatch(func, value) {
+        var out = {};
+        try {
+          out.value = func(value);
+          out.status = "success";
+        } catch (e2) {
+          out.status = "error";
+          out.value = e2;
+        }
+        return out;
+      }
+      Promise2.resolve = resolve;
+      function resolve(value) {
+        if (value instanceof this) {
+          return value;
+        }
+        return handlers.resolve(new this(INTERNAL), value);
+      }
+      Promise2.reject = reject;
+      function reject(reason) {
+        var promise = new this(INTERNAL);
+        return handlers.reject(promise, reason);
+      }
+      Promise2.all = all;
+      function all(iterable) {
+        var self2 = this;
+        if (Object.prototype.toString.call(iterable) !== "[object Array]") {
+          return this.reject(new TypeError("must be an array"));
+        }
+        var len = iterable.length;
+        var called = false;
+        if (!len) {
+          return this.resolve([]);
+        }
+        var values2 = new Array(len);
+        var resolved = 0;
+        var i2 = -1;
+        var promise = new this(INTERNAL);
+        while (++i2 < len) {
+          allResolver(iterable[i2], i2);
+        }
+        return promise;
+        function allResolver(value, i3) {
+          self2.resolve(value).then(resolveFromAll, function(error) {
+            if (!called) {
+              called = true;
+              handlers.reject(promise, error);
+            }
+          });
+          function resolveFromAll(outValue) {
+            values2[i3] = outValue;
+            if (++resolved === len && !called) {
+              called = true;
+              handlers.resolve(promise, values2);
+            }
+          }
+        }
+      }
+      Promise2.race = race;
+      function race(iterable) {
+        var self2 = this;
+        if (Object.prototype.toString.call(iterable) !== "[object Array]") {
+          return this.reject(new TypeError("must be an array"));
+        }
+        var len = iterable.length;
+        var called = false;
+        if (!len) {
+          return this.resolve([]);
+        }
+        var i2 = -1;
+        var promise = new this(INTERNAL);
+        while (++i2 < len) {
+          resolver(iterable[i2]);
+        }
+        return promise;
+        function resolver(value) {
+          self2.resolve(value).then(function(response) {
+            if (!called) {
+              called = true;
+              handlers.resolve(promise, response);
+            }
+          }, function(error) {
+            if (!called) {
+              called = true;
+              handlers.reject(promise, error);
+            }
+          });
+        }
+      }
+    }, { "1": 1 }], 3: [function(_dereq_, module2, exports2) {
+      (function(global2) {
+        if (typeof global2.Promise !== "function") {
+          global2.Promise = _dereq_(2);
+        }
+      }).call(this, typeof commonjsGlobal !== "undefined" ? commonjsGlobal : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {});
+    }, { "2": 2 }], 4: [function(_dereq_, module2, exports2) {
+      var _typeof2 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(obj) {
+        return typeof obj;
+      } : function(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+      function _classCallCheck2(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+          throw new TypeError("Cannot call a class as a function");
+        }
+      }
+      function getIDB() {
+        try {
+          if (typeof indexedDB !== "undefined") {
+            return indexedDB;
+          }
+          if (typeof webkitIndexedDB !== "undefined") {
+            return webkitIndexedDB;
+          }
+          if (typeof mozIndexedDB !== "undefined") {
+            return mozIndexedDB;
+          }
+          if (typeof OIndexedDB !== "undefined") {
+            return OIndexedDB;
+          }
+          if (typeof msIndexedDB !== "undefined") {
+            return msIndexedDB;
+          }
+        } catch (e2) {
+          return;
+        }
+      }
+      var idb = getIDB();
+      function isIndexedDBValid() {
+        try {
+          if (!idb || !idb.open) {
+            return false;
+          }
+          var isSafari = typeof openDatabase !== "undefined" && /(Safari|iPhone|iPad|iPod)/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) && !/BlackBerry/.test(navigator.platform);
+          var hasFetch = typeof fetch === "function" && fetch.toString().indexOf("[native code") !== -1;
+          return (!isSafari || hasFetch) && typeof indexedDB !== "undefined" && typeof IDBKeyRange !== "undefined";
+        } catch (e2) {
+          return false;
+        }
+      }
+      function createBlob(parts, properties2) {
+        parts = parts || [];
+        properties2 = properties2 || {};
+        try {
+          return new Blob(parts, properties2);
+        } catch (e2) {
+          if (e2.name !== "TypeError") {
+            throw e2;
+          }
+          var Builder = typeof BlobBuilder !== "undefined" ? BlobBuilder : typeof MSBlobBuilder !== "undefined" ? MSBlobBuilder : typeof MozBlobBuilder !== "undefined" ? MozBlobBuilder : WebKitBlobBuilder;
+          var builder = new Builder();
+          for (var i2 = 0; i2 < parts.length; i2 += 1) {
+            builder.append(parts[i2]);
+          }
+          return builder.getBlob(properties2.type);
+        }
+      }
+      if (typeof Promise === "undefined") {
+        _dereq_(3);
+      }
+      var Promise$1 = Promise;
+      function executeCallback(promise, callback) {
+        if (callback) {
+          promise.then(function(result) {
+            callback(null, result);
+          }, function(error) {
+            callback(error);
+          });
+        }
+      }
+      function executeTwoCallbacks(promise, callback, errorCallback) {
+        if (typeof callback === "function") {
+          promise.then(callback);
+        }
+        if (typeof errorCallback === "function") {
+          promise["catch"](errorCallback);
+        }
+      }
+      function normalizeKey(key2) {
+        if (typeof key2 !== "string") {
+          console.warn(key2 + " used as a key, but it is not a string.");
+          key2 = String(key2);
+        }
+        return key2;
+      }
+      function getCallback() {
+        if (arguments.length && typeof arguments[arguments.length - 1] === "function") {
+          return arguments[arguments.length - 1];
+        }
+      }
+      var DETECT_BLOB_SUPPORT_STORE = "local-forage-detect-blob-support";
+      var supportsBlobs = void 0;
+      var dbContexts = {};
+      var toString = Object.prototype.toString;
+      var READ_ONLY = "readonly";
+      var READ_WRITE = "readwrite";
+      function _binStringToArrayBuffer(bin) {
+        var length3 = bin.length;
+        var buf = new ArrayBuffer(length3);
+        var arr = new Uint8Array(buf);
+        for (var i2 = 0; i2 < length3; i2++) {
+          arr[i2] = bin.charCodeAt(i2);
+        }
+        return buf;
+      }
+      function _checkBlobSupportWithoutCaching(idb2) {
+        return new Promise$1(function(resolve) {
+          var txn = idb2.transaction(DETECT_BLOB_SUPPORT_STORE, READ_WRITE);
+          var blob2 = createBlob([""]);
+          txn.objectStore(DETECT_BLOB_SUPPORT_STORE).put(blob2, "key");
+          txn.onabort = function(e2) {
+            e2.preventDefault();
+            e2.stopPropagation();
+            resolve(false);
+          };
+          txn.oncomplete = function() {
+            var matchedChrome = navigator.userAgent.match(/Chrome\/(\d+)/);
+            var matchedEdge = navigator.userAgent.match(/Edge\//);
+            resolve(matchedEdge || !matchedChrome || parseInt(matchedChrome[1], 10) >= 43);
+          };
+        })["catch"](function() {
+          return false;
+        });
+      }
+      function _checkBlobSupport(idb2) {
+        if (typeof supportsBlobs === "boolean") {
+          return Promise$1.resolve(supportsBlobs);
+        }
+        return _checkBlobSupportWithoutCaching(idb2).then(function(value) {
+          supportsBlobs = value;
+          return supportsBlobs;
+        });
+      }
+      function _deferReadiness(dbInfo) {
+        var dbContext = dbContexts[dbInfo.name];
+        var deferredOperation = {};
+        deferredOperation.promise = new Promise$1(function(resolve, reject) {
+          deferredOperation.resolve = resolve;
+          deferredOperation.reject = reject;
+        });
+        dbContext.deferredOperations.push(deferredOperation);
+        if (!dbContext.dbReady) {
+          dbContext.dbReady = deferredOperation.promise;
+        } else {
+          dbContext.dbReady = dbContext.dbReady.then(function() {
+            return deferredOperation.promise;
+          });
+        }
+      }
+      function _advanceReadiness(dbInfo) {
+        var dbContext = dbContexts[dbInfo.name];
+        var deferredOperation = dbContext.deferredOperations.pop();
+        if (deferredOperation) {
+          deferredOperation.resolve();
+          return deferredOperation.promise;
+        }
+      }
+      function _rejectReadiness(dbInfo, err) {
+        var dbContext = dbContexts[dbInfo.name];
+        var deferredOperation = dbContext.deferredOperations.pop();
+        if (deferredOperation) {
+          deferredOperation.reject(err);
+          return deferredOperation.promise;
+        }
+      }
+      function _getConnection(dbInfo, upgradeNeeded) {
+        return new Promise$1(function(resolve, reject) {
+          dbContexts[dbInfo.name] = dbContexts[dbInfo.name] || createDbContext();
+          if (dbInfo.db) {
+            if (upgradeNeeded) {
+              _deferReadiness(dbInfo);
+              dbInfo.db.close();
+            } else {
+              return resolve(dbInfo.db);
+            }
+          }
+          var dbArgs = [dbInfo.name];
+          if (upgradeNeeded) {
+            dbArgs.push(dbInfo.version);
+          }
+          var openreq = idb.open.apply(idb, dbArgs);
+          if (upgradeNeeded) {
+            openreq.onupgradeneeded = function(e2) {
+              var db2 = openreq.result;
+              try {
+                db2.createObjectStore(dbInfo.storeName);
+                if (e2.oldVersion <= 1) {
+                  db2.createObjectStore(DETECT_BLOB_SUPPORT_STORE);
+                }
+              } catch (ex) {
+                if (ex.name === "ConstraintError") {
+                  console.warn('The database "' + dbInfo.name + '" has been upgraded from version ' + e2.oldVersion + " to version " + e2.newVersion + ', but the storage "' + dbInfo.storeName + '" already exists.');
+                } else {
+                  throw ex;
+                }
+              }
+            };
+          }
+          openreq.onerror = function(e2) {
+            e2.preventDefault();
+            reject(openreq.error);
+          };
+          openreq.onsuccess = function() {
+            var db2 = openreq.result;
+            db2.onversionchange = function(e2) {
+              e2.target.close();
+            };
+            resolve(db2);
+            _advanceReadiness(dbInfo);
+          };
+        });
+      }
+      function _getOriginalConnection(dbInfo) {
+        return _getConnection(dbInfo, false);
+      }
+      function _getUpgradedConnection(dbInfo) {
+        return _getConnection(dbInfo, true);
+      }
+      function _isUpgradeNeeded(dbInfo, defaultVersion) {
+        if (!dbInfo.db) {
+          return true;
+        }
+        var isNewStore = !dbInfo.db.objectStoreNames.contains(dbInfo.storeName);
+        var isDowngrade = dbInfo.version < dbInfo.db.version;
+        var isUpgrade = dbInfo.version > dbInfo.db.version;
+        if (isDowngrade) {
+          if (dbInfo.version !== defaultVersion) {
+            console.warn('The database "' + dbInfo.name + `" can't be downgraded from version ` + dbInfo.db.version + " to version " + dbInfo.version + ".");
+          }
+          dbInfo.version = dbInfo.db.version;
+        }
+        if (isUpgrade || isNewStore) {
+          if (isNewStore) {
+            var incVersion = dbInfo.db.version + 1;
+            if (incVersion > dbInfo.version) {
+              dbInfo.version = incVersion;
+            }
+          }
+          return true;
+        }
+        return false;
+      }
+      function _encodeBlob(blob2) {
+        return new Promise$1(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onerror = reject;
+          reader.onloadend = function(e2) {
+            var base64 = btoa(e2.target.result || "");
+            resolve({
+              __local_forage_encoded_blob: true,
+              data: base64,
+              type: blob2.type
+            });
+          };
+          reader.readAsBinaryString(blob2);
+        });
+      }
+      function _decodeBlob(encodedBlob) {
+        var arrayBuff = _binStringToArrayBuffer(atob(encodedBlob.data));
+        return createBlob([arrayBuff], { type: encodedBlob.type });
+      }
+      function _isEncodedBlob(value) {
+        return value && value.__local_forage_encoded_blob;
+      }
+      function _fullyReady(callback) {
+        var self2 = this;
+        var promise = self2._initReady().then(function() {
+          var dbContext = dbContexts[self2._dbInfo.name];
+          if (dbContext && dbContext.dbReady) {
+            return dbContext.dbReady;
+          }
+        });
+        executeTwoCallbacks(promise, callback, callback);
+        return promise;
+      }
+      function _tryReconnect(dbInfo) {
+        _deferReadiness(dbInfo);
+        var dbContext = dbContexts[dbInfo.name];
+        var forages = dbContext.forages;
+        for (var i2 = 0; i2 < forages.length; i2++) {
+          var forage = forages[i2];
+          if (forage._dbInfo.db) {
+            forage._dbInfo.db.close();
+            forage._dbInfo.db = null;
+          }
+        }
+        dbInfo.db = null;
+        return _getOriginalConnection(dbInfo).then(function(db2) {
+          dbInfo.db = db2;
+          if (_isUpgradeNeeded(dbInfo)) {
+            return _getUpgradedConnection(dbInfo);
+          }
+          return db2;
+        }).then(function(db2) {
+          dbInfo.db = dbContext.db = db2;
+          for (var i3 = 0; i3 < forages.length; i3++) {
+            forages[i3]._dbInfo.db = db2;
+          }
+        })["catch"](function(err) {
+          _rejectReadiness(dbInfo, err);
+          throw err;
+        });
+      }
+      function createTransaction(dbInfo, mode, callback, retries) {
+        if (retries === void 0) {
+          retries = 1;
+        }
+        try {
+          var tx = dbInfo.db.transaction(dbInfo.storeName, mode);
+          callback(null, tx);
+        } catch (err) {
+          if (retries > 0 && (!dbInfo.db || err.name === "InvalidStateError" || err.name === "NotFoundError")) {
+            return Promise$1.resolve().then(function() {
+              if (!dbInfo.db || err.name === "NotFoundError" && !dbInfo.db.objectStoreNames.contains(dbInfo.storeName) && dbInfo.version <= dbInfo.db.version) {
+                if (dbInfo.db) {
+                  dbInfo.version = dbInfo.db.version + 1;
+                }
+                return _getUpgradedConnection(dbInfo);
+              }
+            }).then(function() {
+              return _tryReconnect(dbInfo).then(function() {
+                createTransaction(dbInfo, mode, callback, retries - 1);
+              });
+            })["catch"](callback);
+          }
+          callback(err);
+        }
+      }
+      function createDbContext() {
+        return {
+          forages: [],
+          db: null,
+          dbReady: null,
+          deferredOperations: []
+        };
+      }
+      function _initStorage(options) {
+        var self2 = this;
+        var dbInfo = {
+          db: null
+        };
+        if (options) {
+          for (var i2 in options) {
+            dbInfo[i2] = options[i2];
+          }
+        }
+        var dbContext = dbContexts[dbInfo.name];
+        if (!dbContext) {
+          dbContext = createDbContext();
+          dbContexts[dbInfo.name] = dbContext;
+        }
+        dbContext.forages.push(self2);
+        if (!self2._initReady) {
+          self2._initReady = self2.ready;
+          self2.ready = _fullyReady;
+        }
+        var initPromises = [];
+        function ignoreErrors() {
+          return Promise$1.resolve();
+        }
+        for (var j2 = 0; j2 < dbContext.forages.length; j2++) {
+          var forage = dbContext.forages[j2];
+          if (forage !== self2) {
+            initPromises.push(forage._initReady()["catch"](ignoreErrors));
+          }
+        }
+        var forages = dbContext.forages.slice(0);
+        return Promise$1.all(initPromises).then(function() {
+          dbInfo.db = dbContext.db;
+          return _getOriginalConnection(dbInfo);
+        }).then(function(db2) {
+          dbInfo.db = db2;
+          if (_isUpgradeNeeded(dbInfo, self2._defaultConfig.version)) {
+            return _getUpgradedConnection(dbInfo);
+          }
+          return db2;
+        }).then(function(db2) {
+          dbInfo.db = dbContext.db = db2;
+          self2._dbInfo = dbInfo;
+          for (var k2 = 0; k2 < forages.length; k2++) {
+            var forage2 = forages[k2];
+            if (forage2 !== self2) {
+              forage2._dbInfo.db = dbInfo.db;
+              forage2._dbInfo.version = dbInfo.version;
+            }
+          }
+        });
+      }
+      function getItem(key2, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_ONLY, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var req = store2.get(key2);
+                req.onsuccess = function() {
+                  var value = req.result;
+                  if (value === void 0) {
+                    value = null;
+                  }
+                  if (_isEncodedBlob(value)) {
+                    value = _decodeBlob(value);
+                  }
+                  resolve(value);
+                };
+                req.onerror = function() {
+                  reject(req.error);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function iterate(iterator, callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_ONLY, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var req = store2.openCursor();
+                var iterationNumber = 1;
+                req.onsuccess = function() {
+                  var cursor2 = req.result;
+                  if (cursor2) {
+                    var value = cursor2.value;
+                    if (_isEncodedBlob(value)) {
+                      value = _decodeBlob(value);
+                    }
+                    var result = iterator(value, cursor2.key, iterationNumber++);
+                    if (result !== void 0) {
+                      resolve(result);
+                    } else {
+                      cursor2["continue"]();
+                    }
+                  } else {
+                    resolve();
+                  }
+                };
+                req.onerror = function() {
+                  reject(req.error);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function setItem(key2, value, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = new Promise$1(function(resolve, reject) {
+          var dbInfo;
+          self2.ready().then(function() {
+            dbInfo = self2._dbInfo;
+            if (toString.call(value) === "[object Blob]") {
+              return _checkBlobSupport(dbInfo.db).then(function(blobSupport) {
+                if (blobSupport) {
+                  return value;
+                }
+                return _encodeBlob(value);
+              });
+            }
+            return value;
+          }).then(function(value2) {
+            createTransaction(self2._dbInfo, READ_WRITE, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                if (value2 === null) {
+                  value2 = void 0;
+                }
+                var req = store2.put(value2, key2);
+                transaction.oncomplete = function() {
+                  if (value2 === void 0) {
+                    value2 = null;
+                  }
+                  resolve(value2);
+                };
+                transaction.onabort = transaction.onerror = function() {
+                  var err2 = req.error ? req.error : req.transaction.error;
+                  reject(err2);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function removeItem(key2, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_WRITE, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var req = store2["delete"](key2);
+                transaction.oncomplete = function() {
+                  resolve();
+                };
+                transaction.onerror = function() {
+                  reject(req.error);
+                };
+                transaction.onabort = function() {
+                  var err2 = req.error ? req.error : req.transaction.error;
+                  reject(err2);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function clear(callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_WRITE, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var req = store2.clear();
+                transaction.oncomplete = function() {
+                  resolve();
+                };
+                transaction.onabort = transaction.onerror = function() {
+                  var err2 = req.error ? req.error : req.transaction.error;
+                  reject(err2);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function length2(callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_ONLY, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var req = store2.count();
+                req.onsuccess = function() {
+                  resolve(req.result);
+                };
+                req.onerror = function() {
+                  reject(req.error);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function key(n2, callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          if (n2 < 0) {
+            resolve(null);
+            return;
+          }
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_ONLY, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var advanced = false;
+                var req = store2.openKeyCursor();
+                req.onsuccess = function() {
+                  var cursor2 = req.result;
+                  if (!cursor2) {
+                    resolve(null);
+                    return;
+                  }
+                  if (n2 === 0) {
+                    resolve(cursor2.key);
+                  } else {
+                    if (!advanced) {
+                      advanced = true;
+                      cursor2.advance(n2);
+                    } else {
+                      resolve(cursor2.key);
+                    }
+                  }
+                };
+                req.onerror = function() {
+                  reject(req.error);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function keys(callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            createTransaction(self2._dbInfo, READ_ONLY, function(err, transaction) {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                var store2 = transaction.objectStore(self2._dbInfo.storeName);
+                var req = store2.openKeyCursor();
+                var keys2 = [];
+                req.onsuccess = function() {
+                  var cursor2 = req.result;
+                  if (!cursor2) {
+                    resolve(keys2);
+                    return;
+                  }
+                  keys2.push(cursor2.key);
+                  cursor2["continue"]();
+                };
+                req.onerror = function() {
+                  reject(req.error);
+                };
+              } catch (e2) {
+                reject(e2);
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function dropInstance(options, callback) {
+        callback = getCallback.apply(this, arguments);
+        var currentConfig = this.config();
+        options = typeof options !== "function" && options || {};
+        if (!options.name) {
+          options.name = options.name || currentConfig.name;
+          options.storeName = options.storeName || currentConfig.storeName;
+        }
+        var self2 = this;
+        var promise;
+        if (!options.name) {
+          promise = Promise$1.reject("Invalid arguments");
+        } else {
+          var isCurrentDb = options.name === currentConfig.name && self2._dbInfo.db;
+          var dbPromise = isCurrentDb ? Promise$1.resolve(self2._dbInfo.db) : _getOriginalConnection(options).then(function(db2) {
+            var dbContext = dbContexts[options.name];
+            var forages = dbContext.forages;
+            dbContext.db = db2;
+            for (var i2 = 0; i2 < forages.length; i2++) {
+              forages[i2]._dbInfo.db = db2;
+            }
+            return db2;
+          });
+          if (!options.storeName) {
+            promise = dbPromise.then(function(db2) {
+              _deferReadiness(options);
+              var dbContext = dbContexts[options.name];
+              var forages = dbContext.forages;
+              db2.close();
+              for (var i2 = 0; i2 < forages.length; i2++) {
+                var forage = forages[i2];
+                forage._dbInfo.db = null;
+              }
+              var dropDBPromise = new Promise$1(function(resolve, reject) {
+                var req = idb.deleteDatabase(options.name);
+                req.onerror = function() {
+                  var db3 = req.result;
+                  if (db3) {
+                    db3.close();
+                  }
+                  reject(req.error);
+                };
+                req.onblocked = function() {
+                  console.warn('dropInstance blocked for database "' + options.name + '" until all open connections are closed');
+                };
+                req.onsuccess = function() {
+                  var db3 = req.result;
+                  if (db3) {
+                    db3.close();
+                  }
+                  resolve(db3);
+                };
+              });
+              return dropDBPromise.then(function(db3) {
+                dbContext.db = db3;
+                for (var i3 = 0; i3 < forages.length; i3++) {
+                  var _forage = forages[i3];
+                  _advanceReadiness(_forage._dbInfo);
+                }
+              })["catch"](function(err) {
+                (_rejectReadiness(options, err) || Promise$1.resolve())["catch"](function() {
+                });
+                throw err;
+              });
+            });
+          } else {
+            promise = dbPromise.then(function(db2) {
+              if (!db2.objectStoreNames.contains(options.storeName)) {
+                return;
+              }
+              var newVersion = db2.version + 1;
+              _deferReadiness(options);
+              var dbContext = dbContexts[options.name];
+              var forages = dbContext.forages;
+              db2.close();
+              for (var i2 = 0; i2 < forages.length; i2++) {
+                var forage = forages[i2];
+                forage._dbInfo.db = null;
+                forage._dbInfo.version = newVersion;
+              }
+              var dropObjectPromise = new Promise$1(function(resolve, reject) {
+                var req = idb.open(options.name, newVersion);
+                req.onerror = function(err) {
+                  var db3 = req.result;
+                  db3.close();
+                  reject(err);
+                };
+                req.onupgradeneeded = function() {
+                  var db3 = req.result;
+                  db3.deleteObjectStore(options.storeName);
+                };
+                req.onsuccess = function() {
+                  var db3 = req.result;
+                  db3.close();
+                  resolve(db3);
+                };
+              });
+              return dropObjectPromise.then(function(db3) {
+                dbContext.db = db3;
+                for (var j2 = 0; j2 < forages.length; j2++) {
+                  var _forage2 = forages[j2];
+                  _forage2._dbInfo.db = db3;
+                  _advanceReadiness(_forage2._dbInfo);
+                }
+              })["catch"](function(err) {
+                (_rejectReadiness(options, err) || Promise$1.resolve())["catch"](function() {
+                });
+                throw err;
+              });
+            });
+          }
+        }
+        executeCallback(promise, callback);
+        return promise;
+      }
+      var asyncStorage = {
+        _driver: "asyncStorage",
+        _initStorage,
+        _support: isIndexedDBValid(),
+        iterate,
+        getItem,
+        setItem,
+        removeItem,
+        clear,
+        length: length2,
+        key,
+        keys,
+        dropInstance
+      };
+      function isWebSQLValid() {
+        return typeof openDatabase === "function";
+      }
+      var BASE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+      var BLOB_TYPE_PREFIX = "~~local_forage_type~";
+      var BLOB_TYPE_PREFIX_REGEX = /^~~local_forage_type~([^~]+)~/;
+      var SERIALIZED_MARKER = "__lfsc__:";
+      var SERIALIZED_MARKER_LENGTH = SERIALIZED_MARKER.length;
+      var TYPE_ARRAYBUFFER = "arbf";
+      var TYPE_BLOB = "blob";
+      var TYPE_INT8ARRAY = "si08";
+      var TYPE_UINT8ARRAY = "ui08";
+      var TYPE_UINT8CLAMPEDARRAY = "uic8";
+      var TYPE_INT16ARRAY = "si16";
+      var TYPE_INT32ARRAY = "si32";
+      var TYPE_UINT16ARRAY = "ur16";
+      var TYPE_UINT32ARRAY = "ui32";
+      var TYPE_FLOAT32ARRAY = "fl32";
+      var TYPE_FLOAT64ARRAY = "fl64";
+      var TYPE_SERIALIZED_MARKER_LENGTH = SERIALIZED_MARKER_LENGTH + TYPE_ARRAYBUFFER.length;
+      var toString$1 = Object.prototype.toString;
+      function stringToBuffer(serializedString) {
+        var bufferLength = serializedString.length * 0.75;
+        var len = serializedString.length;
+        var i2;
+        var p2 = 0;
+        var encoded1, encoded2, encoded3, encoded4;
+        if (serializedString[serializedString.length - 1] === "=") {
+          bufferLength--;
+          if (serializedString[serializedString.length - 2] === "=") {
+            bufferLength--;
+          }
+        }
+        var buffer = new ArrayBuffer(bufferLength);
+        var bytes = new Uint8Array(buffer);
+        for (i2 = 0; i2 < len; i2 += 4) {
+          encoded1 = BASE_CHARS.indexOf(serializedString[i2]);
+          encoded2 = BASE_CHARS.indexOf(serializedString[i2 + 1]);
+          encoded3 = BASE_CHARS.indexOf(serializedString[i2 + 2]);
+          encoded4 = BASE_CHARS.indexOf(serializedString[i2 + 3]);
+          bytes[p2++] = encoded1 << 2 | encoded2 >> 4;
+          bytes[p2++] = (encoded2 & 15) << 4 | encoded3 >> 2;
+          bytes[p2++] = (encoded3 & 3) << 6 | encoded4 & 63;
+        }
+        return buffer;
+      }
+      function bufferToString(buffer) {
+        var bytes = new Uint8Array(buffer);
+        var base64String = "";
+        var i2;
+        for (i2 = 0; i2 < bytes.length; i2 += 3) {
+          base64String += BASE_CHARS[bytes[i2] >> 2];
+          base64String += BASE_CHARS[(bytes[i2] & 3) << 4 | bytes[i2 + 1] >> 4];
+          base64String += BASE_CHARS[(bytes[i2 + 1] & 15) << 2 | bytes[i2 + 2] >> 6];
+          base64String += BASE_CHARS[bytes[i2 + 2] & 63];
+        }
+        if (bytes.length % 3 === 2) {
+          base64String = base64String.substring(0, base64String.length - 1) + "=";
+        } else if (bytes.length % 3 === 1) {
+          base64String = base64String.substring(0, base64String.length - 2) + "==";
+        }
+        return base64String;
+      }
+      function serialize2(value, callback) {
+        var valueType = "";
+        if (value) {
+          valueType = toString$1.call(value);
+        }
+        if (value && (valueType === "[object ArrayBuffer]" || value.buffer && toString$1.call(value.buffer) === "[object ArrayBuffer]")) {
+          var buffer;
+          var marker = SERIALIZED_MARKER;
+          if (value instanceof ArrayBuffer) {
+            buffer = value;
+            marker += TYPE_ARRAYBUFFER;
+          } else {
+            buffer = value.buffer;
+            if (valueType === "[object Int8Array]") {
+              marker += TYPE_INT8ARRAY;
+            } else if (valueType === "[object Uint8Array]") {
+              marker += TYPE_UINT8ARRAY;
+            } else if (valueType === "[object Uint8ClampedArray]") {
+              marker += TYPE_UINT8CLAMPEDARRAY;
+            } else if (valueType === "[object Int16Array]") {
+              marker += TYPE_INT16ARRAY;
+            } else if (valueType === "[object Uint16Array]") {
+              marker += TYPE_UINT16ARRAY;
+            } else if (valueType === "[object Int32Array]") {
+              marker += TYPE_INT32ARRAY;
+            } else if (valueType === "[object Uint32Array]") {
+              marker += TYPE_UINT32ARRAY;
+            } else if (valueType === "[object Float32Array]") {
+              marker += TYPE_FLOAT32ARRAY;
+            } else if (valueType === "[object Float64Array]") {
+              marker += TYPE_FLOAT64ARRAY;
+            } else {
+              callback(new Error("Failed to get type for BinaryArray"));
+            }
+          }
+          callback(marker + bufferToString(buffer));
+        } else if (valueType === "[object Blob]") {
+          var fileReader = new FileReader();
+          fileReader.onload = function() {
+            var str = BLOB_TYPE_PREFIX + value.type + "~" + bufferToString(this.result);
+            callback(SERIALIZED_MARKER + TYPE_BLOB + str);
+          };
+          fileReader.readAsArrayBuffer(value);
+        } else {
+          try {
+            callback(JSON.stringify(value));
+          } catch (e2) {
+            console.error("Couldn't convert value into a JSON string: ", value);
+            callback(null, e2);
+          }
+        }
+      }
+      function deserialize(value) {
+        if (value.substring(0, SERIALIZED_MARKER_LENGTH) !== SERIALIZED_MARKER) {
+          return JSON.parse(value);
+        }
+        var serializedString = value.substring(TYPE_SERIALIZED_MARKER_LENGTH);
+        var type = value.substring(SERIALIZED_MARKER_LENGTH, TYPE_SERIALIZED_MARKER_LENGTH);
+        var blobType;
+        if (type === TYPE_BLOB && BLOB_TYPE_PREFIX_REGEX.test(serializedString)) {
+          var matcher = serializedString.match(BLOB_TYPE_PREFIX_REGEX);
+          blobType = matcher[1];
+          serializedString = serializedString.substring(matcher[0].length);
+        }
+        var buffer = stringToBuffer(serializedString);
+        switch (type) {
+          case TYPE_ARRAYBUFFER:
+            return buffer;
+          case TYPE_BLOB:
+            return createBlob([buffer], { type: blobType });
+          case TYPE_INT8ARRAY:
+            return new Int8Array(buffer);
+          case TYPE_UINT8ARRAY:
+            return new Uint8Array(buffer);
+          case TYPE_UINT8CLAMPEDARRAY:
+            return new Uint8ClampedArray(buffer);
+          case TYPE_INT16ARRAY:
+            return new Int16Array(buffer);
+          case TYPE_UINT16ARRAY:
+            return new Uint16Array(buffer);
+          case TYPE_INT32ARRAY:
+            return new Int32Array(buffer);
+          case TYPE_UINT32ARRAY:
+            return new Uint32Array(buffer);
+          case TYPE_FLOAT32ARRAY:
+            return new Float32Array(buffer);
+          case TYPE_FLOAT64ARRAY:
+            return new Float64Array(buffer);
+          default:
+            throw new Error("Unkown type: " + type);
+        }
+      }
+      var localforageSerializer = {
+        serialize: serialize2,
+        deserialize,
+        stringToBuffer,
+        bufferToString
+      };
+      function createDbTable(t2, dbInfo, callback, errorCallback) {
+        t2.executeSql("CREATE TABLE IF NOT EXISTS " + dbInfo.storeName + " (id INTEGER PRIMARY KEY, key unique, value)", [], callback, errorCallback);
+      }
+      function _initStorage$1(options) {
+        var self2 = this;
+        var dbInfo = {
+          db: null
+        };
+        if (options) {
+          for (var i2 in options) {
+            dbInfo[i2] = typeof options[i2] !== "string" ? options[i2].toString() : options[i2];
+          }
+        }
+        var dbInfoPromise = new Promise$1(function(resolve, reject) {
+          try {
+            dbInfo.db = openDatabase(dbInfo.name, String(dbInfo.version), dbInfo.description, dbInfo.size);
+          } catch (e2) {
+            return reject(e2);
+          }
+          dbInfo.db.transaction(function(t2) {
+            createDbTable(t2, dbInfo, function() {
+              self2._dbInfo = dbInfo;
+              resolve();
+            }, function(t3, error) {
+              reject(error);
+            });
+          }, reject);
+        });
+        dbInfo.serializer = localforageSerializer;
+        return dbInfoPromise;
+      }
+      function tryExecuteSql(t2, dbInfo, sqlStatement, args, callback, errorCallback) {
+        t2.executeSql(sqlStatement, args, callback, function(t3, error) {
+          if (error.code === error.SYNTAX_ERR) {
+            t3.executeSql("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", [dbInfo.storeName], function(t4, results) {
+              if (!results.rows.length) {
+                createDbTable(t4, dbInfo, function() {
+                  t4.executeSql(sqlStatement, args, callback, errorCallback);
+                }, errorCallback);
+              } else {
+                errorCallback(t4, error);
+              }
+            }, errorCallback);
+          } else {
+            errorCallback(t3, error);
+          }
+        }, errorCallback);
+      }
+      function getItem$1(key2, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "SELECT * FROM " + dbInfo.storeName + " WHERE key = ? LIMIT 1", [key2], function(t3, results) {
+                var result = results.rows.length ? results.rows.item(0).value : null;
+                if (result) {
+                  result = dbInfo.serializer.deserialize(result);
+                }
+                resolve(result);
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function iterate$1(iterator, callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "SELECT * FROM " + dbInfo.storeName, [], function(t3, results) {
+                var rows = results.rows;
+                var length3 = rows.length;
+                for (var i2 = 0; i2 < length3; i2++) {
+                  var item = rows.item(i2);
+                  var result = item.value;
+                  if (result) {
+                    result = dbInfo.serializer.deserialize(result);
+                  }
+                  result = iterator(result, item.key, i2 + 1);
+                  if (result !== void 0) {
+                    resolve(result);
+                    return;
+                  }
+                }
+                resolve();
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function _setItem(key2, value, callback, retriesLeft) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            if (value === void 0) {
+              value = null;
+            }
+            var originalValue = value;
+            var dbInfo = self2._dbInfo;
+            dbInfo.serializer.serialize(value, function(value2, error) {
+              if (error) {
+                reject(error);
+              } else {
+                dbInfo.db.transaction(function(t2) {
+                  tryExecuteSql(t2, dbInfo, "INSERT OR REPLACE INTO " + dbInfo.storeName + " (key, value) VALUES (?, ?)", [key2, value2], function() {
+                    resolve(originalValue);
+                  }, function(t3, error2) {
+                    reject(error2);
+                  });
+                }, function(sqlError) {
+                  if (sqlError.code === sqlError.QUOTA_ERR) {
+                    if (retriesLeft > 0) {
+                      resolve(_setItem.apply(self2, [key2, originalValue, callback, retriesLeft - 1]));
+                      return;
+                    }
+                    reject(sqlError);
+                  }
+                });
+              }
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function setItem$1(key2, value, callback) {
+        return _setItem.apply(this, [key2, value, callback, 1]);
+      }
+      function removeItem$1(key2, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "DELETE FROM " + dbInfo.storeName + " WHERE key = ?", [key2], function() {
+                resolve();
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function clear$1(callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "DELETE FROM " + dbInfo.storeName, [], function() {
+                resolve();
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function length$1(callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "SELECT COUNT(key) as c FROM " + dbInfo.storeName, [], function(t3, results) {
+                var result = results.rows.item(0).c;
+                resolve(result);
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function key$1(n2, callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "SELECT key FROM " + dbInfo.storeName + " WHERE id = ? LIMIT 1", [n2 + 1], function(t3, results) {
+                var result = results.rows.length ? results.rows.item(0).key : null;
+                resolve(result);
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function keys$1(callback) {
+        var self2 = this;
+        var promise = new Promise$1(function(resolve, reject) {
+          self2.ready().then(function() {
+            var dbInfo = self2._dbInfo;
+            dbInfo.db.transaction(function(t2) {
+              tryExecuteSql(t2, dbInfo, "SELECT key FROM " + dbInfo.storeName, [], function(t3, results) {
+                var keys2 = [];
+                for (var i2 = 0; i2 < results.rows.length; i2++) {
+                  keys2.push(results.rows.item(i2).key);
+                }
+                resolve(keys2);
+              }, function(t3, error) {
+                reject(error);
+              });
+            });
+          })["catch"](reject);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function getAllStoreNames(db2) {
+        return new Promise$1(function(resolve, reject) {
+          db2.transaction(function(t2) {
+            t2.executeSql("SELECT name FROM sqlite_master WHERE type='table' AND name <> '__WebKitDatabaseInfoTable__'", [], function(t3, results) {
+              var storeNames = [];
+              for (var i2 = 0; i2 < results.rows.length; i2++) {
+                storeNames.push(results.rows.item(i2).name);
+              }
+              resolve({
+                db: db2,
+                storeNames
+              });
+            }, function(t3, error) {
+              reject(error);
+            });
+          }, function(sqlError) {
+            reject(sqlError);
+          });
+        });
+      }
+      function dropInstance$1(options, callback) {
+        callback = getCallback.apply(this, arguments);
+        var currentConfig = this.config();
+        options = typeof options !== "function" && options || {};
+        if (!options.name) {
+          options.name = options.name || currentConfig.name;
+          options.storeName = options.storeName || currentConfig.storeName;
+        }
+        var self2 = this;
+        var promise;
+        if (!options.name) {
+          promise = Promise$1.reject("Invalid arguments");
+        } else {
+          promise = new Promise$1(function(resolve) {
+            var db2;
+            if (options.name === currentConfig.name) {
+              db2 = self2._dbInfo.db;
+            } else {
+              db2 = openDatabase(options.name, "", "", 0);
+            }
+            if (!options.storeName) {
+              resolve(getAllStoreNames(db2));
+            } else {
+              resolve({
+                db: db2,
+                storeNames: [options.storeName]
+              });
+            }
+          }).then(function(operationInfo) {
+            return new Promise$1(function(resolve, reject) {
+              operationInfo.db.transaction(function(t2) {
+                function dropTable(storeName) {
+                  return new Promise$1(function(resolve2, reject2) {
+                    t2.executeSql("DROP TABLE IF EXISTS " + storeName, [], function() {
+                      resolve2();
+                    }, function(t3, error) {
+                      reject2(error);
+                    });
+                  });
+                }
+                var operations = [];
+                for (var i2 = 0, len = operationInfo.storeNames.length; i2 < len; i2++) {
+                  operations.push(dropTable(operationInfo.storeNames[i2]));
+                }
+                Promise$1.all(operations).then(function() {
+                  resolve();
+                })["catch"](function(e2) {
+                  reject(e2);
+                });
+              }, function(sqlError) {
+                reject(sqlError);
+              });
+            });
+          });
+        }
+        executeCallback(promise, callback);
+        return promise;
+      }
+      var webSQLStorage = {
+        _driver: "webSQLStorage",
+        _initStorage: _initStorage$1,
+        _support: isWebSQLValid(),
+        iterate: iterate$1,
+        getItem: getItem$1,
+        setItem: setItem$1,
+        removeItem: removeItem$1,
+        clear: clear$1,
+        length: length$1,
+        key: key$1,
+        keys: keys$1,
+        dropInstance: dropInstance$1
+      };
+      function isLocalStorageValid() {
+        try {
+          return typeof localStorage !== "undefined" && "setItem" in localStorage && !!localStorage.setItem;
+        } catch (e2) {
+          return false;
+        }
+      }
+      function _getKeyPrefix(options, defaultConfig) {
+        var keyPrefix = options.name + "/";
+        if (options.storeName !== defaultConfig.storeName) {
+          keyPrefix += options.storeName + "/";
+        }
+        return keyPrefix;
+      }
+      function checkIfLocalStorageThrows() {
+        var localStorageTestKey = "_localforage_support_test";
+        try {
+          localStorage.setItem(localStorageTestKey, true);
+          localStorage.removeItem(localStorageTestKey);
+          return false;
+        } catch (e2) {
+          return true;
+        }
+      }
+      function _isLocalStorageUsable() {
+        return !checkIfLocalStorageThrows() || localStorage.length > 0;
+      }
+      function _initStorage$2(options) {
+        var self2 = this;
+        var dbInfo = {};
+        if (options) {
+          for (var i2 in options) {
+            dbInfo[i2] = options[i2];
+          }
+        }
+        dbInfo.keyPrefix = _getKeyPrefix(options, self2._defaultConfig);
+        if (!_isLocalStorageUsable()) {
+          return Promise$1.reject();
+        }
+        self2._dbInfo = dbInfo;
+        dbInfo.serializer = localforageSerializer;
+        return Promise$1.resolve();
+      }
+      function clear$2(callback) {
+        var self2 = this;
+        var promise = self2.ready().then(function() {
+          var keyPrefix = self2._dbInfo.keyPrefix;
+          for (var i2 = localStorage.length - 1; i2 >= 0; i2--) {
+            var key2 = localStorage.key(i2);
+            if (key2.indexOf(keyPrefix) === 0) {
+              localStorage.removeItem(key2);
+            }
+          }
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function getItem$2(key2, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = self2.ready().then(function() {
+          var dbInfo = self2._dbInfo;
+          var result = localStorage.getItem(dbInfo.keyPrefix + key2);
+          if (result) {
+            result = dbInfo.serializer.deserialize(result);
+          }
+          return result;
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function iterate$2(iterator, callback) {
+        var self2 = this;
+        var promise = self2.ready().then(function() {
+          var dbInfo = self2._dbInfo;
+          var keyPrefix = dbInfo.keyPrefix;
+          var keyPrefixLength = keyPrefix.length;
+          var length3 = localStorage.length;
+          var iterationNumber = 1;
+          for (var i2 = 0; i2 < length3; i2++) {
+            var key2 = localStorage.key(i2);
+            if (key2.indexOf(keyPrefix) !== 0) {
+              continue;
+            }
+            var value = localStorage.getItem(key2);
+            if (value) {
+              value = dbInfo.serializer.deserialize(value);
+            }
+            value = iterator(value, key2.substring(keyPrefixLength), iterationNumber++);
+            if (value !== void 0) {
+              return value;
+            }
+          }
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function key$2(n2, callback) {
+        var self2 = this;
+        var promise = self2.ready().then(function() {
+          var dbInfo = self2._dbInfo;
+          var result;
+          try {
+            result = localStorage.key(n2);
+          } catch (error) {
+            result = null;
+          }
+          if (result) {
+            result = result.substring(dbInfo.keyPrefix.length);
+          }
+          return result;
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function keys$2(callback) {
+        var self2 = this;
+        var promise = self2.ready().then(function() {
+          var dbInfo = self2._dbInfo;
+          var length3 = localStorage.length;
+          var keys2 = [];
+          for (var i2 = 0; i2 < length3; i2++) {
+            var itemKey = localStorage.key(i2);
+            if (itemKey.indexOf(dbInfo.keyPrefix) === 0) {
+              keys2.push(itemKey.substring(dbInfo.keyPrefix.length));
+            }
+          }
+          return keys2;
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function length$2(callback) {
+        var self2 = this;
+        var promise = self2.keys().then(function(keys2) {
+          return keys2.length;
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function removeItem$2(key2, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = self2.ready().then(function() {
+          var dbInfo = self2._dbInfo;
+          localStorage.removeItem(dbInfo.keyPrefix + key2);
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function setItem$2(key2, value, callback) {
+        var self2 = this;
+        key2 = normalizeKey(key2);
+        var promise = self2.ready().then(function() {
+          if (value === void 0) {
+            value = null;
+          }
+          var originalValue = value;
+          return new Promise$1(function(resolve, reject) {
+            var dbInfo = self2._dbInfo;
+            dbInfo.serializer.serialize(value, function(value2, error) {
+              if (error) {
+                reject(error);
+              } else {
+                try {
+                  localStorage.setItem(dbInfo.keyPrefix + key2, value2);
+                  resolve(originalValue);
+                } catch (e2) {
+                  if (e2.name === "QuotaExceededError" || e2.name === "NS_ERROR_DOM_QUOTA_REACHED") {
+                    reject(e2);
+                  }
+                  reject(e2);
+                }
+              }
+            });
+          });
+        });
+        executeCallback(promise, callback);
+        return promise;
+      }
+      function dropInstance$2(options, callback) {
+        callback = getCallback.apply(this, arguments);
+        options = typeof options !== "function" && options || {};
+        if (!options.name) {
+          var currentConfig = this.config();
+          options.name = options.name || currentConfig.name;
+          options.storeName = options.storeName || currentConfig.storeName;
+        }
+        var self2 = this;
+        var promise;
+        if (!options.name) {
+          promise = Promise$1.reject("Invalid arguments");
+        } else {
+          promise = new Promise$1(function(resolve) {
+            if (!options.storeName) {
+              resolve(options.name + "/");
+            } else {
+              resolve(_getKeyPrefix(options, self2._defaultConfig));
+            }
+          }).then(function(keyPrefix) {
+            for (var i2 = localStorage.length - 1; i2 >= 0; i2--) {
+              var key2 = localStorage.key(i2);
+              if (key2.indexOf(keyPrefix) === 0) {
+                localStorage.removeItem(key2);
+              }
+            }
+          });
+        }
+        executeCallback(promise, callback);
+        return promise;
+      }
+      var localStorageWrapper = {
+        _driver: "localStorageWrapper",
+        _initStorage: _initStorage$2,
+        _support: isLocalStorageValid(),
+        iterate: iterate$2,
+        getItem: getItem$2,
+        setItem: setItem$2,
+        removeItem: removeItem$2,
+        clear: clear$2,
+        length: length$2,
+        key: key$2,
+        keys: keys$2,
+        dropInstance: dropInstance$2
+      };
+      var sameValue = function sameValue2(x2, y2) {
+        return x2 === y2 || typeof x2 === "number" && typeof y2 === "number" && isNaN(x2) && isNaN(y2);
+      };
+      var includes = function includes2(array, searchElement) {
+        var len = array.length;
+        var i2 = 0;
+        while (i2 < len) {
+          if (sameValue(array[i2], searchElement)) {
+            return true;
+          }
+          i2++;
+        }
+        return false;
+      };
+      var isArray = Array.isArray || function(arg) {
+        return Object.prototype.toString.call(arg) === "[object Array]";
+      };
+      var DefinedDrivers = {};
+      var DriverSupport = {};
+      var DefaultDrivers = {
+        INDEXEDDB: asyncStorage,
+        WEBSQL: webSQLStorage,
+        LOCALSTORAGE: localStorageWrapper
+      };
+      var DefaultDriverOrder = [DefaultDrivers.INDEXEDDB._driver, DefaultDrivers.WEBSQL._driver, DefaultDrivers.LOCALSTORAGE._driver];
+      var OptionalDriverMethods = ["dropInstance"];
+      var LibraryMethods = ["clear", "getItem", "iterate", "key", "keys", "length", "removeItem", "setItem"].concat(OptionalDriverMethods);
+      var DefaultConfig = {
+        description: "",
+        driver: DefaultDriverOrder.slice(),
+        name: "localforage",
+        size: 4980736,
+        storeName: "keyvaluepairs",
+        version: 1
+      };
+      function callWhenReady(localForageInstance, libraryMethod) {
+        localForageInstance[libraryMethod] = function() {
+          var _args = arguments;
+          return localForageInstance.ready().then(function() {
+            return localForageInstance[libraryMethod].apply(localForageInstance, _args);
+          });
+        };
+      }
+      function extend() {
+        for (var i2 = 1; i2 < arguments.length; i2++) {
+          var arg = arguments[i2];
+          if (arg) {
+            for (var _key in arg) {
+              if (arg.hasOwnProperty(_key)) {
+                if (isArray(arg[_key])) {
+                  arguments[0][_key] = arg[_key].slice();
+                } else {
+                  arguments[0][_key] = arg[_key];
+                }
+              }
+            }
+          }
+        }
+        return arguments[0];
+      }
+      var LocalForage = function() {
+        function LocalForage2(options) {
+          _classCallCheck2(this, LocalForage2);
+          for (var driverTypeKey in DefaultDrivers) {
+            if (DefaultDrivers.hasOwnProperty(driverTypeKey)) {
+              var driver = DefaultDrivers[driverTypeKey];
+              var driverName = driver._driver;
+              this[driverTypeKey] = driverName;
+              if (!DefinedDrivers[driverName]) {
+                this.defineDriver(driver);
+              }
+            }
+          }
+          this._defaultConfig = extend({}, DefaultConfig);
+          this._config = extend({}, this._defaultConfig, options);
+          this._driverSet = null;
+          this._initDriver = null;
+          this._ready = false;
+          this._dbInfo = null;
+          this._wrapLibraryMethodsWithReady();
+          this.setDriver(this._config.driver)["catch"](function() {
+          });
+        }
+        LocalForage2.prototype.config = function config2(options) {
+          if ((typeof options === "undefined" ? "undefined" : _typeof2(options)) === "object") {
+            if (this._ready) {
+              return new Error("Can't call config() after localforage has been used.");
+            }
+            for (var i2 in options) {
+              if (i2 === "storeName") {
+                options[i2] = options[i2].replace(/\W/g, "_");
+              }
+              if (i2 === "version" && typeof options[i2] !== "number") {
+                return new Error("Database version must be a number.");
+              }
+              this._config[i2] = options[i2];
+            }
+            if ("driver" in options && options.driver) {
+              return this.setDriver(this._config.driver);
+            }
+            return true;
+          } else if (typeof options === "string") {
+            return this._config[options];
+          } else {
+            return this._config;
+          }
+        };
+        LocalForage2.prototype.defineDriver = function defineDriver(driverObject, callback, errorCallback) {
+          var promise = new Promise$1(function(resolve, reject) {
+            try {
+              var driverName = driverObject._driver;
+              var complianceError = new Error("Custom driver not compliant; see https://mozilla.github.io/localForage/#definedriver");
+              if (!driverObject._driver) {
+                reject(complianceError);
+                return;
+              }
+              var driverMethods = LibraryMethods.concat("_initStorage");
+              for (var i2 = 0, len = driverMethods.length; i2 < len; i2++) {
+                var driverMethodName = driverMethods[i2];
+                var isRequired = !includes(OptionalDriverMethods, driverMethodName);
+                if ((isRequired || driverObject[driverMethodName]) && typeof driverObject[driverMethodName] !== "function") {
+                  reject(complianceError);
+                  return;
+                }
+              }
+              var configureMissingMethods = function configureMissingMethods2() {
+                var methodNotImplementedFactory = function methodNotImplementedFactory2(methodName) {
+                  return function() {
+                    var error = new Error("Method " + methodName + " is not implemented by the current driver");
+                    var promise2 = Promise$1.reject(error);
+                    executeCallback(promise2, arguments[arguments.length - 1]);
+                    return promise2;
+                  };
+                };
+                for (var _i = 0, _len = OptionalDriverMethods.length; _i < _len; _i++) {
+                  var optionalDriverMethod = OptionalDriverMethods[_i];
+                  if (!driverObject[optionalDriverMethod]) {
+                    driverObject[optionalDriverMethod] = methodNotImplementedFactory(optionalDriverMethod);
+                  }
+                }
+              };
+              configureMissingMethods();
+              var setDriverSupport = function setDriverSupport2(support) {
+                if (DefinedDrivers[driverName]) {
+                  console.info("Redefining LocalForage driver: " + driverName);
+                }
+                DefinedDrivers[driverName] = driverObject;
+                DriverSupport[driverName] = support;
+                resolve();
+              };
+              if ("_support" in driverObject) {
+                if (driverObject._support && typeof driverObject._support === "function") {
+                  driverObject._support().then(setDriverSupport, reject);
+                } else {
+                  setDriverSupport(!!driverObject._support);
+                }
+              } else {
+                setDriverSupport(true);
+              }
+            } catch (e2) {
+              reject(e2);
+            }
+          });
+          executeTwoCallbacks(promise, callback, errorCallback);
+          return promise;
+        };
+        LocalForage2.prototype.driver = function driver() {
+          return this._driver || null;
+        };
+        LocalForage2.prototype.getDriver = function getDriver(driverName, callback, errorCallback) {
+          var getDriverPromise = DefinedDrivers[driverName] ? Promise$1.resolve(DefinedDrivers[driverName]) : Promise$1.reject(new Error("Driver not found."));
+          executeTwoCallbacks(getDriverPromise, callback, errorCallback);
+          return getDriverPromise;
+        };
+        LocalForage2.prototype.getSerializer = function getSerializer(callback) {
+          var serializerPromise = Promise$1.resolve(localforageSerializer);
+          executeTwoCallbacks(serializerPromise, callback);
+          return serializerPromise;
+        };
+        LocalForage2.prototype.ready = function ready(callback) {
+          var self2 = this;
+          var promise = self2._driverSet.then(function() {
+            if (self2._ready === null) {
+              self2._ready = self2._initDriver();
+            }
+            return self2._ready;
+          });
+          executeTwoCallbacks(promise, callback, callback);
+          return promise;
+        };
+        LocalForage2.prototype.setDriver = function setDriver(drivers, callback, errorCallback) {
+          var self2 = this;
+          if (!isArray(drivers)) {
+            drivers = [drivers];
+          }
+          var supportedDrivers = this._getSupportedDrivers(drivers);
+          function setDriverToConfig() {
+            self2._config.driver = self2.driver();
+          }
+          function extendSelfWithDriver(driver) {
+            self2._extend(driver);
+            setDriverToConfig();
+            self2._ready = self2._initStorage(self2._config);
+            return self2._ready;
+          }
+          function initDriver(supportedDrivers2) {
+            return function() {
+              var currentDriverIndex = 0;
+              function driverPromiseLoop() {
+                while (currentDriverIndex < supportedDrivers2.length) {
+                  var driverName = supportedDrivers2[currentDriverIndex];
+                  currentDriverIndex++;
+                  self2._dbInfo = null;
+                  self2._ready = null;
+                  return self2.getDriver(driverName).then(extendSelfWithDriver)["catch"](driverPromiseLoop);
+                }
+                setDriverToConfig();
+                var error = new Error("No available storage method found.");
+                self2._driverSet = Promise$1.reject(error);
+                return self2._driverSet;
+              }
+              return driverPromiseLoop();
+            };
+          }
+          var oldDriverSetDone = this._driverSet !== null ? this._driverSet["catch"](function() {
+            return Promise$1.resolve();
+          }) : Promise$1.resolve();
+          this._driverSet = oldDriverSetDone.then(function() {
+            var driverName = supportedDrivers[0];
+            self2._dbInfo = null;
+            self2._ready = null;
+            return self2.getDriver(driverName).then(function(driver) {
+              self2._driver = driver._driver;
+              setDriverToConfig();
+              self2._wrapLibraryMethodsWithReady();
+              self2._initDriver = initDriver(supportedDrivers);
+            });
+          })["catch"](function() {
+            setDriverToConfig();
+            var error = new Error("No available storage method found.");
+            self2._driverSet = Promise$1.reject(error);
+            return self2._driverSet;
+          });
+          executeTwoCallbacks(this._driverSet, callback, errorCallback);
+          return this._driverSet;
+        };
+        LocalForage2.prototype.supports = function supports(driverName) {
+          return !!DriverSupport[driverName];
+        };
+        LocalForage2.prototype._extend = function _extend(libraryMethodsAndProperties) {
+          extend(this, libraryMethodsAndProperties);
+        };
+        LocalForage2.prototype._getSupportedDrivers = function _getSupportedDrivers(drivers) {
+          var supportedDrivers = [];
+          for (var i2 = 0, len = drivers.length; i2 < len; i2++) {
+            var driverName = drivers[i2];
+            if (this.supports(driverName)) {
+              supportedDrivers.push(driverName);
+            }
+          }
+          return supportedDrivers;
+        };
+        LocalForage2.prototype._wrapLibraryMethodsWithReady = function _wrapLibraryMethodsWithReady() {
+          for (var i2 = 0, len = LibraryMethods.length; i2 < len; i2++) {
+            callWhenReady(this, LibraryMethods[i2]);
+          }
+        };
+        LocalForage2.prototype.createInstance = function createInstance(options) {
+          return new LocalForage2(options);
+        };
+        return LocalForage2;
+      }();
+      var localforage_js = new LocalForage();
+      module2.exports = localforage_js;
+    }, { "3": 3 }] }, {}, [4])(4);
+  });
+})(localforage$1);
+var localforage = localforage$1.exports;
+var KEY_PREFIX = "persist:";
+var FLUSH = "persist/FLUSH";
+var REHYDRATE = "persist/REHYDRATE";
+var PAUSE = "persist/PAUSE";
+var PERSIST = "persist/PERSIST";
+var PURGE = "persist/PURGE";
+var REGISTER = "persist/REGISTER";
+var DEFAULT_VERSION = -1;
+function _typeof$1(obj) {
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof$1 = function _typeof2(obj2) {
+      return typeof obj2;
+    };
+  } else {
+    _typeof$1 = function _typeof2(obj2) {
+      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+    };
+  }
+  return _typeof$1(obj);
+}
+function ownKeys$4(object, enumerableOnly) {
+  var keys = Object.keys(object);
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly)
+      symbols = symbols.filter(function(sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    keys.push.apply(keys, symbols);
+  }
+  return keys;
+}
+function _objectSpread$4(target) {
+  for (var i2 = 1; i2 < arguments.length; i2++) {
+    var source = arguments[i2] != null ? arguments[i2] : {};
+    if (i2 % 2) {
+      ownKeys$4(source, true).forEach(function(key) {
+        _defineProperty$5(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys$4(source).forEach(function(key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+  return target;
+}
+function _defineProperty$5(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+function autoMergeLevel1(inboundState, originalState, reducedState, _ref) {
+  _ref.debug;
+  var newState = _objectSpread$4({}, reducedState);
+  if (inboundState && _typeof$1(inboundState) === "object") {
+    Object.keys(inboundState).forEach(function(key) {
+      if (key === "_persist")
+        return;
+      if (originalState[key] !== reducedState[key]) {
+        return;
+      }
+      newState[key] = inboundState[key];
+    });
+  }
+  return newState;
+}
+function createPersistoid(config2) {
+  var blacklist = config2.blacklist || null;
+  var whitelist = config2.whitelist || null;
+  var transforms = config2.transforms || [];
+  var throttle = config2.throttle || 0;
+  var storageKey = "".concat(config2.keyPrefix !== void 0 ? config2.keyPrefix : KEY_PREFIX).concat(config2.key);
+  var storage = config2.storage;
+  var serialize2;
+  if (config2.serialize === false) {
+    serialize2 = function serialize3(x2) {
+      return x2;
+    };
+  } else if (typeof config2.serialize === "function") {
+    serialize2 = config2.serialize;
+  } else {
+    serialize2 = defaultSerialize;
+  }
+  var writeFailHandler = config2.writeFailHandler || null;
+  var lastState = {};
+  var stagedState = {};
+  var keysToProcess = [];
+  var timeIterator = null;
+  var writePromise = null;
+  var update = function update2(state) {
+    Object.keys(state).forEach(function(key) {
+      if (!passWhitelistBlacklist(key))
+        return;
+      if (lastState[key] === state[key])
+        return;
+      if (keysToProcess.indexOf(key) !== -1)
+        return;
+      keysToProcess.push(key);
+    });
+    Object.keys(lastState).forEach(function(key) {
+      if (state[key] === void 0 && passWhitelistBlacklist(key) && keysToProcess.indexOf(key) === -1 && lastState[key] !== void 0) {
+        keysToProcess.push(key);
+      }
+    });
+    if (timeIterator === null) {
+      timeIterator = setInterval(processNextKey, throttle);
+    }
+    lastState = state;
+  };
+  function processNextKey() {
+    if (keysToProcess.length === 0) {
+      if (timeIterator)
+        clearInterval(timeIterator);
+      timeIterator = null;
+      return;
+    }
+    var key = keysToProcess.shift();
+    var endState = transforms.reduce(function(subState, transformer) {
+      return transformer.in(subState, key, lastState);
+    }, lastState[key]);
+    if (endState !== void 0) {
+      try {
+        stagedState[key] = serialize2(endState);
+      } catch (err) {
+        console.error("redux-persist/createPersistoid: error serializing state", err);
+      }
+    } else {
+      delete stagedState[key];
+    }
+    if (keysToProcess.length === 0) {
+      writeStagedState();
+    }
+  }
+  function writeStagedState() {
+    Object.keys(stagedState).forEach(function(key) {
+      if (lastState[key] === void 0) {
+        delete stagedState[key];
+      }
+    });
+    writePromise = storage.setItem(storageKey, serialize2(stagedState)).catch(onWriteFail);
+  }
+  function passWhitelistBlacklist(key) {
+    if (whitelist && whitelist.indexOf(key) === -1 && key !== "_persist")
+      return false;
+    if (blacklist && blacklist.indexOf(key) !== -1)
+      return false;
+    return true;
+  }
+  function onWriteFail(err) {
+    if (writeFailHandler)
+      writeFailHandler(err);
+    if (err && false) {
+      console.error("Error storing data", err);
+    }
+  }
+  var flush = function flush2() {
+    while (keysToProcess.length !== 0) {
+      processNextKey();
+    }
+    return writePromise || Promise.resolve();
+  };
+  return {
+    update,
+    flush
+  };
+}
+function defaultSerialize(data) {
+  return JSON.stringify(data);
+}
+function getStoredState(config2) {
+  var transforms = config2.transforms || [];
+  var storageKey = "".concat(config2.keyPrefix !== void 0 ? config2.keyPrefix : KEY_PREFIX).concat(config2.key);
+  var storage = config2.storage;
+  config2.debug;
+  var deserialize;
+  if (config2.deserialize === false) {
+    deserialize = function deserialize2(x2) {
+      return x2;
+    };
+  } else if (typeof config2.deserialize === "function") {
+    deserialize = config2.deserialize;
+  } else {
+    deserialize = defaultDeserialize;
+  }
+  return storage.getItem(storageKey).then(function(serialized) {
+    if (!serialized)
+      return void 0;
+    else {
+      try {
+        var state = {};
+        var rawState = deserialize(serialized);
+        Object.keys(rawState).forEach(function(key) {
+          state[key] = transforms.reduceRight(function(subState, transformer) {
+            return transformer.out(subState, key, rawState);
+          }, deserialize(rawState[key]));
+        });
+        return state;
+      } catch (err) {
+        throw err;
+      }
+    }
+  });
+}
+function defaultDeserialize(serial) {
+  return JSON.parse(serial);
+}
+function purgeStoredState(config2) {
+  var storage = config2.storage;
+  var storageKey = "".concat(config2.keyPrefix !== void 0 ? config2.keyPrefix : KEY_PREFIX).concat(config2.key);
+  return storage.removeItem(storageKey, warnIfRemoveError);
+}
+function warnIfRemoveError(err) {
+  if (err && false) {
+    console.error("redux-persist/purgeStoredState: Error purging data stored state", err);
+  }
+}
+function ownKeys$3(object, enumerableOnly) {
+  var keys = Object.keys(object);
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly)
+      symbols = symbols.filter(function(sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    keys.push.apply(keys, symbols);
+  }
+  return keys;
+}
+function _objectSpread$3(target) {
+  for (var i2 = 1; i2 < arguments.length; i2++) {
+    var source = arguments[i2] != null ? arguments[i2] : {};
+    if (i2 % 2) {
+      ownKeys$3(source, true).forEach(function(key) {
+        _defineProperty$4(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys$3(source).forEach(function(key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+  return target;
+}
+function _defineProperty$4(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+function _objectWithoutProperties$1(source, excluded) {
+  if (source == null)
+    return {};
+  var target = _objectWithoutPropertiesLoose$1(source, excluded);
+  var key, i2;
+  if (Object.getOwnPropertySymbols) {
+    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+    for (i2 = 0; i2 < sourceSymbolKeys.length; i2++) {
+      key = sourceSymbolKeys[i2];
+      if (excluded.indexOf(key) >= 0)
+        continue;
+      if (!Object.prototype.propertyIsEnumerable.call(source, key))
+        continue;
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+function _objectWithoutPropertiesLoose$1(source, excluded) {
+  if (source == null)
+    return {};
+  var target = {};
+  var sourceKeys = Object.keys(source);
+  var key, i2;
+  for (i2 = 0; i2 < sourceKeys.length; i2++) {
+    key = sourceKeys[i2];
+    if (excluded.indexOf(key) >= 0)
+      continue;
+    target[key] = source[key];
+  }
+  return target;
+}
+var DEFAULT_TIMEOUT = 5e3;
+function persistReducer(config2, baseReducer) {
+  var version = config2.version !== void 0 ? config2.version : DEFAULT_VERSION;
+  config2.debug || false;
+  var stateReconciler = config2.stateReconciler === void 0 ? autoMergeLevel1 : config2.stateReconciler;
+  var getStoredState$1 = config2.getStoredState || getStoredState;
+  var timeout = config2.timeout !== void 0 ? config2.timeout : DEFAULT_TIMEOUT;
+  var _persistoid = null;
+  var _purge = false;
+  var _paused = true;
+  var conditionalUpdate = function conditionalUpdate2(state) {
+    state._persist.rehydrated && _persistoid && !_paused && _persistoid.update(state);
+    return state;
+  };
+  return function(state, action) {
+    var _ref = state || {}, _persist = _ref._persist, rest = _objectWithoutProperties$1(_ref, ["_persist"]);
+    var restState = rest;
+    if (action.type === PERSIST) {
+      var _sealed = false;
+      var _rehydrate = function _rehydrate2(payload, err) {
+        if (!_sealed) {
+          action.rehydrate(config2.key, payload, err);
+          _sealed = true;
+        }
+      };
+      timeout && setTimeout(function() {
+        !_sealed && _rehydrate(void 0, new Error('redux-persist: persist timed out for persist key "'.concat(config2.key, '"')));
+      }, timeout);
+      _paused = false;
+      if (!_persistoid)
+        _persistoid = createPersistoid(config2);
+      if (_persist) {
+        return _objectSpread$3({}, baseReducer(restState, action), {
+          _persist
+        });
+      }
+      if (typeof action.rehydrate !== "function" || typeof action.register !== "function")
+        throw new Error("redux-persist: either rehydrate or register is not a function on the PERSIST action. This can happen if the action is being replayed. This is an unexplored use case, please open an issue and we will figure out a resolution.");
+      action.register(config2.key);
+      getStoredState$1(config2).then(function(restoredState) {
+        var migrate = config2.migrate || function(s2, v2) {
+          return Promise.resolve(s2);
+        };
+        migrate(restoredState, version).then(function(migratedState) {
+          _rehydrate(migratedState);
+        }, function(migrateErr) {
+          _rehydrate(void 0, migrateErr);
+        });
+      }, function(err) {
+        _rehydrate(void 0, err);
+      });
+      return _objectSpread$3({}, baseReducer(restState, action), {
+        _persist: {
+          version,
+          rehydrated: false
+        }
+      });
+    } else if (action.type === PURGE) {
+      _purge = true;
+      action.result(purgeStoredState(config2));
+      return _objectSpread$3({}, baseReducer(restState, action), {
+        _persist
+      });
+    } else if (action.type === FLUSH) {
+      action.result(_persistoid && _persistoid.flush());
+      return _objectSpread$3({}, baseReducer(restState, action), {
+        _persist
+      });
+    } else if (action.type === PAUSE) {
+      _paused = true;
+    } else if (action.type === REHYDRATE) {
+      if (_purge)
+        return _objectSpread$3({}, restState, {
+          _persist: _objectSpread$3({}, _persist, {
+            rehydrated: true
+          })
+        });
+      if (action.key === config2.key) {
+        var reducedState = baseReducer(restState, action);
+        var inboundState = action.payload;
+        var reconciledRest = stateReconciler !== false && inboundState !== void 0 ? stateReconciler(inboundState, state, reducedState, config2) : reducedState;
+        var _newState = _objectSpread$3({}, reconciledRest, {
+          _persist: _objectSpread$3({}, _persist, {
+            rehydrated: true
+          })
+        });
+        return conditionalUpdate(_newState);
+      }
+    }
+    if (!_persist)
+      return baseReducer(state, action);
+    var newState = baseReducer(restState, action);
+    if (newState === restState)
+      return state;
+    return conditionalUpdate(_objectSpread$3({}, newState, {
+      _persist
+    }));
+  };
+}
+function _toConsumableArray$1(arr) {
+  return _arrayWithoutHoles$1(arr) || _iterableToArray$1(arr) || _nonIterableSpread$1();
+}
+function _nonIterableSpread$1() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance");
+}
+function _iterableToArray$1(iter) {
+  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]")
+    return Array.from(iter);
+}
+function _arrayWithoutHoles$1(arr) {
+  if (Array.isArray(arr)) {
+    for (var i2 = 0, arr2 = new Array(arr.length); i2 < arr.length; i2++) {
+      arr2[i2] = arr[i2];
+    }
+    return arr2;
+  }
+}
+function ownKeys$2(object, enumerableOnly) {
+  var keys = Object.keys(object);
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly)
+      symbols = symbols.filter(function(sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    keys.push.apply(keys, symbols);
+  }
+  return keys;
+}
+function _objectSpread$2(target) {
+  for (var i2 = 1; i2 < arguments.length; i2++) {
+    var source = arguments[i2] != null ? arguments[i2] : {};
+    if (i2 % 2) {
+      ownKeys$2(source, true).forEach(function(key) {
+        _defineProperty$3(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys$2(source).forEach(function(key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+  return target;
+}
+function _defineProperty$3(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+var initialState$5 = {
+  registry: [],
+  bootstrapped: false
+};
+var persistorReducer = function persistorReducer2() {
+  var state = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : initialState$5;
+  var action = arguments.length > 1 ? arguments[1] : void 0;
+  switch (action.type) {
+    case REGISTER:
+      return _objectSpread$2({}, state, {
+        registry: [].concat(_toConsumableArray$1(state.registry), [action.key])
+      });
+    case REHYDRATE:
+      var firstIndex = state.registry.indexOf(action.key);
+      var registry = _toConsumableArray$1(state.registry);
+      registry.splice(firstIndex, 1);
+      return _objectSpread$2({}, state, {
+        registry,
+        bootstrapped: registry.length === 0
+      });
+    default:
+      return state;
+  }
+};
+function persistStore(store2, options, cb2) {
+  var boostrappedCb = cb2 || false;
+  var _pStore = createStore(persistorReducer, initialState$5, options && options.enhancer ? options.enhancer : void 0);
+  var register = function register2(key) {
+    _pStore.dispatch({
+      type: REGISTER,
+      key
+    });
+  };
+  var rehydrate = function rehydrate2(key, payload, err) {
+    var rehydrateAction = {
+      type: REHYDRATE,
+      payload,
+      err,
+      key
+    };
+    store2.dispatch(rehydrateAction);
+    _pStore.dispatch(rehydrateAction);
+    if (boostrappedCb && persistor2.getState().bootstrapped) {
+      boostrappedCb();
+      boostrappedCb = false;
+    }
+  };
+  var persistor2 = _objectSpread$2({}, _pStore, {
+    purge: function purge() {
+      var results = [];
+      store2.dispatch({
+        type: PURGE,
+        result: function result(purgeResult) {
+          results.push(purgeResult);
+        }
+      });
+      return Promise.all(results);
+    },
+    flush: function flush() {
+      var results = [];
+      store2.dispatch({
+        type: FLUSH,
+        result: function result(flushResult) {
+          results.push(flushResult);
+        }
+      });
+      return Promise.all(results);
+    },
+    pause: function pause() {
+      store2.dispatch({
+        type: PAUSE
+      });
+    },
+    persist: function persist() {
+      store2.dispatch({
+        type: PERSIST,
+        register,
+        rehydrate
+      });
+    }
+  });
+  if (!(options && options.manualPersist)) {
+    persistor2.persist();
+  }
+  return persistor2;
+}
+const initialState$4 = {
+  chunks: []
+};
+const chunkDataSlice = createSlice({
+  initialState: initialState$4,
+  name: "chunkData",
+  reducers: {
+    addChunk: (state, action) => {
+      state.chunks.push(action.payload);
+    },
+    setPixel: (state, action) => {
+      const {
+        chunkX,
+        chunkY,
+        pixels
+      } = action.payload;
+      const chunk = state.chunks.find((x2) => x2.chunkX === chunkX && x2.chunkY === chunkY);
+      if (!chunk || chunk.fetching)
+        return;
+      pixels.forEach((p2) => {
+        chunk.chunkData.set([p2.color], p2.offsetInChunk);
+      });
+    }
+  },
+  extraReducers: (builder) => {
+    builder.addCase(fetchChunkDataAction.pending, (state, action) => {
+      const foundChunk = state.chunks.some((x2) => x2.chunkX === action.meta.arg.chunkX && x2.chunkY === action.meta.arg.chunkY);
+      if (!foundChunk) {
+        state.chunks.push({
+          chunkX: action.meta.arg.chunkX,
+          chunkY: action.meta.arg.chunkY,
+          fetching: true
+        });
+        return;
+      }
+      state.chunks = state.chunks.map((c2) => {
+        if (c2.chunkX === action.meta.arg.chunkX && c2.chunkY === action.meta.arg.chunkY) {
+          return {
+            chunkX: action.meta.arg.chunkX,
+            chunkY: action.meta.arg.chunkY,
+            fetching: true
+          };
+        }
+        return c2;
+      });
+    });
+    builder.addCase(fetchChunkDataAction.fulfilled, (state, action) => {
+      const foundChunk = state.chunks.some((x2) => x2.chunkX === action.meta.arg.chunkX && x2.chunkY === action.meta.arg.chunkY);
+      if (!foundChunk) {
+        state.chunks.push({
+          chunkX: action.meta.arg.chunkX,
+          chunkY: action.meta.arg.chunkY,
+          chunkData: action.payload,
+          fetching: false
+        });
+        return;
+      }
+      state.chunks = state.chunks.map((chunk) => {
+        if (chunk.chunkX === action.meta.arg.chunkX && chunk.chunkY === action.meta.arg.chunkY) {
+          return {
+            chunkX: action.meta.arg.chunkX,
+            chunkY: action.meta.arg.chunkY,
+            fetching: false,
+            chunkData: action.payload
+          };
+        }
+        return chunk;
+      });
+    });
+    builder.addCase(fetchChunkDataAction.rejected, (state, action) => {
+      state.chunks = state.chunks.filter((x2) => x2.chunkX !== action.meta.arg.chunkX && x2.chunkY !== action.meta.arg.chunkY);
+    });
+  }
+});
+const fetchChunkDataAction = createAsyncThunk("chunkData/fetchChunkData", async (chunkCoords, {
+  getState
+}) => {
+  const canvasId = selectCanvasId(getState());
+  const chunkData = await fetch(`/chunks/${canvasId}/${chunkCoords.chunkX}/${chunkCoords.chunkY}.bmp`).then((x2) => x2.arrayBuffer()).then((x2) => new Uint8Array(x2));
+  return chunkData;
+});
+function isStringOrNumber(value) {
+  return typeof value === "string" || typeof value === "number";
+}
+var FlatObjectCache = /* @__PURE__ */ function() {
+  function FlatObjectCache2() {
+    this._cache = {};
+  }
+  var _proto = FlatObjectCache2.prototype;
+  _proto.set = function set(key, selectorFn) {
+    this._cache[key] = selectorFn;
+  };
+  _proto.get = function get(key) {
+    return this._cache[key];
+  };
+  _proto.remove = function remove(key) {
+    delete this._cache[key];
+  };
+  _proto.clear = function clear() {
+    this._cache = {};
+  };
+  _proto.isValidCacheKey = function isValidCacheKey(cacheKey) {
+    return isStringOrNumber(cacheKey);
+  };
+  return FlatObjectCache2;
+}();
+var defaultCacheCreator = FlatObjectCache;
+var defaultCacheKeyValidator = function defaultCacheKeyValidator2() {
+  return true;
+};
+function createCachedSelector() {
+  for (var _len = arguments.length, funcs = new Array(_len), _key = 0; _key < _len; _key++) {
+    funcs[_key] = arguments[_key];
+  }
+  return function(polymorphicOptions, legacyOptions) {
+    if (legacyOptions) {
+      throw new Error('[re-reselect] "options" as second argument is not supported anymore. Please provide an option object as single argument.');
+    }
+    var options = typeof polymorphicOptions === "function" ? {
+      keySelector: polymorphicOptions
+    } : Object.assign({}, polymorphicOptions);
+    var recomputations = 0;
+    var resultFunc = funcs.pop();
+    var dependencies = Array.isArray(funcs[0]) ? funcs[0] : [].concat(funcs);
+    var resultFuncWithRecomputations = function resultFuncWithRecomputations2() {
+      recomputations++;
+      return resultFunc.apply(void 0, arguments);
+    };
+    funcs.push(resultFuncWithRecomputations);
+    var cache2 = options.cacheObject || new defaultCacheCreator();
+    var selectorCreator = options.selectorCreator || createSelector;
+    var isValidCacheKey = cache2.isValidCacheKey || defaultCacheKeyValidator;
+    if (options.keySelectorCreator) {
+      options.keySelector = options.keySelectorCreator({
+        keySelector: options.keySelector,
+        inputSelectors: dependencies,
+        resultFunc
+      });
+    }
+    var selector = function selector2() {
+      var cacheKey = options.keySelector.apply(options, arguments);
+      if (isValidCacheKey(cacheKey)) {
+        var cacheResponse = cache2.get(cacheKey);
+        if (cacheResponse === void 0) {
+          cacheResponse = selectorCreator.apply(void 0, funcs);
+          cache2.set(cacheKey, cacheResponse);
+        }
+        return cacheResponse.apply(void 0, arguments);
+      }
+      console.warn('[re-reselect] Invalid cache key "' + cacheKey + '" has been returned by keySelector function.');
+      return void 0;
+    };
+    selector.getMatchingSelector = function() {
+      var cacheKey = options.keySelector.apply(options, arguments);
+      return cache2.get(cacheKey);
+    };
+    selector.removeMatchingSelector = function() {
+      var cacheKey = options.keySelector.apply(options, arguments);
+      cache2.remove(cacheKey);
+    };
+    selector.clearCache = function() {
+      cache2.clear();
+    };
+    selector.resultFunc = resultFunc;
+    selector.dependencies = dependencies;
+    selector.cache = cache2;
+    selector.recomputations = function() {
+      return recomputations;
+    };
+    selector.resetRecomputations = function() {
+      return recomputations = 0;
+    };
+    selector.keySelector = options.keySelector;
+    return selector;
+  };
+}
+function gameCoordsToScreen(gameCoords, windowSize, viewCenter, viewScale) {
+  const gameCoordsOffsetX = gameCoords.x - viewCenter.x;
+  const gameCoordsOffsetY = gameCoords.y - viewCenter.y;
+  const screenCoordsX = windowSize.width / 2 + gameCoordsOffsetX * viewScale;
+  const screenCoordsY = windowSize.height / 2 + gameCoordsOffsetY * viewScale;
+  return {
+    clientX: Math.floor(screenCoordsX),
+    clientY: Math.floor(screenCoordsY)
+  };
+}
+const initialState$3 = {
+  pixelsToPlaceQueue: {},
+  pixelPlaceQueueEnabled: false
+};
+const pixelPlacementSlice = createSlice({
+  initialState: initialState$3,
+  name: "pixelPlacement",
+  reducers: {
+    addPixelsToPlaceQueue: (state, action) => {
+      action.payload.pixels.forEach(({
+        coord,
+        color: color2
+      }) => {
+        const pixelId = coord.x + action.payload.canvasSize / 2 + (coord.y + action.payload.canvasSize / 2) * action.payload.canvasSize;
+        state.pixelsToPlaceQueue[pixelId] = {
+          coord,
+          color: color2
+        };
+      });
+    },
+    removePixelsFromPlaceQueue: (state, action) => {
+      action.payload.pixels.forEach(({
+        coord
+      }) => {
+        const pixelId = coord.x + action.payload.canvasSize / 2 + (coord.y + action.payload.canvasSize / 2) * action.payload.canvasSize;
+        delete state.pixelsToPlaceQueue[pixelId];
+      });
+    },
+    setPixelPlaceQueueEnabled: (state, action) => {
+      state.pixelPlaceQueueEnabled = action.payload;
+    }
+  }
+});
+const selectPixelPlaceQueueEnabled = createSelector((state) => state.pixelPlacement.pixelPlaceQueueEnabled, (pixelPlaceQueueEnabled) => pixelPlaceQueueEnabled);
+const selectPixelsToPlaceQueue = createSelector((state) => state.pixelPlacement.pixelsToPlaceQueue, (pixelsToPlaceQueue) => pixelsToPlaceQueue);
+const selectPixelsToPlaceIds = createSelector((state) => state.pixelPlacement.pixelsToPlaceQueue, (pixelsToPlaceQueue) => Object.keys(pixelsToPlaceQueue).map((key) => parseInt(key, 10)));
+createSelector(selectPixelsToPlaceIds, selectPixelsToPlaceQueue, (pixelsToPlaceIds, pixelsToPlaceQueue) => {
+  const first = pixelsToPlaceIds[0];
+  if (!first)
+    return void 0;
+  return pixelsToPlaceQueue[first];
+});
+const splitRenderCanvasSize$1 = 1024;
+const selectRenderCanvasCoords = createCachedSelector(selectCanvasSize, (_2, renderCanvasId) => renderCanvasId, (canvasSize, renderCanvasId) => {
+  const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize$1);
+  const renderCanvasXCorner = Math.floor(renderCanvasId % splitCanvasesWidth) * splitRenderCanvasSize$1 - canvasSize / 2;
+  const renderCanvasYCorner = Math.floor(renderCanvasId / splitCanvasesWidth) * splitRenderCanvasSize$1 - canvasSize / 2;
+  return {
+    renderCanvasXCorner,
+    renderCanvasYCorner
+  };
+})((_2, renderCanvasId) => renderCanvasId);
+const selectPixelIdsToPlaceByRenderCanvasId = createSelector(selectPixelsToPlaceIds, selectCanvasSize, (pixelsToPlaceIds, canvasSize) => {
+  const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize$1);
+  const dict = pixelsToPlaceIds.reduce((acc, pixelId) => {
+    const x2 = pixelId % canvasSize;
+    const y2 = Math.floor(pixelId / canvasSize);
+    const splitRenderCanvasX = Math.floor(x2 / splitRenderCanvasSize$1);
+    const splitRenderCanvasY = Math.floor(y2 / splitRenderCanvasSize$1);
+    const splitRenderCanvasId = splitRenderCanvasX + splitRenderCanvasY * splitCanvasesWidth;
+    const foundAccumulator = acc[splitRenderCanvasId];
+    if (!foundAccumulator) {
+      acc[splitRenderCanvasId] = [pixelId];
+      return acc;
+    }
+    foundAccumulator.push(pixelId);
+    return acc;
+  }, {});
+  return dict;
+});
+const selectMainCanvasTopLeftScreenCoords = createSelector(selectCanvasSize, selectWindowSize, selectGameViewCenter, selectGameViewScale, (canvasSize, windowSize, gameViewCenter, gameViewScale) => {
+  return gameCoordsToScreen({
+    x: -canvasSize / 2,
+    y: -canvasSize / 2
+  }, {
+    height: windowSize.innerHeight,
+    width: windowSize.innerWidth
+  }, gameViewCenter, gameViewScale);
+});
+const selectPixelsToPlaceRenderCanvasIds = createSelector(selectPixelIdsToPlaceByRenderCanvasId, (pixelIdsToPlaceByRenderCanvasId) => Object.keys(pixelIdsToPlaceByRenderCanvasId).map((key) => parseInt(key, 10)));
+const selectPixelsToPlaceBySplitRenderCanvasId = createCachedSelector(selectPixelIdsToPlaceByRenderCanvasId, selectPixelsToPlaceQueue, selectCanvasSize, (_2, renderCanvasId) => renderCanvasId, (pixelIdsToPlaceByRenderCanvasId, pixelsToPlaceQueue, canvasSize, renderCanvasId) => {
+  const splitCanvasesWidth = Math.ceil(canvasSize / splitRenderCanvasSize$1);
+  const splitRenderCanvasX = Math.floor(renderCanvasId % splitCanvasesWidth);
+  const splitRenderCanvasY = Math.floor(renderCanvasId / splitCanvasesWidth);
+  const splitRenderCanvasId = splitRenderCanvasX + splitRenderCanvasY * splitCanvasesWidth;
+  const pixelIdsToPlace = pixelIdsToPlaceByRenderCanvasId[splitRenderCanvasId];
+  if (!pixelIdsToPlace)
+    return [];
+  return pixelIdsToPlace.map((pixelId) => pixelsToPlaceQueue[pixelId]).filter((pixel) => !!pixel).map((pixel) => pixel);
+})((_2, renderCanvasId) => renderCanvasId);
+const initialState$2 = {
+  inputImage: {
+    loadedImage: {
+      status: "none"
+    }
+  },
+  outputImage: {
+    isProcessing: false
+  }
+};
+const processedImagesSlice = createSlice({
+  initialState: initialState$2,
+  name: "processedImages",
+  reducers: {},
+  extraReducers: (builder) => {
+    builder.addCase(startNewImageReadingProcess.pending, (state) => {
+      state.inputImage.loadedImage.status = "loading";
+      state.inputImage.loadedImage.error = void 0;
+    });
+    builder.addCase(startNewImageReadingProcess.fulfilled, (state, action) => {
+      state.inputImage.loadedImage.status = "loaded";
+      state.inputImage.loadedImage.imageData = action.payload;
+    });
+    builder.addCase(startNewImageReadingProcess.rejected, (state, action) => {
+      state.inputImage.loadedImage.status = "error";
+      state.inputImage.loadedImage.error = action.error.message;
+    });
+    builder.addCase(clearInputImageAction.fulfilled, (state) => {
+      state.inputImage.loadedImage.status = "none";
+      state.inputImage.loadedImage.error = void 0;
+      state.inputImage.loadedImage.imageData = void 0;
+    });
+    builder.addCase(startProcessingOutputImage.pending, (state) => {
+      state.outputImage.isProcessing = true;
+    });
+    builder.addCase(startProcessingOutputImage.fulfilled, (state, action) => {
+      state.outputImage.isProcessing = false;
+      state.outputImage.imageData = action.payload.outImageData;
+      state.outputImage.abortController = action.payload.abortController;
+    });
+    builder.addCase(clearOutputImageAction.fulfilled, (state) => {
+      state.outputImage.imageData = void 0;
+      state.outputImage.abortController = void 0;
+      state.outputImage.isProcessing = false;
+    });
+  }
+});
+const listenerMiddleware = createListenerMiddleware();
+const startAppListening = listenerMiddleware.startListening;
+const reduxPersistedStorage = localforage.createInstance({
+  name: "picture_overlay",
+  storeName: "redux_persisted"
+});
+const commonPersistReducerParams = {
+  serialize: false,
+  deserialize: false,
+  storage: reduxPersistedStorage
+};
+const persistedOverlayReducer = persistReducer(__spreadProps2(__spreadValues2({}, commonPersistReducerParams), {
+  key: "overlay"
+}), overlaySlice.reducer);
+function configureAppStore() {
+  return configureStore({
+    reducer: {
+      overlay: persistedOverlayReducer,
+      game: gameSlice.reducer,
+      chunkData: chunkDataSlice.reducer,
+      pixelPlacement: pixelPlacementSlice.reducer,
+      processedImages: processedImagesSlice.reducer
+    },
+    devTools: false,
+    middleware(getDefaultMiddleware2) {
+      return getDefaultMiddleware2().concat([listenerMiddleware.middleware]);
+    }
+  });
+}
+const store = configureAppStore();
+const persistor = persistStore(store);
+function isStoreFromRedux(store2) {
+  if (typeof store2 !== "object")
+    return false;
+  if (!store2.dispatch)
+    return false;
+  if (!store2.getState)
+    return false;
+  if (!store2.subscribe)
+    return false;
+  return true;
+}
+function getStoreFromReactInternalEl(el2) {
+  var _a, _b, _c;
+  if (el2.tag !== 0 || !el2.child)
+    return void 0;
+  if (el2.child.tag !== 10)
+    return void 0;
+  if (!el2.child.memoizedProps)
+    return void 0;
+  const childStore = (_b = (_a = el2.child.memoizedProps) == null ? void 0 : _a.value) == null ? void 0 : _b.store;
+  if (!isStoreFromRedux(childStore))
+    return void 0;
+  const parentStore = (_c = el2.memoizedProps) == null ? void 0 : _c.store;
+  if (!isStoreFromRedux(parentStore))
+    return void 0;
+  if (childStore !== parentStore)
+    return void 0;
+  return parentStore;
+}
+function findReactRootContainerEl() {
+  return document.getElementById("app");
+}
+function findStoreInRoot(el2) {
+  const reactContainerName = Object.keys(el2).filter((k2) => k2.startsWith("__reactContainer"))[0];
+  if (!reactContainerName)
+    throw new Error("couldn't find internal react root");
+  const root = el2[reactContainerName];
+  let checkedReactInternalElement = root;
+  while (checkedReactInternalElement.child) {
+    const store2 = getStoreFromReactInternalEl(checkedReactInternalElement);
+    if (store2)
+      return store2;
+    checkedReactInternalElement = checkedReactInternalElement.child;
+  }
+  return void 0;
+}
+function findPageReduxStore() {
+  const reactRootEl = findReactRootContainerEl();
+  if (!reactRootEl)
+    throw new Error("Couldn't find React root container");
+  const store2 = findStoreInRoot(reactRootEl);
+  if (!store2)
+    throw new Error("Couldn't find Redux store");
+  return store2;
+}
+const usePageReduxStoreSelector = (selector) => {
+  const store2 = usePageReduxStore();
+  const [selectedResult, setSelectedResult] = react.exports.useState();
+  react.exports.useEffect(() => {
+    if (!store2)
+      return void 0;
+    setSelectedResult(selector(store2.getState()));
+    const unsubscribe = store2.subscribe(() => {
+      setSelectedResult(selector(store2.getState()));
+    });
+    return () => unsubscribe();
+  }, [store2, selector]);
+  return selectedResult;
+};
+const usePageReduxStoreDispatch = () => {
+  const store2 = usePageReduxStore();
+  if (!store2)
+    return void 0;
+  return store2.dispatch;
+};
+function pageReduxStoreSelectColorAction(colorIndex) {
+  return {
+    type: "SELECT_COLOR",
+    color: colorIndex
+  };
+}
+function setViewCoordinates(view) {
+  return {
+    type: "SET_VIEW_COORDINATES",
+    view
+  };
+}
+function usePageReduxStore() {
+  const [pageReduxStore, setPageReduxStore] = react.exports.useState();
+  react.exports.useEffect(() => {
+    setPageReduxStore(findPageReduxStore());
+  }, [setPageReduxStore]);
+  return pageReduxStore;
+}
+const selectPageStatePixelWaitDate = createSelector((state) => state.user.wait, (pixelWaitDate) => pixelWaitDate);
+const selectPageStateCurrentSelectedColor = createSelector((state) => state.canvas.selectedColor, (currentSelectedColor) => currentSelectedColor);
+const selectPageStateHoverPixel = createSelector((state) => {
+  var _a;
+  return (_a = state.gui.hover) == null ? void 0 : _a[0];
+}, (state) => {
+  var _a;
+  return (_a = state.gui.hover) == null ? void 0 : _a[1];
+}, (hoverPixelX, hoverPixelY) => {
+  if (hoverPixelX == null || hoverPixelY == null)
+    return void 0;
+  return {
+    x: hoverPixelX,
+    y: hoverPixelY
+  };
+});
+const selectPageStateViewScale = createSelector((state) => state.canvas.viewscale, (viewScale) => viewScale);
+const selectPageStateCanvasViewCenter = createSelector((state) => state.canvas.view[0], (state) => state.canvas.view[1], (viewX, viewY) => {
+  if (viewX == null || viewY == null)
+    return void 0;
+  return {
+    x: viewX,
+    y: viewY
+  };
+});
+const selectPageStateRoundedCanvasViewCenter = createSelector(selectPageStateCanvasViewCenter, (view) => view ? {
+  x: Math.round(view.x),
+  y: Math.round(view.y)
+} : void 0);
+const selectPageStateCanvasPalette = createSelector((state) => state.canvas.palette.abgr, (paletteAbgr) => {
+  return Array.from(new Uint32Array(paletteAbgr)).map((abgr) => {
+    const b2 = (abgr & 16711680) >>> 16;
+    const g2 = (abgr & 65280) >>> 8;
+    const r2 = abgr & 255;
+    return [r2, g2, b2];
+  });
+});
+const selectPageStateCanvasReservedColors = createSelector((state) => state.canvas.clrIgnore, (reservedColors) => reservedColors);
+const selectPageStateCanvasId = createSelector((state) => state.canvas.canvasId, (canvasId) => canvasId);
+const selectPageStateCanvasSize = createSelector((state) => state.canvas.canvasSize, (size) => size);
+const selectPageStateCanvasMaxTimeoutMs = createSelector((state) => {
+  var _a;
+  return (_a = state.canvas.canvases[state.canvas.canvasId]) == null ? void 0 : _a.cds;
+}, (canvasMaxTimeout) => canvasMaxTimeout);
+const selectPageStateCanvasTimeoutOnBaseMs = createSelector((state) => {
+  var _a;
+  return (_a = state.canvas.canvases[state.canvas.canvasId]) == null ? void 0 : _a.bcd;
+}, (canvasTimeoutOnBase) => canvasTimeoutOnBase);
+const selectPaseStateCanvasTimeoutOnPlacedMs = createSelector((state) => {
+  var _a;
+  return (_a = state.canvas.canvases[state.canvas.canvasId]) == null ? void 0 : _a.pcd;
+}, (canvasTimeoutOnPlaced) => canvasTimeoutOnPlaced);
+function executeAllHooks() {
+  hookForAutoSelectColor();
+  hookForHoverPixel();
+}
+function hookForAutoSelectColor() {
+  const pageStore = findPageReduxStore();
+  const pageDispatch = pageStore.dispatch;
+  let lastColorIndex;
+  store.subscribe(() => {
+    const colorIndex = selectCurrentHoverPixelOnOutputImageColorIndexInPalette(store.getState());
+    if (colorIndex !== void 0 && colorIndex !== lastColorIndex) {
+      lastColorIndex = colorIndex;
+      pageDispatch(pageReduxStoreSelectColorAction(colorIndex));
+    }
+  });
+}
+function hookForHoverPixel() {
+  const pageStore = findPageReduxStore();
+  let lastHoverPixel;
+  pageStore.subscribe(() => {
+    let hoverPixel = selectPageStateHoverPixel(pageStore.getState());
+    if (hoverPixel) {
+      if (hoverPixel !== lastHoverPixel) {
+        lastHoverPixel = hoverPixel;
+        store.dispatch(gameSlice.actions.setHoverPixel(hoverPixel));
+      }
+      return;
+    }
+    hoverPixel = selectPageStateRoundedCanvasViewCenter(pageStore.getState());
+    if (hoverPixel) {
+      if (hoverPixel !== lastHoverPixel) {
+        lastHoverPixel = hoverPixel;
+        store.dispatch(gameSlice.actions.setHoverPixel(hoverPixel));
+      }
+    }
+  });
+}
+var createRoot;
+var m$1 = reactDom.exports;
+{
+  createRoot = m$1.createRoot;
+}
+function _setPrototypeOf$1(o2, p2) {
+  _setPrototypeOf$1 = Object.setPrototypeOf || function _setPrototypeOf2(o3, p3) {
+    o3.__proto__ = p3;
+    return o3;
+  };
+  return _setPrototypeOf$1(o2, p2);
+}
+function _inheritsLoose(subClass, superClass) {
+  subClass.prototype = Object.create(superClass.prototype);
+  subClass.prototype.constructor = subClass;
+  _setPrototypeOf$1(subClass, superClass);
+}
+var changedArray = function changedArray2(a2, b2) {
+  if (a2 === void 0) {
+    a2 = [];
+  }
+  if (b2 === void 0) {
+    b2 = [];
+  }
+  return a2.length !== b2.length || a2.some(function(item, index) {
+    return !Object.is(item, b2[index]);
+  });
+};
+var initialState$1 = {
+  error: null
+};
+var ErrorBoundary = /* @__PURE__ */ function(_React$Component) {
+  _inheritsLoose(ErrorBoundary2, _React$Component);
+  function ErrorBoundary2() {
+    var _this;
+    for (var _len = arguments.length, _args = new Array(_len), _key = 0; _key < _len; _key++) {
+      _args[_key] = arguments[_key];
+    }
+    _this = _React$Component.call.apply(_React$Component, [this].concat(_args)) || this;
+    _this.state = initialState$1;
+    _this.resetErrorBoundary = function() {
+      var _this$props;
+      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+      _this.props.onReset == null ? void 0 : (_this$props = _this.props).onReset.apply(_this$props, args);
+      _this.reset();
+    };
+    return _this;
+  }
+  ErrorBoundary2.getDerivedStateFromError = function getDerivedStateFromError(error) {
+    return {
+      error
+    };
+  };
+  var _proto = ErrorBoundary2.prototype;
+  _proto.reset = function reset() {
+    this.setState(initialState$1);
+  };
+  _proto.componentDidCatch = function componentDidCatch(error, info) {
+    var _this$props$onError, _this$props2;
+    (_this$props$onError = (_this$props2 = this.props).onError) == null ? void 0 : _this$props$onError.call(_this$props2, error, info);
+  };
+  _proto.componentDidUpdate = function componentDidUpdate(prevProps, prevState) {
+    var error = this.state.error;
+    var resetKeys = this.props.resetKeys;
+    if (error !== null && prevState.error !== null && changedArray(prevProps.resetKeys, resetKeys)) {
+      var _this$props$onResetKe, _this$props3;
+      (_this$props$onResetKe = (_this$props3 = this.props).onResetKeysChange) == null ? void 0 : _this$props$onResetKe.call(_this$props3, prevProps.resetKeys, resetKeys);
+      this.reset();
+    }
+  };
+  _proto.render = function render() {
+    var error = this.state.error;
+    var _this$props4 = this.props, fallbackRender = _this$props4.fallbackRender, FallbackComponent = _this$props4.FallbackComponent, fallback = _this$props4.fallback;
+    if (error !== null) {
+      var _props = {
+        error,
+        resetErrorBoundary: this.resetErrorBoundary
+      };
+      if (/* @__PURE__ */ react.exports.isValidElement(fallback)) {
+        return fallback;
+      } else if (typeof fallbackRender === "function") {
+        return fallbackRender(_props);
+      } else if (FallbackComponent) {
+        return /* @__PURE__ */ react.exports.createElement(FallbackComponent, _props);
+      } else {
+        throw new Error("react-error-boundary requires either a fallback, fallbackRender, or FallbackComponent prop");
+      }
+    }
+    return this.props.children;
+  };
+  return ErrorBoundary2;
+}(react.exports.Component);
+function _typeof(obj) {
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function _typeof2(obj2) {
+      return typeof obj2;
+    };
+  } else {
+    _typeof = function _typeof2(obj2) {
+      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+    };
+  }
+  return _typeof(obj);
+}
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+function _defineProperties(target, props) {
+  for (var i2 = 0; i2 < props.length; i2++) {
+    var descriptor = props[i2];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor)
+      descriptor.writable = true;
+    Object.defineProperty(target, descriptor.key, descriptor);
+  }
+}
+function _createClass(Constructor, protoProps, staticProps) {
+  if (protoProps)
+    _defineProperties(Constructor.prototype, protoProps);
+  if (staticProps)
+    _defineProperties(Constructor, staticProps);
+  return Constructor;
+}
+function _possibleConstructorReturn(self2, call) {
+  if (call && (_typeof(call) === "object" || typeof call === "function")) {
+    return call;
+  }
+  return _assertThisInitialized$1(self2);
+}
+function _getPrototypeOf(o2) {
+  _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf2(o3) {
+    return o3.__proto__ || Object.getPrototypeOf(o3);
+  };
+  return _getPrototypeOf(o2);
+}
+function _assertThisInitialized$1(self2) {
+  if (self2 === void 0) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }
+  return self2;
+}
+function _inherits(subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function");
+  }
+  subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } });
+  if (superClass)
+    _setPrototypeOf(subClass, superClass);
+}
+function _setPrototypeOf(o2, p2) {
+  _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf2(o3, p3) {
+    o3.__proto__ = p3;
+    return o3;
+  };
+  return _setPrototypeOf(o2, p2);
+}
+function _defineProperty$2(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+var PersistGate = /* @__PURE__ */ function(_PureComponent) {
+  _inherits(PersistGate2, _PureComponent);
+  function PersistGate2() {
+    var _getPrototypeOf2;
+    var _this;
+    _classCallCheck(this, PersistGate2);
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+    _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(PersistGate2)).call.apply(_getPrototypeOf2, [this].concat(args)));
+    _defineProperty$2(_assertThisInitialized$1(_this), "state", {
+      bootstrapped: false
+    });
+    _defineProperty$2(_assertThisInitialized$1(_this), "_unsubscribe", void 0);
+    _defineProperty$2(_assertThisInitialized$1(_this), "handlePersistorState", function() {
+      var persistor2 = _this.props.persistor;
+      var _persistor$getState = persistor2.getState(), bootstrapped = _persistor$getState.bootstrapped;
+      if (bootstrapped) {
+        if (_this.props.onBeforeLift) {
+          Promise.resolve(_this.props.onBeforeLift()).finally(function() {
+            return _this.setState({
+              bootstrapped: true
+            });
+          });
+        } else {
+          _this.setState({
+            bootstrapped: true
+          });
+        }
+        _this._unsubscribe && _this._unsubscribe();
+      }
+    });
+    return _this;
+  }
+  _createClass(PersistGate2, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      this._unsubscribe = this.props.persistor.subscribe(this.handlePersistorState);
+      this.handlePersistorState();
+    }
+  }, {
+    key: "componentWillUnmount",
+    value: function componentWillUnmount() {
+      this._unsubscribe && this._unsubscribe();
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      if (typeof this.props.children === "function") {
+        return this.props.children(this.state.bootstrapped);
+      }
+      return this.state.bootstrapped ? this.props.children : this.props.loading;
+    }
+  }]);
+  return PersistGate2;
+}(react.exports.PureComponent);
+_defineProperty$2(PersistGate, "defaultProps", {
+  children: null,
+  loading: null
+});
 var tssReact = {};
 var cssAndCx = {};
 var classnames$1 = {};
@@ -15061,7 +17882,7 @@ const splitProps = (props) => {
 function extendSxProp(props) {
   const {
     sx: inSx
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$S);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$S);
   const {
     systemProps,
     otherProps
@@ -15145,7 +17966,7 @@ function createBreakpoints(breakpoints) {
     },
     unit = "px",
     step = 5
-  } = breakpoints, other = _objectWithoutPropertiesLoose$1(breakpoints, _excluded$R);
+  } = breakpoints, other = _objectWithoutPropertiesLoose$2(breakpoints, _excluded$R);
   const sortedValues = sortBreakpointsValues(values2);
   const keys = Object.keys(sortedValues);
   function up(key) {
@@ -15215,7 +18036,7 @@ function createTheme$1(options = {}, ...args) {
     palette: paletteInput = {},
     spacing: spacingInput,
     shape: shapeInput = {}
-  } = options, other = _objectWithoutPropertiesLoose$1(options, _excluded$Q);
+  } = options, other = _objectWithoutPropertiesLoose$2(options, _excluded$Q);
   const breakpoints = createBreakpoints(breakpointsInput);
   const spacing2 = createSpacing(spacingInput);
   let muiTheme = deepmerge({
@@ -15289,7 +18110,7 @@ function createBox(options = {}) {
     const _extendSxProp = extendSxProp(inProps), {
       className,
       component = "div"
-    } = _extendSxProp, other = _objectWithoutPropertiesLoose$1(_extendSxProp, _excluded$P);
+    } = _extendSxProp, other = _objectWithoutPropertiesLoose$2(_extendSxProp, _excluded$P);
     return /* @__PURE__ */ jsx$1(BoxRoot, _extends({
       as: component,
       ref,
@@ -15306,7 +18127,7 @@ function isEmpty$3(string) {
 function propsToClassKey(props) {
   const {
     variant
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$O);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$O);
   let classKey = variant || "";
   Object.keys(other).sort().forEach((key) => {
     if (key === "color") {
@@ -15379,7 +18200,7 @@ function createStyled(input = {}) {
       skipVariantsResolver: inputSkipVariantsResolver,
       skipSx: inputSkipSx,
       overridesResolver: overridesResolver2
-    } = inputOptions, options = _objectWithoutPropertiesLoose$1(inputOptions, _excluded$N);
+    } = inputOptions, options = _objectWithoutPropertiesLoose$2(inputOptions, _excluded$N);
     const skipVariantsResolver = inputSkipVariantsResolver !== void 0 ? inputSkipVariantsResolver : componentSlot && componentSlot !== "Root" || false;
     const skipSx = inputSkipSx || false;
     let label;
@@ -15398,7 +18219,7 @@ function createStyled(input = {}) {
         return typeof stylesArg === "function" && stylesArg.__emotion_real !== stylesArg ? (_ref) => {
           let {
             theme: themeInput
-          } = _ref, other = _objectWithoutPropertiesLoose$1(_ref, _excluded2$4);
+          } = _ref, other = _objectWithoutPropertiesLoose$2(_ref, _excluded2$4);
           return stylesArg(_extends({
             theme: isEmpty$2(themeInput) ? defaultTheme2 : themeInput
           }, other));
@@ -15444,7 +18265,7 @@ function createStyled(input = {}) {
         transformedStyleArg = (_ref2) => {
           let {
             theme: themeInput
-          } = _ref2, other = _objectWithoutPropertiesLoose$1(_ref2, _excluded3$1);
+          } = _ref2, other = _objectWithoutPropertiesLoose$2(_ref2, _excluded3$1);
           return styleArg(_extends({
             theme: isEmpty$2(themeInput) ? defaultTheme2 : themeInput
           }, other));
@@ -15733,7 +18554,7 @@ function useSlotProps(parameters) {
     elementType,
     externalSlotProps,
     ownerState
-  } = parameters, rest = _objectWithoutPropertiesLoose$1(parameters, _excluded$M);
+  } = parameters, rest = _objectWithoutPropertiesLoose$2(parameters, _excluded$M);
   const resolvedComponentsProps = resolveComponentProps(externalSlotProps, ownerState);
   const merged = mergeSlotProps(_extends({}, rest, {
     externalSlotProps: resolvedComponentsProps
@@ -17117,7 +19938,7 @@ const PopperTooltip = /* @__PURE__ */ react.exports.forwardRef(function PopperTo
     popperOptions,
     popperRef: popperRefProp,
     TransitionProps
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$L);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$L);
   const tooltipRef = react.exports.useRef(null);
   const ownRef = useForkRef(tooltipRef, ref);
   const popperRef = react.exports.useRef(null);
@@ -17207,7 +20028,7 @@ const PopperUnstyled = /* @__PURE__ */ react.exports.forwardRef(function PopperU
     popperRef,
     style: style2,
     transition = false
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded2$3);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded2$3);
   const [exited, setExited] = react.exports.useState(true);
   const handleEnter = () => {
     setExited(false);
@@ -17683,7 +20504,7 @@ const ModalUnstyled = /* @__PURE__ */ react.exports.forwardRef(function ModalUns
     open,
     onTransitionEnter,
     onTransitionExited
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$K);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$K);
   const [exited, setExited] = react.exports.useState(true);
   const modal = react.exports.useRef({});
   const mountNodeRef = react.exports.useRef(null);
@@ -18476,7 +21297,7 @@ const SliderUnstyled = /* @__PURE__ */ react.exports.forwardRef(function SliderU
     isRtl = false,
     components = {},
     componentsProps = {}
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$J);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$J);
   const ownerState = _extends({}, props, {
     marks: marksProp,
     classes: classesProp,
@@ -18662,7 +21483,7 @@ const TextareaAutosize = /* @__PURE__ */ react.exports.forwardRef(function Texta
     minRows = 1,
     style: style2,
     value
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$I);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$I);
   const {
     current: isControlled
   } = react.exports.useRef(value != null);
@@ -18968,7 +21789,7 @@ function createPalette(palette2) {
     mode = "light",
     contrastThreshold = 3,
     tonalOffset = 0.2
-  } = palette2, other = _objectWithoutPropertiesLoose$1(palette2, _excluded$H);
+  } = palette2, other = _objectWithoutPropertiesLoose$2(palette2, _excluded$H);
   const primary = palette2.primary || getDefaultPrimary(mode);
   const secondary = palette2.secondary || getDefaultSecondary(mode);
   const error = palette2.error || getDefaultError(mode);
@@ -19064,7 +21885,7 @@ function createTypography(palette2, typography2) {
     htmlFontSize = 16,
     allVariants,
     pxToRem: pxToRem2
-  } = _ref, other = _objectWithoutPropertiesLoose$1(_ref, _excluded$G);
+  } = _ref, other = _objectWithoutPropertiesLoose$2(_ref, _excluded$G);
   const coef = fontSize2 / 14;
   const pxToRem = pxToRem2 || ((size) => `${size / htmlFontSize * coef}rem`);
   const buildVariant = (fontWeight2, size, lineHeight2, letterSpacing2, casing) => _extends({
@@ -19146,7 +21967,7 @@ function createTransitions(inputTransitions) {
       easing: easingOption = mergedEasing.easeInOut,
       delay: delay2 = 0
     } = options;
-    _objectWithoutPropertiesLoose$1(options, _excluded$F);
+    _objectWithoutPropertiesLoose$2(options, _excluded$F);
     return (Array.isArray(props) ? props : [props]).map((animatedProp) => `${animatedProp} ${typeof durationOption === "string" ? durationOption : formatMs(durationOption)} ${easingOption} ${typeof delay2 === "string" ? delay2 : formatMs(delay2)}`).join(",");
   };
   return _extends({
@@ -19175,7 +21996,7 @@ function createTheme(options = {}, ...args) {
     palette: paletteInput = {},
     transitions: transitionsInput = {},
     typography: typographyInput = {}
-  } = options, other = _objectWithoutPropertiesLoose$1(options, _excluded$E);
+  } = options, other = _objectWithoutPropertiesLoose$2(options, _excluded$E);
   const palette2 = createPalette(paletteInput);
   const systemTheme = createTheme$1(options);
   let muiTheme = deepmerge(systemTheme, {
@@ -19280,7 +22101,7 @@ const Paper = /* @__PURE__ */ react.exports.forwardRef(function Paper2(inProps, 
     elevation = 1,
     square = false,
     variant = "elevation"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$D);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$D);
   const ownerState = _extends({}, props, {
     component,
     elevation,
@@ -19364,7 +22185,7 @@ const SvgIcon = /* @__PURE__ */ react.exports.forwardRef(function SvgIcon2(inPro
     inheritViewBox = false,
     titleAccess,
     viewBox = "0 0 24 24"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$C);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$C);
   const ownerState = _extends({}, props, {
     color: color2,
     component,
@@ -19653,7 +22474,7 @@ var Transition = /* @__PURE__ */ function(_React$Component) {
     _this$props.onExiting;
     _this$props.onExited;
     _this$props.nodeRef;
-    var childProps = _objectWithoutPropertiesLoose$1(_this$props, ["children", "in", "mountOnEnter", "unmountOnExit", "appear", "enter", "exit", "timeout", "addEndListener", "onEnter", "onEntering", "onEntered", "onExit", "onExiting", "onExited", "nodeRef"]);
+    var childProps = _objectWithoutPropertiesLoose$2(_this$props, ["children", "in", "mountOnEnter", "unmountOnExit", "appear", "enter", "exit", "timeout", "addEndListener", "onEnter", "onEntering", "onEntered", "onExit", "onExiting", "onExited", "nodeRef"]);
     return /* @__PURE__ */ React$1.createElement(TransitionGroupContext.Provider, {
       value: null
     }, typeof children === "function" ? children(status, childProps) : React$1.cloneElement(React$1.Children.only(children), childProps));
@@ -19847,7 +22668,7 @@ var TransitionGroup = /* @__PURE__ */ function(_React$Component) {
     }
   };
   _proto.render = function render() {
-    var _this$props = this.props, Component = _this$props.component, childFactory2 = _this$props.childFactory, props = _objectWithoutPropertiesLoose$1(_this$props, ["component", "childFactory"]);
+    var _this$props = this.props, Component = _this$props.component, childFactory2 = _this$props.childFactory, props = _objectWithoutPropertiesLoose$2(_this$props, ["component", "childFactory"]);
     var contextValue = this.state.contextValue;
     var children = values(this.state.children).map(childFactory2);
     delete props.appear;
@@ -20039,7 +22860,7 @@ const TouchRipple = /* @__PURE__ */ react.exports.forwardRef(function TouchRippl
     center: centerProp = false,
     classes = {},
     className
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$B);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$B);
   const [ripples, setRipples] = react.exports.useState([]);
   const nextKey = react.exports.useRef(0);
   const rippleCallback = react.exports.useRef(null);
@@ -20288,7 +23109,7 @@ const ButtonBase = /* @__PURE__ */ react.exports.forwardRef(function ButtonBase2
     TouchRippleProps,
     touchRippleRef,
     type
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$A);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$A);
   const buttonRef = react.exports.useRef(null);
   const rippleRef = react.exports.useRef(null);
   const handleRippleRef = useForkRef(rippleRef, touchRippleRef);
@@ -20557,7 +23378,7 @@ const IconButton = /* @__PURE__ */ react.exports.forwardRef(function IconButton2
     disabled = false,
     disableFocusRipple = false,
     size = "medium"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$z);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$z);
   const ownerState = _extends({}, props, {
     edge,
     color: color2,
@@ -20663,7 +23484,7 @@ const Typography = /* @__PURE__ */ react.exports.forwardRef(function Typography2
     paragraph = false,
     variant = "body1",
     variantMapping = defaultVariantMapping
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$y);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$y);
   const ownerState = _extends({}, props, {
     align,
     color: color2,
@@ -20941,7 +23762,7 @@ const InputBase = /* @__PURE__ */ react.exports.forwardRef(function InputBase2(i
     startAdornment,
     type = "text",
     value: valueProp
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$x);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$x);
   const value = inputPropsProp.value != null ? inputPropsProp.value : valueProp;
   const {
     current: isControlled
@@ -21185,7 +24006,7 @@ const Fade = /* @__PURE__ */ react.exports.forwardRef(function Fade2(props, ref)
     style: style2,
     timeout = defaultTimeout,
     TransitionComponent = Transition$1
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$w);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$w);
   const nodeRef = react.exports.useRef(null);
   const foreignRef = useForkRef(children.ref, ref);
   const handleRef = useForkRef(nodeRef, foreignRef);
@@ -21318,7 +24139,7 @@ const Backdrop = /* @__PURE__ */ react.exports.forwardRef(function Backdrop2(inP
     open,
     transitionDuration,
     TransitionComponent = Fade$1
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$v);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$v);
   const ownerState = _extends({}, props, {
     component,
     invisible
@@ -21575,7 +24396,7 @@ const Button = /* @__PURE__ */ react.exports.forwardRef(function Button2(inProps
     startIcon: startIconProp,
     type,
     variant = "text"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$u);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$u);
   const ownerState = _extends({}, props, {
     color: color2,
     component,
@@ -21676,7 +24497,7 @@ const SwitchBase = /* @__PURE__ */ react.exports.forwardRef(function SwitchBase2
     tabIndex,
     type,
     value
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$t);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$t);
   const [checked, setCheckedState] = useControlled({
     controlled: checkedProp,
     default: Boolean(defaultChecked),
@@ -21832,7 +24653,7 @@ const Checkbox = /* @__PURE__ */ react.exports.forwardRef(function Checkbox2(inP
     indeterminateIcon: indeterminateIconProp = defaultIndeterminateIcon,
     inputProps,
     size = "medium"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$s);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$s);
   const icon = indeterminate ? indeterminateIconProp : iconProp;
   const indeterminateIcon = indeterminate ? indeterminateIconProp : checkedIcon;
   const ownerState = _extends({}, props, {
@@ -21933,7 +24754,7 @@ const Modal = /* @__PURE__ */ react.exports.forwardRef(function Modal2(inProps, 
     hideBackdrop = false,
     keepMounted = false,
     theme
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$r);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$r);
   const [exited, setExited] = react.exports.useState(true);
   const commonProps = {
     closeAfterTransition,
@@ -22133,7 +24954,7 @@ const Dialog = /* @__PURE__ */ react.exports.forwardRef(function Dialog2(inProps
     TransitionComponent = Fade$1,
     transitionDuration = defaultTransitionDuration,
     TransitionProps
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$q);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$q);
   const ownerState = _extends({}, props, {
     disableEscapeKeyDown,
     fullScreen,
@@ -22257,7 +25078,7 @@ const DialogActions = /* @__PURE__ */ react.exports.forwardRef(function DialogAc
   const {
     className,
     disableSpacing = false
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$p);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$p);
   const ownerState = _extends({}, props, {
     disableSpacing
   });
@@ -22323,7 +25144,7 @@ const DialogContent = /* @__PURE__ */ react.exports.forwardRef(function DialogCo
   const {
     className,
     dividers = false
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$o);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$o);
   const ownerState = _extends({}, props, {
     dividers
   });
@@ -22361,7 +25182,7 @@ const DialogTitle = /* @__PURE__ */ react.exports.forwardRef(function DialogTitl
   const {
     className,
     id: idProp
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$n);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$n);
   const ownerState = props;
   const classes = useUtilityClasses$i(ownerState);
   const {
@@ -22550,7 +25371,7 @@ const FilledInput = /* @__PURE__ */ react.exports.forwardRef(function FilledInpu
     inputComponent = "input",
     multiline = false,
     type = "text"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$m);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$m);
   const ownerState = _extends({}, props, {
     fullWidth,
     inputComponent,
@@ -22647,7 +25468,7 @@ const FormControl = /* @__PURE__ */ react.exports.forwardRef(function FormContro
     required = false,
     size = "medium",
     variant = "outlined"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$l);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$l);
   const ownerState = _extends({}, props, {
     color: color2,
     component,
@@ -22812,7 +25633,7 @@ const FormControlLabel = /* @__PURE__ */ react.exports.forwardRef(function FormC
     disableTypography,
     label: labelProp,
     labelPlacement = "end"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$k);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$k);
   const muiFormControl = useFormControl();
   let disabled = disabledProp;
   if (typeof disabled === "undefined" && typeof control.props.disabled !== "undefined") {
@@ -22922,7 +25743,7 @@ const FormHelperText = /* @__PURE__ */ react.exports.forwardRef(function FormHel
     children,
     className,
     component = "p"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$j);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$j);
   const muiFormControl = useFormControl();
   const fcs = formControlState({
     props,
@@ -23023,7 +25844,7 @@ const FormLabel = /* @__PURE__ */ react.exports.forwardRef(function FormLabel2(i
     children,
     className,
     component = "label"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$i);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$i);
   const muiFormControl = useFormControl();
   const fcs = formControlState({
     props,
@@ -23086,7 +25907,7 @@ const Grow = /* @__PURE__ */ react.exports.forwardRef(function Grow2(props, ref)
     style: style2,
     timeout = "auto",
     TransitionComponent = Transition$1
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$h);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$h);
   const timer = react.exports.useRef();
   const autoTimeout = react.exports.useRef();
   const theme = useTheme();
@@ -23391,7 +26212,7 @@ const Input = /* @__PURE__ */ react.exports.forwardRef(function Input2(inProps, 
     inputComponent = "input",
     multiline = false,
     type = "text"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$g);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$g);
   const classes = useUtilityClasses$c(props);
   const ownerState = {
     disableUnderline
@@ -23514,7 +26335,7 @@ const InputLabel = /* @__PURE__ */ react.exports.forwardRef(function InputLabel2
   const {
     disableAnimation = false,
     shrink: shrinkProp
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$f);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$f);
   const muiFormControl = useFormControl();
   let shrink = shrinkProp;
   if (typeof shrink === "undefined" && muiFormControl) {
@@ -23596,7 +26417,7 @@ const List = /* @__PURE__ */ react.exports.forwardRef(function List2(inProps, re
     dense = false,
     disablePadding = false,
     subheader
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$e);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$e);
   const context = react.exports.useMemo(() => ({
     dense
   }), [dense]);
@@ -23690,7 +26511,7 @@ const MenuList = /* @__PURE__ */ react.exports.forwardRef(function MenuList2(pro
     disableListWrap = false,
     onKeyDown,
     variant = "selectedMenu"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$d);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$d);
   const listRef = react.exports.useRef(null);
   const textCriteriaRef = react.exports.useRef({
     keys: [],
@@ -23886,7 +26707,7 @@ const Popover = /* @__PURE__ */ react.exports.forwardRef(function Popover2(inPro
     TransitionProps: {
       onEntering
     } = {}
-  } = props, TransitionProps = _objectWithoutPropertiesLoose$1(props.TransitionProps, _excluded$c), other = _objectWithoutPropertiesLoose$1(props, _excluded2$2);
+  } = props, TransitionProps = _objectWithoutPropertiesLoose$2(props.TransitionProps, _excluded$c), other = _objectWithoutPropertiesLoose$2(props, _excluded2$2);
   const paperRef = react.exports.useRef();
   const handlePaperRef = useForkRef(paperRef, PaperProps.ref);
   const ownerState = _extends({}, props, {
@@ -24104,7 +26925,7 @@ const Menu = /* @__PURE__ */ react.exports.forwardRef(function Menu2(inProps, re
       onEntering
     } = {},
     variant = "selectedMenu"
-  } = props, TransitionProps = _objectWithoutPropertiesLoose$1(props.TransitionProps, _excluded$b), other = _objectWithoutPropertiesLoose$1(props, _excluded2$1);
+  } = props, TransitionProps = _objectWithoutPropertiesLoose$2(props.TransitionProps, _excluded$b), other = _objectWithoutPropertiesLoose$2(props, _excluded2$1);
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
   const ownerState = _extends({}, props, {
@@ -24308,7 +27129,7 @@ const MenuItem = /* @__PURE__ */ react.exports.forwardRef(function MenuItem2(inP
     focusVisibleClassName,
     role = "menuitem",
     tabIndex: tabIndexProp
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$a);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$a);
   const context = react.exports.useContext(ListContext$1);
   const childContext = {
     dense: dense || context.dense || false,
@@ -24459,7 +27280,7 @@ const NativeSelectInput = /* @__PURE__ */ react.exports.forwardRef(function Nati
     IconComponent,
     inputRef,
     variant = "standard"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$9);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$9);
   const ownerState = _extends({}, props, {
     disabled,
     variant
@@ -24543,7 +27364,7 @@ function NotchedOutline(props) {
     className,
     label,
     notched
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$8);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$8);
   const withLabel = label != null && label !== "";
   const ownerState = _extends({}, props, {
     notched,
@@ -24681,7 +27502,7 @@ const OutlinedInput = /* @__PURE__ */ react.exports.forwardRef(function Outlined
     multiline = false,
     notched,
     type = "text"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$7);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$7);
   const classes = useUtilityClasses$5(props);
   const muiFormControl = useFormControl();
   const fcs = formControlState({
@@ -24766,7 +27587,7 @@ const ScopedCssBaseline = /* @__PURE__ */ react.exports.forwardRef(function Scop
   const {
     className,
     component = "div"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$6);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$6);
   const ownerState = _extends({}, props, {
     component
   });
@@ -24892,7 +27713,7 @@ const SelectInput = /* @__PURE__ */ react.exports.forwardRef(function SelectInpu
     tabIndex: tabIndexProp,
     value: valueProp,
     variant = "standard"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$5);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$5);
   const [value, setValueState] = useControlled({
     controlled: valueProp,
     default: defaultValue,
@@ -25265,7 +28086,7 @@ const Select = /* @__PURE__ */ react.exports.forwardRef(function Select2(inProps
     renderValue,
     SelectDisplayProps,
     variant: variantProp = "outlined"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$4);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$4);
   const inputComponent = native ? NativeSelectInput$1 : SelectInput$1;
   const muiFormControl = useFormControl();
   const fcs = formControlState({
@@ -25649,7 +28470,7 @@ const Slider = /* @__PURE__ */ react.exports.forwardRef(function Slider2(inputPr
     componentsProps = {},
     color: color2 = "primary",
     size = "medium"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$3);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$3);
   const ownerState = _extends({}, props, {
     color: color2,
     size
@@ -25916,7 +28737,7 @@ const Tooltip = /* @__PURE__ */ react.exports.forwardRef(function Tooltip2(inPro
     title,
     TransitionComponent: TransitionComponentProp = Grow$1,
     TransitionProps
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$2);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$2);
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
   const [childNode, setChildNode] = react.exports.useState();
@@ -26264,7 +29085,7 @@ const TextField = /* @__PURE__ */ react.exports.forwardRef(function TextField2(i
     type,
     value,
     variant = "outlined"
-  } = props, other = _objectWithoutPropertiesLoose$1(props, _excluded$1);
+  } = props, other = _objectWithoutPropertiesLoose$2(props, _excluded$1);
   const ownerState = _extends({}, props, {
     autoFocus,
     color: color2,
@@ -26732,8 +29553,6 @@ webSocketWrapper.subscribe("message", (ev) => {
     }
   }
 });
-const useAppDispatch = () => useDispatch();
-const useAppSelector = useSelector;
 var colorString = { exports: {} };
 var colorName = {
   "aliceblue": [240, 248, 255],
@@ -29502,9 +32321,10 @@ function useReprocessOutputImage() {
   const modifierShouldConvertColors = useAppSelector(selectModifierShouldConvertColors);
   const modifierImageBrightness = useAppSelector(selectModifierImageBrightness);
   const modifierSmolPixels = useAppSelector(selectModifierSmolPixels);
+  const inputImageData = useAppSelector(selectInputImageData);
   react.exports.useEffect(() => {
     dispatch(startProcessingOutputImage());
-  }, [dispatch, url, palette2, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels]);
+  }, [dispatch, url, palette2, modifierShouldConvertColors, modifierImageBrightness, modifierSmolPixels, inputImageData]);
 }
 function useSubscribeToWindowResize() {
   const dispatch = useAppDispatch();
@@ -29562,6 +32382,7 @@ const ProviderPageStateMapper = ({
   usePageStoreCanvasReservedColors();
   usePageStoreCanvasId();
   useWebSocketEvents();
+  useReadingInputImageProcess();
   return /* @__PURE__ */ jsx$1(Fragment, {
     children
   });
@@ -29609,25 +32430,29 @@ const AppProvidersWrapper = () => {
   const [appStore, setAppStore] = React$1.useState(store);
   const theme = useAppTheme();
   return /* @__PURE__ */ jsx$1(React$1.StrictMode, {
-    children: /* @__PURE__ */ jsxs(Provider, {
+    children: /* @__PURE__ */ jsx$1(Provider, {
       store: appStore,
-      children: [/* @__PURE__ */ jsx$1(tssReact.GlobalStyles, {
-        styles: {
-          body: {
-            margin: 0,
-            padding: 0
+      children: /* @__PURE__ */ jsxs(PersistGate, {
+        loading: null,
+        persistor,
+        children: [/* @__PURE__ */ jsx$1(tssReact.GlobalStyles, {
+          styles: {
+            body: {
+              margin: 0,
+              padding: 0
+            }
           }
-        }
-      }), /* @__PURE__ */ jsx$1(ThemeProvider, {
-        theme,
-        children: /* @__PURE__ */ jsx$1(ScopedCssBaseline$1, {
-          children: /* @__PURE__ */ jsx$1(ErrorBoundary, {
-            FallbackComponent: ErrorBoundaryFallbackModal,
-            onReset: () => setAppStore(configureAppStore()),
-            children: /* @__PURE__ */ jsx$1(App, {})
+        }), /* @__PURE__ */ jsx$1(ThemeProvider, {
+          theme,
+          children: /* @__PURE__ */ jsx$1(ScopedCssBaseline$1, {
+            children: /* @__PURE__ */ jsx$1(ErrorBoundary, {
+              FallbackComponent: ErrorBoundaryFallbackModal,
+              onReset: () => setAppStore(configureAppStore()),
+              children: /* @__PURE__ */ jsx$1(App, {})
+            })
           })
-        })
-      })]
+        })]
+      })
     })
   });
 };
