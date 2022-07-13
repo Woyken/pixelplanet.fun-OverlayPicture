@@ -1,4 +1,4 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, isAnyOf } from '@reduxjs/toolkit';
 
 import { pictureConverterApi, tryReadingImageData } from '../pictureConversionApi';
 import { selectCanvasUserPalette } from '../store/slices/gameSlice';
@@ -10,9 +10,8 @@ import {
     selectModifierImageBrightness,
     selectModifierShouldConvertColors,
     selectModifierSmolPixels,
-    selectSavedConfigurations,
 } from '../store/slices/overlaySlice';
-import { RootState } from '../store/store';
+import type { RootState } from '../store/store';
 import { delay } from '../utils/promiseUtils';
 
 type InputImage = File | string;
@@ -98,17 +97,3 @@ export const startProcessingOutputImage = createAsyncThunk<{ outImageData: Image
 export const loadSavedConfigurations = createAsyncThunk<OverlaySavedConfigurationState[], void, { state: RootState }>('imageProcessing/loadSavedConfigurations', async (_, { dispatch, getState }) => {
     return JSON.parse(localStorage.getItem('OverlaySavedConfigurationsv2') || '[]') as OverlaySavedConfigurationState[];
 });
-
-// TODO, this would work better as middleware
-const saveCurrentConfigurationsToLocalStorage = createAsyncThunk<void, void, { state: RootState }>('imageProcessing/saveCurrentConfigurationsToLocalStorage', async (_, { getState }) => {
-    const savedConfigurations = selectSavedConfigurations(getState());
-    localStorage.setItem('OverlaySavedConfigurationsv2', JSON.stringify(savedConfigurations));
-});
-
-export const saveConfiguration = createAsyncThunk<OverlaySavedConfigurationState, OverlaySavedConfigurationState, { state: RootState }>(
-    'imageProcessing/saveConfiguration',
-    async (configuration, { dispatch }) => {
-        delay(0).then(() => dispatch(saveCurrentConfigurationsToLocalStorage()));
-        return configuration;
-    }
-);

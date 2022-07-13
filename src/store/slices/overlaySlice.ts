@@ -2,7 +2,7 @@ import colorConverter from 'colorConverter';
 
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { clearInputImageAction, clearOutputImageAction, loadSavedConfigurations, saveConfiguration, setInputImageAction, startProcessingOutputImage } from '../../actions/imageProcessing';
+import { clearInputImageAction, clearOutputImageAction, loadSavedConfigurations, setInputImageAction, startProcessingOutputImage } from '../../actions/imageProcessing';
 import { RootState } from '../store';
 
 import { selectCanvasPalette, selectCanvasReservedColorCount, selectGameViewCenter, selectGameViewScale, selectHoverPixel } from './gameSlice';
@@ -104,6 +104,16 @@ export const overlaySlice = createSlice({
         setWindowSize: (state, action: PayloadAction<{ innerWidth: number; innerHeight: number }>) => {
             state.browserWindow = action.payload;
         },
+        saveConfiguration: (state, action: PayloadAction<OverlaySavedConfigurationState>) => {
+            const savedConfigurations = state.savedConfigs;
+            const existingConfiguration = savedConfigurations.find((c) => c.imageUrl === action.payload.imageUrl);
+            if (existingConfiguration != null) {
+                existingConfiguration.modifiers = action.payload.modifiers;
+                existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
+            } else {
+                savedConfigurations.push(action.payload);
+            }
+        },
         removeSavedConfig: (state, action: PayloadAction<string>) => {
             const savedConfigurations = state.savedConfigs;
             const existingConfiguration = savedConfigurations.find((c) => c.imageUrl === action.payload);
@@ -136,16 +146,6 @@ export const overlaySlice = createSlice({
         });
         builder.addCase(loadSavedConfigurations.fulfilled, (state, action) => {
             state.savedConfigs = action.payload;
-        });
-        builder.addCase(saveConfiguration.fulfilled, (state, action) => {
-            const savedConfigurations = state.savedConfigs;
-            const existingConfiguration = savedConfigurations.find((c) => c.imageUrl === action.payload.imageUrl);
-            if (existingConfiguration != null) {
-                existingConfiguration.modifiers = action.payload.modifiers;
-                existingConfiguration.placementConfiguration = action.payload.placementConfiguration;
-            } else {
-                savedConfigurations.push(action.payload);
-            }
         });
     },
 });

@@ -24,17 +24,14 @@ function getStoreFromReactInternalEl(el: any) {
 }
 
 function findReactRootContainerEl() {
-    return (
-        Array.from(document.getElementsByTagName('div'))
-            .filter((el) => el.id !== 'PictureOverlay_RootNode')
-            // eslint-disable-next-line no-underscore-dangle
-            .find((el) => !!(el as any)._reactRootContainer?._internalRoot?.current)
-    );
+    return document.getElementById('app');
 }
 
-function findStoreInRoot(el: HTMLDivElement) {
-    // eslint-disable-next-line no-underscore-dangle
-    const root = (el as any)._reactRootContainer._internalRoot.current;
+function findStoreInRoot(el: HTMLElement) {
+    const reactContainerName = Object.keys(el).filter((k) => k.startsWith('__reactContainer'))[0];
+    if (!reactContainerName) throw new Error("couldn't find internal react root");
+
+    const root = (el as any)[reactContainerName];
     let checkedReactInternalElement = root;
     while (checkedReactInternalElement.child) {
         const store = getStoreFromReactInternalEl(checkedReactInternalElement);

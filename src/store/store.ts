@@ -5,6 +5,7 @@ import { gameSlice } from './slices/gameSlice';
 import { overlaySlice } from './slices/overlaySlice';
 import { pixelPlacementSlice } from './slices/pixelPlacementSlice';
 import { processedImagesSlice } from './slices/precessedImages';
+import { listenerMiddleware } from './storeMiddlewareCreator';
 
 export function configureAppStore() {
     return configureStore({
@@ -16,6 +17,9 @@ export function configureAppStore() {
             processedImages: processedImagesSlice.reducer,
         },
         devTools: import.meta.env.DEV,
+        middleware(getDefaultMiddleware) {
+            return getDefaultMiddleware().concat([listenerMiddleware.middleware]);
+        },
     });
 }
 
