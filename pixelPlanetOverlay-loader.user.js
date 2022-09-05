@@ -14060,10 +14060,10 @@ const selectPageStatePixelWaitDate = createSelector((state) => state.user.wait, 
 const selectPageStateCurrentSelectedColor = createSelector((state) => state.canvas.selectedColor, (currentSelectedColor) => currentSelectedColor);
 const selectPageStateHoverPixel = createSelector((state) => {
   var _a;
-  return (_a = state.gui.hover) == null ? void 0 : _a[0];
+  return (_a = state.canvas.hover) == null ? void 0 : _a[0];
 }, (state) => {
   var _a;
-  return (_a = state.gui.hover) == null ? void 0 : _a[1];
+  return (_a = state.canvas.hover) == null ? void 0 : _a[1];
 }, (hoverPixelX, hoverPixelY) => {
   if (hoverPixelX == null || hoverPixelY == null)
     return void 0;
