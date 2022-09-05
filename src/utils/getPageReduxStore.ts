@@ -112,8 +112,8 @@ export const selectPageStateCurrentSelectedColor = createSelector(
 );
 
 export const selectPageStateHoverPixel = createSelector(
-    (state: PageState) => state.gui.hover?.[0],
-    (state: PageState) => state.gui.hover?.[1],
+    (state: PageState) => state.canvas.hover?.[0],
+    (state: PageState) => state.canvas.hover?.[1],
     (hoverPixelX, hoverPixelY) => {
         if (hoverPixelX == null || hoverPixelY == null) return undefined;
         return { x: hoverPixelX, y: hoverPixelY };
@@ -232,6 +232,7 @@ export interface Canvas {
     isHistoricalView: boolean;
     historicalDate: null;
     historicalTime: null;
+    hover: number[] | null;
     showHiddenCanvases: boolean;
     prevCanvasCoords: PrevCanvasCoords;
 }
@@ -295,7 +296,6 @@ export interface Fetching {
 export interface GUI {
     showGrid: boolean;
     showPixelNotify: boolean;
-    hover: number[] | null;
     autoZoomIn: boolean;
     isPotato: boolean;
     isLightGrid: boolean;
