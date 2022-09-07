@@ -6,6 +6,7 @@
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
+// @include      https://fuckyouarkeros.fun/*
 // @grant        none
 // @downloadURL  https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js
 // ==/UserScript==
