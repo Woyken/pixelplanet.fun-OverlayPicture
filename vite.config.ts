@@ -21,6 +21,7 @@ const loaderModuleBanner = `
 // @description  ${pkg.description}
 // @author       ${pkg.author}
 // @include      https://pixelplanet.fun/*
+// @include      https://fuckyouarkeros.fun/*
 // @grant        none
 // @downloadURL  https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js
 // ==/UserScript==
