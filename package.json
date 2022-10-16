@@ -49,7 +49,7 @@
         "eslint-plugin-react-hooks": "4.3.0",
         "eslint-plugin-simple-import-sort": "7.0.0",
         "husky": "7.0.4",
-        "node-sass": "7.0.1",
+        "node-sass": "7.0.2",
         "prettier": "2.7.1",
         "rimraf": "3.0.2",
         "rollup-plugin-visualizer": "5.5.4",
