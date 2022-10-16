@@ -93,7 +93,7 @@ export function setViewCoordinates(view: [number, number]) {
     };
 }
 
-export function usePageReduxStore() {
+function usePageReduxStore() {
     const [pageReduxStore, setPageReduxStore] = useState<Store<PageState, AnyAction>>();
     useEffect(() => {
         setPageReduxStore(findPageReduxStore());
