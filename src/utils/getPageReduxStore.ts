@@ -1,3 +1,4 @@
+import logger from 'handlers/logger';
 import { useEffect, useState } from 'react';
 import { AnyAction, Store } from 'redux';
 
@@ -96,7 +97,18 @@ export function setViewCoordinates(view: [number, number]) {
 function usePageReduxStore() {
     const [pageReduxStore, setPageReduxStore] = useState<Store<PageState, AnyAction>>();
     useEffect(() => {
-        setPageReduxStore(findPageReduxStore());
+        let timeout: number | undefined;
+        try {
+            setPageReduxStore(findPageReduxStore());
+        } catch (error) {
+            logger.log('Error while finding redux store', error, 'retrying in 1 second');
+            timeout = setTimeout(() => {
+                setPageReduxStore(findPageReduxStore());
+            }, 1000);
+        }
+        return () => {
+            if (timeout) clearTimeout(timeout);
+        };
     }, [setPageReduxStore]);
     return pageReduxStore;
 }

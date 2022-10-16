@@ -1,11 +1,25 @@
+import logger from 'handlers/logger';
 import { Cell, gameSlice } from 'store/slices/gameSlice';
 import { selectCurrentHoverPixelOnOutputImageColorIndexInPalette } from 'store/slices/overlaySlice';
 import { store } from 'store/store';
 import { findPageReduxStore, pageReduxStoreSelectColorAction, selectPageStateHoverPixel, selectPageStateRoundedCanvasViewCenter } from 'utils/getPageReduxStore';
 
-export function executeAllHooks() {
-    hookForAutoSelectColor();
-    hookForHoverPixel();
+export function executeAllHooks(retryCounter = 0) {
+    try {
+        hookForAutoSelectColor();
+        hookForHoverPixel();
+    } catch (error) {
+        if (retryCounter > 5) {
+            // Something is terribly wrong.
+            logger.logError('failed to executeAllHooks multiple times. Rethrowing exception');
+            throw error;
+        }
+        const retryInMs = (retryCounter + 1) * 1000;
+        logger.log('failed to executeAllHooks', error, 'retrying in', retryInMs);
+        setTimeout(() => {
+            executeAllHooks(retryCounter + 1);
+        }, retryInMs);
+    }
 }
 
 function hookForAutoSelectColor() {
