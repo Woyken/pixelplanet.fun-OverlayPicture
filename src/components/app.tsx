@@ -1,6 +1,6 @@
 import { viewPortEvents } from 'gameInjection/viewport';
 import { webSocketEvents } from 'gameInjection/webSockets/webSocketEvents';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { chunkDataSlice } from 'store/slices/chunkDataSlice';
 
 import { loadSavedConfigurations, startProcessingOutputImage, useReadingInputImageProcess } from '../actions/imageProcessing';
@@ -229,6 +229,19 @@ const ProviderPageStateMapper: React.FC<React.PropsWithChildren> = ({ children }
 
 const App: React.FC = () => {
     const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
+
+    const [isPageLoaded, setIsPageLoaded] = useState(false);
+
+    // When palette loads consider page loaded.
+    // Sometimes userscript might finish loading sooner than page
+    const palette = usePageReduxStoreSelector(selectPageStateCanvasPalette);
+    useEffect(() => {
+        if (!palette) return;
+        setIsPageLoaded(true);
+    }, [palette]);
+
+    if (!isPageLoaded) return <>Waiting for page to load</>;
+
     return (
         <div>
             <ProviderPageStateMapper>
