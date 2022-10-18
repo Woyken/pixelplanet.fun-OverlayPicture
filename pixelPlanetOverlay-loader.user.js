@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.9
+// @version      1.1.10
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -32414,6 +32414,17 @@ const ProviderPageStateMapper = ({
 };
 const App = () => {
   const isOverlayEnabled = useAppSelector(selectIsOverlayEnabled);
+  const [isPageLoaded, setIsPageLoaded] = react.exports.useState(false);
+  const palette2 = usePageReduxStoreSelector(selectPageStateCanvasPalette);
+  react.exports.useEffect(() => {
+    if (!palette2)
+      return;
+    setIsPageLoaded(true);
+  }, [palette2]);
+  if (!isPageLoaded)
+    return /* @__PURE__ */ jsx$1(Fragment, {
+      children: "Waiting for page to load"
+    });
   return /* @__PURE__ */ jsx$1("div", {
     children: /* @__PURE__ */ jsxs(ProviderPageStateMapper, {
       children: [isOverlayEnabled && /* @__PURE__ */ jsx$1(OverlayImage, {}), /* @__PURE__ */ jsx$1(ConfigurationModal, {})]
