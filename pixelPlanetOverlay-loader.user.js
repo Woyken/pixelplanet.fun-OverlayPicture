@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.10
+// @version      1.1.11
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -32417,7 +32417,7 @@ const App = () => {
   const [isPageLoaded, setIsPageLoaded] = react.exports.useState(false);
   const palette2 = usePageReduxStoreSelector(selectPageStateCanvasPalette);
   react.exports.useEffect(() => {
-    if (!palette2)
+    if (!(palette2 == null ? void 0 : palette2.length))
       return;
     setIsPageLoaded(true);
   }, [palette2]);
