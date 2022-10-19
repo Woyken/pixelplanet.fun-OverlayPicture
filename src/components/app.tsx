@@ -236,7 +236,7 @@ const App: React.FC = () => {
     // Sometimes userscript might finish loading sooner than page
     const palette = usePageReduxStoreSelector(selectPageStateCanvasPalette);
     useEffect(() => {
-        if (!palette) return;
+        if (!palette?.length) return;
         setIsPageLoaded(true);
     }, [palette]);
 
