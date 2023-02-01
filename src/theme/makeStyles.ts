@@ -1,6 +1,7 @@
+import useMediaQuery from 'beautiful-react-hooks/useMediaQuery';
 import { createMakeAndWithStyles } from 'tss-react';
 
-import { createTheme, ThemeOptions, useMediaQuery } from '@mui/material';
+import { createTheme, ThemeOptions } from '@mui/material';
 
 export const lightThemeOptions: ThemeOptions = {
     palette: {

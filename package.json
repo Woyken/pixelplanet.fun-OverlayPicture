@@ -66,6 +66,7 @@
         "@mui/material": "^5.11.7",
         "@reduxjs/toolkit": "^1.9.2",
         "@types/offscreencanvas": "^2019.7.0",
+        "beautiful-react-hooks": "^3.12.2",
         "color-string": "^1.9.1",
         "comlink": "^4.4.0",
         "fast-png": "^6.1.0",
