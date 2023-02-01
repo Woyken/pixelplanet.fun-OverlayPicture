@@ -12,9 +12,7 @@
         "build:verify": "npm run build",
         "open": "open-cli file://%cd%\\dist\\pixelPlanetOverlay.user.js -- firefox",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix",
-        "postinstall": "husky install",
-        "prepare": "husky install"
+        "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --quiet --fix"
     },
     "keywords": [
         "pixelplanet.fun",
@@ -48,7 +46,6 @@
         "eslint-plugin-react": "7.32.2",
         "eslint-plugin-react-hooks": "4.6.0",
         "eslint-plugin-simple-import-sort": "10.0.0",
-        "husky": "8.0.3",
         "node-sass": "8.0.0",
         "prettier": "2.8.3",
         "rimraf": "4.1.2",
