@@ -13,8 +13,8 @@ enum LogLevel {
     info,
 }
 
-class Logger {
-    public isLogLevelEnabled(level: LogLevel): boolean {
+const logger = {
+    isLogLevelEnabled(level: LogLevel): boolean {
         if (typeof window === 'undefined') return true;
 
         if (typeof window.logLevel === 'number') {
@@ -22,25 +22,25 @@ class Logger {
         }
         window.logLevel = 0;
         return level <= 0;
-    }
+    },
 
-    public log(a: string, ...args: unknown[]): void {
-        if (this.isLogLevelEnabled(LogLevel.info)) {
+    log(a: string, ...args: unknown[]): void {
+        if (logger.isLogLevelEnabled(LogLevel.info)) {
             console.log(a, ...args);
         }
-    }
+    },
 
-    public logWarn(a: string, ...args: unknown[]): void {
-        if (this.isLogLevelEnabled(LogLevel.warn)) {
+    logWarn(a: string, ...args: unknown[]): void {
+        if (logger.isLogLevelEnabled(LogLevel.warn)) {
             console.warn(a, ...args);
         }
-    }
+    },
 
-    public logError(a: string, ...args: unknown[]): void {
-        if (this.isLogLevelEnabled(LogLevel.error)) {
+    logError(a: string, ...args: unknown[]): void {
+        if (logger.isLogLevelEnabled(LogLevel.error)) {
             console.error(a, ...args);
         }
-    }
-}
+    },
+};
 
-export default new Logger();
+export default logger;
