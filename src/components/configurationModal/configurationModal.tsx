@@ -46,7 +46,7 @@ const ConfigurationModal: React.FC = () => {
         },
         [dispatch]
     );
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: 'image/*', noClick: true });
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': ['.png', '.gif', '.jpeg', '.jpg'] }, noClick: true });
 
     const handleToggleOverlayOnOff = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(overlaySlice.actions.setOverlayEnabled(e.target.checked));

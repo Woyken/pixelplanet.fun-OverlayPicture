@@ -62,7 +62,7 @@ export const InputImageModal: React.FC<IProps> = (props) => {
                 <Typography sx={{ margin: '1em 0em 1em 0' }} variant="body1">
                     CTRL + V to paste image from clipboard
                 </Typography>
-                <Dropzone onDrop={onDrop} accept="image/*">
+                <Dropzone onDrop={onDrop} accept={{ 'image/*': ['.png', '.gif', '.jpeg', '.jpg'] }}>
                     {({ getRootProps, getInputProps, isDragActive, isDragAccept }) => (
                         <div {...getRootProps({ className: classes.dropzoneEl })} style={{ borderColor: isDragAccept ? theme.palette.success.main : undefined }}>
                             <input {...getInputProps()} hidden />
