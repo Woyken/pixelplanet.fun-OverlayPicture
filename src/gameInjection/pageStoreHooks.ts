@@ -11,7 +11,7 @@ export function executeAllHooks(retryCounter = 0) {
     } catch (error) {
         if (retryCounter > 5) {
             // Something is terribly wrong.
-            logger.logError('failed to executeAllHooks multiple times. Rethrowing exception');
+            logger.logError('failed to executeAllHooks multiple times. Rethrowing exception', error);
             throw error;
         }
         const retryInMs = (retryCounter + 1) * 1000;
