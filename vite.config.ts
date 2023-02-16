@@ -41,7 +41,8 @@ const config: () => UserConfig = () => ({
     build: {
         emptyOutDir: !doNotClean,
         sourcemap: isDev ? 'inline' : false,
-        minify: isDev ? false : undefined,
+        minify: false, // isDev ? false : undefined, // TODO, mark 'GM' as global/restricted keyword so minifier doesn't generate variables with that name
+        target: 'esnext',
         rollupOptions: {
             plugins: [isDev ? visualizer({ filename: 'moduleVisualizerOutput.html' }) : undefined],
             output: {
