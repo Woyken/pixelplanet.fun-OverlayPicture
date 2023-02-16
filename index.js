@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.11
+// @version      1.1.12
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -12,4 +12,96 @@
 // ==/UserScript==
 /**/
 
-(function(){const o=document.createElement("link").relList;if(o&&o.supports&&o.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))l(t);new MutationObserver(t=>{for(const e of t)if(e.type==="childList")for(const r of e.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&l(r)}).observe(document,{childList:!0,subtree:!0});function i(t){const e={};return t.integrity&&(e.integrity=t.integrity),t.referrerpolicy&&(e.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?e.credentials="include":t.crossorigin==="anonymous"?e.credentials="omit":e.credentials="same-origin",e}function l(t){if(t.ep)return;t.ep=!0;const e=i(t);fetch(t.href,e)}})();const d="modulepreload",m=function(u){return"/"+u},f={},h=function(o,i,l){if(!i||i.length===0)return o();const t=document.getElementsByTagName("link");return Promise.all(i.map(e=>{if(e=m(e),e in f)return;f[e]=!0;const r=e.endsWith(".css"),a=r?'[rel="stylesheet"]':"";if(!!l)for(let s=t.length-1;s>=0;s--){const c=t[s];if(c.href===e&&(!r||c.rel==="stylesheet"))return}else if(document.querySelector(`link[href="${e}"]${a}`))return;const n=document.createElement("link");if(n.rel=r?"stylesheet":d,r||(n.as="script",n.crossOrigin=""),n.href=e,document.head.appendChild(n),r)return new Promise((s,c)=>{n.addEventListener("load",s),n.addEventListener("error",()=>c(new Error(`Unable to preload CSS for ${e}`)))})})).then(()=>o())};h(()=>import("./pixelPlanetOverlay-loader.user.js"),[]);
+true&&(function polyfill() {
+    const relList = document.createElement('link').relList;
+    if (relList && relList.supports && relList.supports('modulepreload')) {
+        return;
+    }
+    for (const link of document.querySelectorAll('link[rel="modulepreload"]')) {
+        processPreload(link);
+    }
+    new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type !== 'childList') {
+                continue;
+            }
+            for (const node of mutation.addedNodes) {
+                if (node.tagName === 'LINK' && node.rel === 'modulepreload')
+                    processPreload(node);
+            }
+        }
+    }).observe(document, { childList: true, subtree: true });
+    function getFetchOpts(script) {
+        const fetchOpts = {};
+        if (script.integrity)
+            fetchOpts.integrity = script.integrity;
+        if (script.referrerpolicy)
+            fetchOpts.referrerPolicy = script.referrerpolicy;
+        if (script.crossorigin === 'use-credentials')
+            fetchOpts.credentials = 'include';
+        else if (script.crossorigin === 'anonymous')
+            fetchOpts.credentials = 'omit';
+        else
+            fetchOpts.credentials = 'same-origin';
+        return fetchOpts;
+    }
+    function processPreload(link) {
+        if (link.ep)
+            // ep marker = processed
+            return;
+        link.ep = true;
+        // prepopulate the load record
+        const fetchOpts = getFetchOpts(link);
+        fetch(link.href, fetchOpts);
+    }
+}());
+
+const scriptRel = 'modulepreload';const assetsURL = function(dep) { return "/"+dep };const seen = {};const __vitePreload = function preload(baseModule, deps, importerUrl) {
+    // @ts-expect-error true will be replaced with boolean later
+    if (!true || !deps || deps.length === 0) {
+        return baseModule();
+    }
+    const links = document.getElementsByTagName('link');
+    return Promise.all(deps.map((dep) => {
+        // @ts-expect-error assetsURL is declared before preload.toString()
+        dep = assetsURL(dep);
+        if (dep in seen)
+            return;
+        seen[dep] = true;
+        const isCss = dep.endsWith('.css');
+        const cssSelector = isCss ? '[rel="stylesheet"]' : '';
+        const isBaseRelative = !!importerUrl;
+        // check if the file is already preloaded by SSR markup
+        if (isBaseRelative) {
+            // When isBaseRelative is true then we have `importerUrl` and `dep` is
+            // already converted to an absolute URL by the `assetsURL` function
+            for (let i = links.length - 1; i >= 0; i--) {
+                const link = links[i];
+                // The `links[i].href` is an absolute URL thanks to browser doing the work
+                // for us. See https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#reflecting-content-attributes-in-idl-attributes:idl-domstring-5
+                if (link.href === dep && (!isCss || link.rel === 'stylesheet')) {
+                    return;
+                }
+            }
+        }
+        else if (document.querySelector(`link[href="${dep}"]${cssSelector}`)) {
+            return;
+        }
+        const link = document.createElement('link');
+        link.rel = isCss ? 'stylesheet' : scriptRel;
+        if (!isCss) {
+            link.as = 'script';
+            link.crossOrigin = '';
+        }
+        link.href = dep;
+        document.head.appendChild(link);
+        if (isCss) {
+            return new Promise((res, rej) => {
+                link.addEventListener('load', res);
+                link.addEventListener('error', () => rej(new Error(`Unable to preload CSS for ${dep}`)));
+            });
+        }
+    })).then(() => baseModule());
+};
+
+__vitePreload(() => import('./pixelPlanetOverlay-loader.user.js'),true?[]:void 0);
