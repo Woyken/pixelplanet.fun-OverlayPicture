@@ -1,14 +1,14 @@
 
 // ==UserScript==
-// @name         pixelplanet.fun picture overlay
-// @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
+// @name         canvaspixel.net picture overlay
+// @namespace    https://github.com/Woyken/canvaspixel.net-OverlayPicture
 // @version      1.1.12
-// @description  Add your picture as overlay to pixelplanet.fun
+// @description  Add your picture as overlay to canvaspixel.net
 // @author       Woyken
-// @include      https://pixelplanet.fun/*
-// @include      https://fuckyouarkeros.fun/*
+// @include      https://canvaspixel.net/*
+// @include      https://www.canvaspixel.net/*
 // @grant        none
-// @downloadURL  https://woyken.github.io/pixelplanet.fun-OverlayPicture/pixelPlanetOverlay-loader.user.js
+// @downloadURL  https://bypikod.github.io/canvaspixel.net-OverlayPicture/pixelPlanetOverlay-loader.user.js
 // ==/UserScript==
 /**/
 
