@@ -11,7 +11,7 @@ jobs:
             - uses: actions/checkout@v2
 
             - name: Setup Node.js environment
-              uses: actions/setup-node@v2.5.1
+              uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2.5.2
 
             - run: npm install
             - run: npm run build:verify
@@ -24,7 +24,7 @@ jobs:
             - uses: actions/checkout@v2
 
             - name: Setup Node.js environment
-              uses: actions/setup-node@v2.5.1
+              uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2.5.2
 
             - run: npm install
             - run: npm run build
