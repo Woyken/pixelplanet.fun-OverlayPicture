@@ -133,7 +133,7 @@ export const selectPageStateHoverPixel = createSelector(
 );
 
 export const selectPageStateViewScale = createSelector(
-    (state: PageState) => state.canvas.viewscale,
+    (state: PageState) => state.canvas.view[2],
     (viewScale) => viewScale
 );
 
@@ -238,7 +238,6 @@ export interface Canvas {
     clrIgnore: number;
     selectedColor: number;
     view: number[];
-    viewscale: number;
     scale: number;
     canvases: { [key: number]: Canvase };
     isHistoricalView: boolean;
