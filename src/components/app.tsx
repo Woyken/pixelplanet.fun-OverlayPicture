@@ -1,3 +1,4 @@
+import type { EventEmitter } from 'events';
 import { viewPortEvents } from 'gameInjection/viewport';
 import { webSocketEvents } from 'gameInjection/webSockets/webSocketEvents';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -34,6 +35,12 @@ import {
 import ConfigurationModal from './configurationModal/configurationModal';
 import OverlayImage from './overlayImage/overlayImage';
 
+declare global {
+    interface Window {
+        pixelPlanetEvents: EventEmitter;
+    }
+}
+
 function usePageStoreWaitDate() {
     const dispatch = useAppDispatch();
     const waitDate = usePageReduxStoreSelector(selectPageStatePixelWaitDate);
@@ -53,20 +60,46 @@ function usePageStoreCurrentSelectedColor() {
 
 function usePageStoreViewScale() {
     const dispatch = useAppDispatch();
-    const pageViewScale = usePageReduxStoreSelector(selectPageStateViewScale);
+    // const pageViewScale = usePageReduxStoreSelector(selectPageStateViewScale);
 
     useEffect(() => {
-        if (pageViewScale) dispatch(gameSlice.actions.setViewScale(pageViewScale));
-    }, [dispatch, pageViewScale]);
+        // Extension events: https://git.pixelplanet.fun/ppfun/pixelplanet/src/branch/master/src/store/middleware/extensions.js
+        const processEvent = (scale: number) => dispatch(gameSlice.actions.setViewScale(scale));
+
+        window.pixelPlanetEvents.on('setscale', processEvent);
+        return () => {
+            window.pixelPlanetEvents.off('setscale', processEvent);
+        };
+    }, [dispatch]);
+
+    // useEffect(() => {
+    //     if (pageViewScale) dispatch(gameSlice.actions.setViewScale(pageViewScale));
+    // }, [dispatch, pageViewScale]);
 }
 
 function usePageStoreViewCenter() {
     const dispatch = useAppDispatch();
-    const pageViewCenter = usePageReduxStoreSelector(selectPageStateCanvasViewCenter);
+    // const pageViewCenter = usePageReduxStoreSelector(selectPageStateCanvasViewCenter);
 
     useEffect(() => {
-        if (pageViewCenter) dispatch(gameSlice.actions.setViewCenter(pageViewCenter));
-    }, [dispatch, pageViewCenter]);
+        // Extension events: https://git.pixelplanet.fun/ppfun/pixelplanet/src/branch/master/src/store/middleware/extensions.js
+        const processEvent = (viewCoordinates: number[]) => {
+            if (viewCoordinates.length < 2) return;
+            const x = viewCoordinates[0];
+            const y = viewCoordinates[1];
+            if (typeof x !== 'number' || typeof y !== 'number') return;
+            dispatch(gameSlice.actions.setViewCenter({ x, y }));
+        };
+
+        window.pixelPlanetEvents.on('setviewcoordinates', processEvent);
+        return () => {
+            window.pixelPlanetEvents.off('setviewcoordinates', processEvent);
+        };
+    }, [dispatch]);
+
+    // useEffect(() => {
+    //     if (pageViewCenter) dispatch(gameSlice.actions.setViewCenter(pageViewCenter));
+    // }, [dispatch, pageViewCenter]);
 }
 
 function usePageStoreCanvasPalette() {

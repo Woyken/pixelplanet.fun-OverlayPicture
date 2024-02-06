@@ -1,7 +1,7 @@
 {
     "name": "pixelplanet.fun-picture-overlay",
     "displayName": "pixelplanet.fun picture overlay",
-    "version": "1.1.13",
+    "version": "1.1.14",
     "description": "Add your picture as overlay to pixelplanet.fun",
     "main": "./dist/index.js",
     "scripts": {
@@ -27,6 +27,7 @@
         "@babel/core": "7.20.12",
         "@open-wc/rollup-plugin-html": "1.2.5",
         "@types/color-string": "1.5.2",
+        "@types/events": "^3.0.3",
         "@types/jest": "29.4.0",
         "@types/pako": "2.0.0",
         "@types/react": "18.0.27",
@@ -69,6 +70,7 @@
         "beautiful-react-hooks": "^3.12.2",
         "color-string": "^1.9.1",
         "comlink": "^4.4.0",
+        "events": "^3.3.0",
         "fast-png": "^6.1.0",
         "keycode": "^2.2.1",
         "localforage": "^1.10.0",
