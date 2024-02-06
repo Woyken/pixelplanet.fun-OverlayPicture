@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.13
+// @version      1.1.14
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -7606,7 +7606,7 @@ const selectPageStateHoverPixel = createSelector((state) => state.canvas.hover?.
     y: hoverPixelY
   };
 });
-const selectPageStateViewScale = createSelector((state) => state.canvas.view[2], (viewScale) => viewScale);
+createSelector((state) => state.canvas.view[2], (viewScale) => viewScale);
 const selectPageStateCanvasViewCenter = createSelector((state) => state.canvas.view[0], (state) => state.canvas.view[1], (viewX, viewY) => {
   if (viewX == null || viewY == null)
     return void 0;
@@ -28762,19 +28762,34 @@ function usePageStoreCurrentSelectedColor() {
 }
 function usePageStoreViewScale() {
   const dispatch = useAppDispatch();
-  const pageViewScale = usePageReduxStoreSelector(selectPageStateViewScale);
   reactExports.useEffect(() => {
-    if (pageViewScale)
-      dispatch(gameSlice.actions.setViewScale(pageViewScale));
-  }, [dispatch, pageViewScale]);
+    const processEvent = (scale) => dispatch(gameSlice.actions.setViewScale(scale));
+    window.pixelPlanetEvents.on("setscale", processEvent);
+    return () => {
+      window.pixelPlanetEvents.off("setscale", processEvent);
+    };
+  }, [dispatch]);
 }
 function usePageStoreViewCenter() {
   const dispatch = useAppDispatch();
-  const pageViewCenter = usePageReduxStoreSelector(selectPageStateCanvasViewCenter);
   reactExports.useEffect(() => {
-    if (pageViewCenter)
-      dispatch(gameSlice.actions.setViewCenter(pageViewCenter));
-  }, [dispatch, pageViewCenter]);
+    const processEvent = (viewCoordinates) => {
+      if (viewCoordinates.length < 2)
+        return;
+      const x = viewCoordinates[0];
+      const y = viewCoordinates[1];
+      if (typeof x !== "number" || typeof y !== "number")
+        return;
+      dispatch(gameSlice.actions.setViewCenter({
+        x,
+        y
+      }));
+    };
+    window.pixelPlanetEvents.on("setviewcoordinates", processEvent);
+    return () => {
+      window.pixelPlanetEvents.off("setviewcoordinates", processEvent);
+    };
+  }, [dispatch]);
 }
 function usePageStoreCanvasPalette() {
   const dispatch = useAppDispatch();
