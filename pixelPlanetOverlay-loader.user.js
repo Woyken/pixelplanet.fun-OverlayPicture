@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         pixelplanet.fun picture overlay
 // @namespace    https://github.com/Woyken/pixelplanet.fun-OverlayPicture
-// @version      1.1.12
+// @version      1.1.13
 // @description  Add your picture as overlay to pixelplanet.fun
 // @author       Woyken
 // @include      https://pixelplanet.fun/*
@@ -7606,7 +7606,7 @@ const selectPageStateHoverPixel = createSelector((state) => state.canvas.hover?.
     y: hoverPixelY
   };
 });
-const selectPageStateViewScale = createSelector((state) => state.canvas.viewscale, (viewScale) => viewScale);
+const selectPageStateViewScale = createSelector((state) => state.canvas.view[2], (viewScale) => viewScale);
 const selectPageStateCanvasViewCenter = createSelector((state) => state.canvas.view[0], (state) => state.canvas.view[1], (viewX, viewY) => {
   if (viewX == null || viewY == null)
     return void 0;
