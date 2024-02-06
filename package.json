@@ -26,7 +26,7 @@
     "devDependencies": {
         "@babel/core": "7.20.12",
         "@open-wc/rollup-plugin-html": "1.2.5",
-        "@types/color-string": "1.5.2",
+        "@types/color-string": "1.5.5",
         "@types/events": "^3.0.3",
         "@types/jest": "29.4.0",
         "@types/pako": "2.0.0",
